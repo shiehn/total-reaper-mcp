@@ -1,14 +1,57 @@
--- REAPER MCP Bridge (File-based, Full API)
--- This script runs inside REAPER and communicates with the MCP server using files
+-- REAPER MCP Bridge with Object Registry
+-- This version maintains references to objects between calls
 
 local bridge_dir = reaper.GetResourcePath() .. '/Scripts/mcp_bridge_data/'
+
+-- Object registry to store references
+local object_registry = {}
+local next_handle_id = 1
 
 -- Create bridge directory if it doesn't exist
 local function ensure_dir()
     reaper.RecursiveCreateDirectory(bridge_dir, 0)
 end
 
--- Simple JSON encoding (minimal implementation)
+-- Register an object and return a handle
+local function register_object(obj)
+    if type(obj) ~= "userdata" then
+        return obj
+    end
+    
+    -- Check if already registered
+    for handle, stored_obj in pairs(object_registry) do
+        if stored_obj == obj then
+            return {__handle = handle}
+        end
+    end
+    
+    -- Register new object
+    local handle = "handle_" .. next_handle_id
+    next_handle_id = next_handle_id + 1
+    object_registry[handle] = obj
+    return {__handle = handle}
+end
+
+-- Retrieve object from handle
+local function resolve_handle(value)
+    if type(value) == "table" and value.__handle then
+        return object_registry[value.__handle]
+    end
+    return value
+end
+
+-- Resolve handles in arguments
+local function resolve_args(args)
+    if not args then return args end
+    
+    local resolved = {}
+    for i, arg in ipairs(args) do
+        resolved[i] = resolve_handle(arg)
+    end
+    return resolved
+end
+
+-- Simple JSON encoding with handle support
 local function encode_json(v)
     if type(v) == "nil" then
         return "null"
@@ -27,14 +70,20 @@ local function encode_json(v)
             end
             return "[" .. table.concat(parts, ",") .. "]"
         else
+            -- Check if it's a handle reference
+            if v.__handle then
+                return string.format('{"__handle":"%s"}', v.__handle)
+            end
+            
             for k, item in pairs(v) do
                 table.insert(parts, string.format('"%s":%s', k, encode_json(item)))
             end
             return "{" .. table.concat(parts, ",") .. "}"
         end
     elseif type(v) == "userdata" then
-        -- Handle userdata (pointers) by converting to a handle ID
-        return encode_json({__ptr = tostring(v)})
+        -- Register userdata and return handle
+        local handle_obj = register_object(v)
+        return encode_json(handle_obj)
     else
         return "null"
     end
@@ -187,6 +236,22 @@ local function delete_file(filepath)
     os.remove(filepath)
 end
 
+-- Process return values and register any userdata
+local function process_return_value(value)
+    if type(value) == "userdata" then
+        return register_object(value)
+    elseif type(value) == "table" then
+        -- Process tables recursively
+        local processed = {}
+        for k, v in pairs(value) do
+            processed[k] = process_return_value(v)
+        end
+        return processed
+    else
+        return value
+    end
+end
+
 -- Main processing function
 local function process_request()
     -- Look for any request files with numbered pattern
@@ -195,18 +260,18 @@ local function process_request()
         local numbered_response_file = bridge_dir .. 'response_' .. i .. '.json'
         
         if file_exists(numbered_request_file) then
-            -- Wrap in pcall to catch any errors
+            -- Wrap in pcall for safety
             local ok, err = pcall(function()
                 -- Read and process request
                 local request_data = read_file(numbered_request_file)
                 if request_data then
-                    reaper.ShowConsoleMsg("Processing request " .. i .. ": " .. request_data .. "\n")
-                    
-                    -- Parse the request
-                    local request = decode_json(request_data)
-                    if request and request.func then
-                        local fname = request.func
-                        local args = request.args or {}
+                reaper.ShowConsoleMsg("Processing request " .. i .. ": " .. request_data .. "\n")
+                
+                -- Parse the request
+                local request = decode_json(request_data)
+                if request and request.func then
+                    local fname = request.func
+                    local args = resolve_args(request.args or {})
                     
                     -- Call the REAPER function
                     local response = {ok = false}
@@ -234,14 +299,18 @@ local function process_request()
                         if #args >= 2 then
                             local track = reaper.GetTrack(args[1], args[2])
                             response.ok = true
-                            response.ret = track
+                            response.ret = process_return_value(track)
                         else
                             response.error = "GetTrack requires 2 arguments"
                         end
                     
                     elseif fname == "SetTrackSelected" then
                         if #args >= 2 then
-                            local track = reaper.GetTrack(0, args[1])
+                            local track = args[1]
+                            if type(track) == "number" then
+                                -- Track index provided
+                                track = reaper.GetTrack(0, track)
+                            end
                             if track then
                                 reaper.SetTrackSelected(track, args[2])
                                 response.ok = true
@@ -254,7 +323,10 @@ local function process_request()
                     
                     elseif fname == "GetTrackName" then
                         if #args >= 1 then
-                            local track = reaper.GetTrack(0, args[1])
+                            local track = args[1]
+                            if type(track) == "number" then
+                                track = reaper.GetTrack(0, track)
+                            end
                             if track then
                                 local retval, name = reaper.GetTrackName(track)
                                 response.ok = true
@@ -268,7 +340,10 @@ local function process_request()
                     
                     elseif fname == "SetTrackName" then
                         if #args >= 2 then
-                            local track = reaper.GetTrack(0, args[1])
+                            local track = args[1]
+                            if type(track) == "number" then
+                                track = reaper.GetTrack(0, track)
+                            end
                             if track then
                                 reaper.GetSetMediaTrackInfo_String(track, "P_NAME", args[2], true)
                                 response.ok = true
@@ -282,33 +357,26 @@ local function process_request()
                     elseif fname == "GetMasterTrack" then
                         local track = reaper.GetMasterTrack(args[1] or 0)
                         response.ok = true
-                        response.ret = track
+                        response.ret = process_return_value(track)
                     
                     elseif fname == "DeleteTrack" then
                         if args[1] then
-                            -- Check if it's a track index or a pointer object
-                            local track = nil
-                            if type(args[1]) == "number" then
-                                -- It's a track index
-                                track = reaper.GetTrack(0, args[1])
-                            elseif type(args[1]) == "table" and args[1].__ptr then
-                                -- It's a pointer object - we can't use it directly
-                                -- For now, return an error
-                                response.error = "Cannot use track pointer from previous call - use DeleteTrackByIndex instead"
-                                response.ok = false
-                            else
-                                track = args[1]  -- Assume it's already a track
-                            end
-                            
+                            local track = args[1]
                             if track then
                                 reaper.DeleteTrack(track)
                                 response.ok = true
+                                -- Remove from registry
+                                for handle, obj in pairs(object_registry) do
+                                    if obj == track then
+                                        object_registry[handle] = nil
+                                        break
+                                    end
+                                end
                             else
-                                response.error = "Track not found"
-                                response.ok = false
+                                response.error = "Invalid track"
                             end
                         else
-                            response.error = "DeleteTrack requires track pointer or index"
+                            response.error = "DeleteTrack requires track"
                         end
                     
                     elseif fname == "DeleteTrackByIndex" then
@@ -317,9 +385,15 @@ local function process_request()
                             if track then
                                 reaper.DeleteTrack(track)
                                 response.ok = true
+                                -- Remove from registry
+                                for handle, obj in pairs(object_registry) do
+                                    if obj == track then
+                                        object_registry[handle] = nil
+                                        break
+                                    end
+                                end
                             else
                                 response.error = "Track not found at index " .. tostring(args[1])
-                                response.ok = false
                             end
                         else
                             response.error = "DeleteTrackByIndex requires track index"
@@ -346,9 +420,9 @@ local function process_request()
                         if args[1] then
                             local item = reaper.AddMediaItemToTrack(args[1])
                             response.ok = true
-                            response.ret = item
+                            response.ret = process_return_value(item)
                         else
-                            response.error = "AddMediaItemToTrack requires track pointer"
+                            response.error = "AddMediaItemToTrack requires track"
                         end
                     
                     elseif fname == "CountMediaItems" then
@@ -360,84 +434,10 @@ local function process_request()
                         if #args >= 2 then
                             local item = reaper.GetMediaItem(args[1], args[2])
                             response.ok = true
-                            response.ret = item
+                            response.ret = process_return_value(item)
                         else
                             response.error = "GetMediaItem requires 2 arguments"
                         end
-                    
-                    elseif fname == "GetTrackMediaItem" then
-                        if #args >= 2 then
-                            local item = reaper.GetTrackMediaItem(args[1], args[2])
-                            response.ok = true
-                            response.ret = item
-                        else
-                            response.error = "GetTrackMediaItem requires 2 arguments"
-                        end
-                    
-                    elseif fname == "DeleteTrackMediaItem" then
-                        if #args >= 2 then
-                            local result = reaper.DeleteTrackMediaItem(args[1], args[2])
-                            response.ok = result
-                        else
-                            response.error = "DeleteTrackMediaItem requires 2 arguments"
-                        end
-                    
-                    elseif fname == "GetMediaItemInfo_Value" then
-                        if #args >= 2 then
-                            local value = reaper.GetMediaItemInfo_Value(args[1], args[2])
-                            response.ok = true
-                            response.ret = value
-                        else
-                            response.error = "GetMediaItemInfo_Value requires 2 arguments"
-                        end
-                    
-                    elseif fname == "SetMediaItemLength" then
-                        if #args >= 3 then
-                            reaper.SetMediaItemLength(args[1], args[2], args[3])
-                            response.ok = true
-                        else
-                            response.error = "SetMediaItemLength requires 3 arguments"
-                        end
-                    
-                    elseif fname == "SetMediaItemPosition" then
-                        if #args >= 3 then
-                            reaper.SetMediaItemPosition(args[1], args[2], args[3])
-                            response.ok = true
-                        else
-                            response.error = "SetMediaItemPosition requires 3 arguments"
-                        end
-                    
-                    elseif fname == "GetProjectName" then
-                        local retval, name = reaper.GetProjectName(args[1] or 0, "", 512)
-                        response.ok = true
-                        response.ret = {name}
-                    
-                    elseif fname == "GetProjectPath" then
-                        local path = reaper.GetProjectPath("", 2048)
-                        response.ok = true
-                        response.ret = path
-                    
-                    elseif fname == "Main_SaveProject" then
-                        reaper.Main_SaveProject(args[1] or 0, args[2] or false)
-                        response.ok = true
-                    
-                    elseif fname == "GetCursorPosition" then
-                        local pos = reaper.GetCursorPosition()
-                        response.ok = true
-                        response.ret = pos
-                    
-                    elseif fname == "SetEditCurPos" then
-                        if #args >= 1 then
-                            reaper.SetEditCurPos(args[1], args[2] or true, args[3] or false)
-                            response.ok = true
-                        else
-                            response.error = "SetEditCurPos requires at least 1 argument"
-                        end
-                    
-                    elseif fname == "GetPlayState" then
-                        local state = reaper.GetPlayState()
-                        response.ok = true
-                        response.ret = state
                     
                     elseif fname == "Main_OnCommand" then
                         if #args >= 2 then
@@ -446,6 +446,11 @@ local function process_request()
                         else
                             response.error = "Main_OnCommand requires 2 arguments"
                         end
+                    
+                    elseif fname == "GetPlayState" then
+                        local state = reaper.GetPlayState()
+                        response.ok = true
+                        response.ret = state
                     
                     elseif fname == "SetPlayState" then
                         if #args >= 3 then
@@ -467,18 +472,6 @@ local function process_request()
                             response.error = "GetSetRepeat requires 1 argument"
                         end
                     
-                    elseif fname == "Undo_BeginBlock" then
-                        reaper.Undo_BeginBlock()
-                        response.ok = true
-                    
-                    elseif fname == "Undo_EndBlock" then
-                        if #args >= 1 then
-                            reaper.Undo_EndBlock(args[1], args[2] or -1)
-                            response.ok = true
-                        else
-                            response.error = "Undo_EndBlock requires at least 1 argument"
-                        end
-                    
                     elseif fname == "UpdateArrange" then
                         reaper.UpdateArrange()
                         response.ok = true
@@ -496,38 +489,11 @@ local function process_request()
                             response.error = "AddProjectMarker requires at least 5 arguments"
                         end
                     
-                    elseif fname == "DeleteProjectMarker" then
-                        if #args >= 3 then
-                            local result = reaper.DeleteProjectMarker(args[1], args[2], args[3])
-                            response.ok = result
-                        else
-                            response.error = "DeleteProjectMarker requires 3 arguments"
-                        end
-                    
-                    elseif fname == "CountProjectMarkers" then
-                        local ret, num_markers, num_regions = reaper.CountProjectMarkers(args[1] or 0)
-                        response.ok = true
-                        response.ret = {num_markers, num_regions}
-                    
-                    elseif fname == "EnumProjectMarkers" then
-                        if #args >= 1 then
-                            local ret, is_region, pos, region_end, name, idx = reaper.EnumProjectMarkers(args[1])
-                            if ret then
-                                response.ok = true
-                                response.ret = {ret, is_region, pos, region_end, name, idx}
-                            else
-                                response.ok = true
-                                response.ret = {}
-                            end
-                        else
-                            response.error = "EnumProjectMarkers requires 1 argument"
-                        end
-                    
                     elseif fname == "GetSet_LoopTimeRange" then
                         if #args >= 2 then
                             if args[1] then  -- Set mode
                                 if #args >= 5 then
-                                    reaper.GetSet_LoopTimeRange(true, args[2], args[3], args[4], args[5])
+                                    reaper.GetSet_LoopTimeRange(args[1], args[2], args[3], args[4], args[5])
                                     response.ok = true
                                 else
                                     response.error = "GetSet_LoopTimeRange set mode requires 5 arguments"
@@ -540,14 +506,14 @@ local function process_request()
                         else
                             response.error = "GetSet_LoopTimeRange requires at least 2 arguments"
                         end
-                    
+                        
                     else
-                        -- Try generic function call
+                        -- Generic function call
                         if reaper[fname] then
                             local ok, result = pcall(reaper[fname], table.unpack(args))
                             if ok then
                                 response.ok = true
-                                response.ret = result
+                                response.ret = process_return_value(result)
                             else
                                 response.error = "Error calling " .. fname .. ": " .. tostring(result)
                             end
@@ -561,7 +527,10 @@ local function process_request()
                     reaper.ShowConsoleMsg("Sending response " .. i .. ": " .. response_json .. "\n")
                     write_file(numbered_response_file, response_json)
                 end
-            end
+                
+                -- Clean up request file
+                delete_file(numbered_request_file)
+                end
             end)
             
             if not ok then
@@ -569,21 +538,38 @@ local function process_request()
                 reaper.ShowConsoleMsg("ERROR processing request " .. i .. ": " .. tostring(err) .. "\n")
                 local error_response = {ok = false, error = "Bridge error: " .. tostring(err)}
                 write_file(numbered_response_file, encode_json(error_response))
+                -- Still clean up request file
+                delete_file(numbered_request_file)
             end
-            
-            -- Always clean up request file
-            delete_file(numbered_request_file)
         end
+    end
+end
+
+-- Add a cleanup function to prevent memory leaks
+local cleanup_counter = 0
+local function periodic_cleanup()
+    cleanup_counter = cleanup_counter + 1
+    -- Every 100 iterations, show registry size
+    if cleanup_counter % 100 == 0 then
+        local count = 0
+        for _ in pairs(object_registry) do count = count + 1 end
+        reaper.ShowConsoleMsg("Registry size: " .. count .. " objects\n")
     end
 end
 
 -- Main loop
 ensure_dir()
-reaper.ShowConsoleMsg("REAPER MCP Bridge (File-based, Full API) started\n")
+reaper.ShowConsoleMsg("REAPER MCP Bridge with Object Registry started\n")
 reaper.ShowConsoleMsg("Bridge directory: " .. bridge_dir .. "\n")
 
 function main()
-    process_request()
+    -- Wrap in pcall for safety
+    local ok, err = pcall(process_request)
+    if not ok then
+        reaper.ShowConsoleMsg("ERROR in main loop: " .. tostring(err) .. "\n")
+    end
+    
+    periodic_cleanup()
     reaper.defer(main)
 end
 

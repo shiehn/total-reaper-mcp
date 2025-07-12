@@ -1036,7 +1036,7 @@ async def call_tool(name: str, arguments: dict):
             is_muted = bool(result.get("ret", 0))
             return [TextContent(
                 type="text",
-                text=f"Track {track_index} mute state: {is_muted}"
+                text=f"Track {track_index} is {'muted' if is_muted else 'unmuted'}"
             )]
         else:
             return [TextContent(
@@ -1062,7 +1062,7 @@ async def call_tool(name: str, arguments: dict):
             state = "muted" if mute else "unmuted"
             return [TextContent(
                 type="text",
-                text=f"Track {track_index} has been {state}"
+                text=f"Track {track_index} {state}"
             )]
         else:
             return [TextContent(
@@ -1114,7 +1114,7 @@ async def call_tool(name: str, arguments: dict):
             state = "soloed" if solo else "unsoloed"
             return [TextContent(
                 type="text",
-                text=f"Track {track_index} has been {state}"
+                text=f"Track {track_index} {state}"
             )]
         else:
             return [TextContent(

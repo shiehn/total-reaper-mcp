@@ -15,10 +15,12 @@ def event_loop():
 @pytest_asyncio.fixture
 async def reaper_mcp_client():
     """Create an MCP client connected to the REAPER server"""
-    # Check if we should use the file-based server
-    use_file_bridge = os.environ.get('USE_FILE_BRIDGE', 'true').lower() == 'true'
+    # Check which server to use
+    bridge_type = os.environ.get('BRIDGE_TYPE', 'file').lower()
     
-    if use_file_bridge:
+    if bridge_type == 'registry':
+        server_module = "server.app_file_bridge_registry"
+    elif bridge_type == 'file':
         server_module = "server.app_file_bridge_full"
     else:
         server_module = "server.app"
