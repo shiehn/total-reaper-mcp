@@ -1702,6 +1702,64 @@ async def list_tools():
                 },
                 "required": ["notes"]
             }
+        ),
+        Tool(
+            name="get_track_automation_mode",
+            description="Get the automation mode for a track",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index (0-based)",
+                        "minimum": 0
+                    }
+                },
+                "required": ["track_index"]
+            }
+        ),
+        Tool(
+            name="set_track_automation_mode",
+            description="Set the automation mode for a track",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index (0-based)",
+                        "minimum": 0
+                    },
+                    "mode": {
+                        "type": "integer",
+                        "description": "Automation mode (0=Trim/Read, 1=Read, 2=Touch, 3=Write, 4=Latch)",
+                        "enum": [0, 1, 2, 3, 4]
+                    }
+                },
+                "required": ["track_index", "mode"]
+            }
+        ),
+        Tool(
+            name="get_global_automation_override",
+            description="Get the global automation override mode",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        ),
+        Tool(
+            name="set_global_automation_override",
+            description="Set the global automation override mode",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "mode": {
+                        "type": "integer",
+                        "description": "Override mode (0=No override, 1=Bypass all, 2=All to trim/read)",
+                        "enum": [0, 1, 2]
+                    }
+                },
+                "required": ["mode"]
+            }
         )
     ]
 
@@ -4109,6 +4167,137 @@ async def call_tool(name: str, arguments: dict):
             return [TextContent(
                 type="text",
                 text=f"Failed to set project notes: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_track_automation_mode":
+        track_index = arguments["track_index"]
+        
+        # Get track
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
+        if not track_result.get("ok") or not track_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find track at index {track_index}"
+            )]
+        
+        track_handle = track_result.get("ret")
+        
+        # Get automation mode
+        result = await bridge.call_lua("GetTrackAutomationMode", [track_handle])
+        
+        if result.get("ok"):
+            mode = result.get("ret", 0)
+            mode_names = {
+                0: "Trim/Read",
+                1: "Read",
+                2: "Touch", 
+                3: "Write",
+                4: "Latch",
+                5: "Latch Preview"
+            }
+            mode_name = mode_names.get(mode, f"Unknown ({mode})")
+            
+            return [TextContent(
+                type="text",
+                text=f"Track {track_index} automation mode: {mode_name}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get automation mode: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "set_track_automation_mode":
+        track_index = arguments["track_index"]
+        mode = arguments["mode"]
+        
+        # Get track
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
+        if not track_result.get("ok") or not track_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find track at index {track_index}"
+            )]
+        
+        track_handle = track_result.get("ret")
+        
+        # Set automation mode
+        result = await bridge.call_lua("SetTrackAutomationMode", [track_handle, mode])
+        
+        if result.get("ok"):
+            mode_names = {
+                0: "Trim/Read",
+                1: "Read",
+                2: "Touch",
+                3: "Write",
+                4: "Latch"
+            }
+            mode_name = mode_names.get(mode, f"Mode {mode}")
+            
+            return [TextContent(
+                type="text",
+                text=f"Set track {track_index} to {mode_name} mode"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set automation mode: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_global_automation_override":
+        result = await bridge.call_lua("GetGlobalAutomationOverride", [])
+        
+        if result.get("ok"):
+            override = result.get("ret", 0)
+            override_names = {
+                -1: "No change",
+                0: "No override (normal)",
+                1: "Bypass all automation",
+                2: "All automation to trim/read mode",
+                5: "All automation to write mode",
+                6: "All automation to touch mode"
+            }
+            override_name = override_names.get(override, f"Unknown ({override})")
+            
+            return [TextContent(
+                type="text",
+                text=f"Global automation override: {override_name}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get global automation override: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "set_global_automation_override":
+        mode = arguments["mode"]
+        
+        # Map our simplified modes to REAPER's internal values
+        mode_map = {
+            0: 0,   # No override
+            1: 1,   # Bypass all
+            2: 2    # All to trim/read
+        }
+        
+        reaper_mode = mode_map.get(mode, mode)
+        result = await bridge.call_lua("SetGlobalAutomationOverride", [reaper_mode])
+        
+        if result.get("ok"):
+            mode_names = {
+                0: "No override",
+                1: "Bypass all automation",
+                2: "All automation to trim/read"
+            }
+            mode_name = mode_names.get(mode, f"Mode {mode}")
+            
+            return [TextContent(
+                type="text",
+                text=f"Set global automation override to: {mode_name}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set global automation override: {result.get('error', 'Unknown error')}"
             )]
     
     else:
