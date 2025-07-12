@@ -27,7 +27,7 @@ async def test_delete_track(reaper_mcp_client):
         {"track_index": 0}
     )
     print(f"Delete track result: {result}")
-    assert "Track 0 deleted successfully" in result.content[0].text
+    assert "Successfully deleted track at index 0" in result.content[0].text
     
     # Try to delete non-existent track
     result = await reaper_mcp_client.call_tool(

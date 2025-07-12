@@ -284,10 +284,43 @@ local function process_request()
                     
                     elseif fname == "DeleteTrack" then
                         if args[1] then
-                            reaper.DeleteTrack(args[1])
-                            response.ok = true
+                            -- Check if it's a track index or a pointer object
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                -- It's a track index
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                -- It's a pointer object - we can't use it directly
+                                -- For now, return an error
+                                response.error = "Cannot use track pointer from previous call - use DeleteTrackByIndex instead"
+                                response.ok = false
+                            else
+                                track = args[1]  -- Assume it's already a track
+                            end
+                            
+                            if track then
+                                reaper.DeleteTrack(track)
+                                response.ok = true
+                            else
+                                response.error = "Track not found"
+                                response.ok = false
+                            end
                         else
-                            response.error = "DeleteTrack requires track pointer"
+                            response.error = "DeleteTrack requires track pointer or index"
+                        end
+                    
+                    elseif fname == "DeleteTrackByIndex" then
+                        if args[1] then
+                            local track = reaper.GetTrack(0, args[1])
+                            if track then
+                                reaper.DeleteTrack(track)
+                                response.ok = true
+                            else
+                                response.error = "Track not found at index " .. tostring(args[1])
+                                response.ok = false
+                            end
+                        else
+                            response.error = "DeleteTrackByIndex requires track index"
                         end
                     
                     elseif fname == "GetMediaTrackInfo_Value" then

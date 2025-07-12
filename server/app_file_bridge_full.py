@@ -1005,16 +1005,8 @@ async def call_tool(name: str, arguments: dict):
     elif name == "delete_track":
         track_index = arguments["track_index"]
         
-        # Get track first
-        track_result = await bridge.call_lua("GetTrack", [0, track_index])
-        if not track_result.get("ok") or not track_result.get("ret"):
-            return [TextContent(
-                type="text",
-                text=f"Failed to find track at index {track_index}"
-            )]
-        
-        # Delete track
-        result = await bridge.call_lua("DeleteTrack", [track_result.get("ret")])
+        # Use the index-based delete directly
+        result = await bridge.call_lua("DeleteTrackByIndex", [track_index])
         
         if result.get("ok"):
             return [TextContent(
