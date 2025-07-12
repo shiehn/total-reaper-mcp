@@ -130,6 +130,25 @@ async def list_tools():
                 },
                 "required": ["track_index"]
             }
+        ),
+        Tool(
+            name="set_track_name",
+            description="Set the name of a track",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "The track index (0-based)",
+                        "minimum": 0
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "The new name for the track"
+                    }
+                },
+                "required": ["track_index", "name"]
+            }
         )
     ]
 
@@ -254,6 +273,23 @@ async def call_tool(name: str, arguments: dict):
             return [TextContent(
                 type="text",
                 text=f"Failed to get track name: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "set_track_name":
+        track_index = arguments["track_index"]
+        name = arguments["name"]
+        
+        result = bridge.call_lua("SetTrackName", [track_index, name])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Track {track_index} renamed to \"{name}\""
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set track name: {result.get('error', 'Unknown error')}"
             )]
     
     else:

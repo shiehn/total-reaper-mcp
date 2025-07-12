@@ -142,6 +142,18 @@ function main()
                 else
                     response.error = "GetTrackName requires 1 argument (trackidx)"
                 end
+            elseif fname == "SetTrackName" then
+                if #args >= 2 then
+                    local track = reaper.GetTrack(0, args[1])
+                    if track then
+                        local ok = reaper.GetSetMediaTrackInfo_String(track, "P_NAME", args[2], true)
+                        response.ok = ok
+                    else
+                        response.error = "Track not found at index " .. tostring(args[1])
+                    end
+                else
+                    response.error = "SetTrackName requires 2 arguments (trackidx, name)"
+                end
             else
                 response.error = "Unknown function: " .. fname
             end

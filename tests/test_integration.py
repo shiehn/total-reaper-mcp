@@ -141,6 +141,39 @@ async def test_get_track_name(reaper_mcp_client):
     assert "Failed to get track name" in result.content[0].text
 
 @pytest.mark.asyncio
+async def test_set_track_name(reaper_mcp_client):
+    """Test setting track names"""
+    # First ensure we have at least one track
+    result = await reaper_mcp_client.call_tool(
+        "insert_track",
+        {"index": 0, "use_defaults": True}
+    )
+    
+    # Set the track name
+    result = await reaper_mcp_client.call_tool(
+        "set_track_name",
+        {"track_index": 0, "name": "My Test Track"}
+    )
+    print(f"Set track name result: {result}")
+    assert "Track 0 renamed to \"My Test Track\"" in result.content[0].text
+    
+    # Verify the name was set
+    result = await reaper_mcp_client.call_tool(
+        "get_track_name",
+        {"track_index": 0}
+    )
+    print(f"Get renamed track result: {result}")
+    assert "My Test Track" in result.content[0].text
+    
+    # Try to rename non-existent track
+    result = await reaper_mcp_client.call_tool(
+        "set_track_name",
+        {"track_index": 999, "name": "Should Fail"}
+    )
+    print(f"Set non-existent track name result: {result}")
+    assert "Failed to set track name" in result.content[0].text
+
+@pytest.mark.asyncio
 async def test_list_tools(reaper_mcp_client):
     """Test listing available tools"""
     tools = await reaper_mcp_client.list_tools()
@@ -152,6 +185,7 @@ async def test_list_tools(reaper_mcp_client):
     assert "get_track" in tool_names
     assert "set_track_selected" in tool_names
     assert "get_track_name" in tool_names
+    assert "set_track_name" in tool_names
     
     # Verify tool schemas
     insert_track_tool = next(t for t in tools if t.name == "insert_track")
@@ -167,3 +201,7 @@ async def test_list_tools(reaper_mcp_client):
     
     get_track_name_tool = next(t for t in tools if t.name == "get_track_name")
     assert "track_index" in get_track_name_tool.inputSchema["properties"]
+    
+    set_track_name_tool = next(t for t in tools if t.name == "set_track_name")
+    assert "track_index" in set_track_name_tool.inputSchema["properties"]
+    assert "name" in set_track_name_tool.inputSchema["properties"]
