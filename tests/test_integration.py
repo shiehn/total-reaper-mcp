@@ -205,3 +205,126 @@ async def test_list_tools(reaper_mcp_client):
     set_track_name_tool = next(t for t in tools if t.name == "set_track_name")
     assert "track_index" in set_track_name_tool.inputSchema["properties"]
     assert "name" in set_track_name_tool.inputSchema["properties"]
+
+@pytest.mark.asyncio
+async def test_markers_and_regions(reaper_mcp_client):
+    """Test marker and region functionality"""
+    # First, count existing markers
+    result = await reaper_mcp_client.call_tool(
+        "count_project_markers",
+        {}
+    )
+    print(f"Initial marker count: {result}")
+    
+    # Add a marker at 10 seconds
+    result = await reaper_mcp_client.call_tool(
+        "add_project_marker",
+        {
+            "is_region": False,
+            "position": 10.0,
+            "name": "Test Marker 1"
+        }
+    )
+    print(f"Add marker result: {result}")
+    assert "Successfully added marker 'Test Marker 1'" in result.content[0].text
+    
+    # Add a region from 20 to 30 seconds
+    result = await reaper_mcp_client.call_tool(
+        "add_project_marker",
+        {
+            "is_region": True,
+            "position": 20.0,
+            "region_end": 30.0,
+            "name": "Test Region 1"
+        }
+    )
+    print(f"Add region result: {result}")
+    assert "Successfully added region 'Test Region 1'" in result.content[0].text
+    
+    # Count markers again
+    result = await reaper_mcp_client.call_tool(
+        "count_project_markers",
+        {}
+    )
+    print(f"Updated marker count: {result}")
+    assert "Total markers/regions:" in result.content[0].text
+    
+    # Enumerate first marker
+    result = await reaper_mcp_client.call_tool(
+        "enum_project_markers",
+        {"marker_index": 0}
+    )
+    print(f"First marker info: {result}")
+    assert "at " in result.content[0].text  # Should contain position info
+    
+    # Try to get non-existent marker
+    result = await reaper_mcp_client.call_tool(
+        "enum_project_markers",
+        {"marker_index": 999}
+    )
+    print(f"Non-existent marker result: {result}")
+    assert "No marker/region found" in result.content[0].text
+    
+    # Delete a marker (note: we need to know the actual displayed number)
+    # For testing, we'll try to delete marker 1
+    result = await reaper_mcp_client.call_tool(
+        "delete_project_marker",
+        {
+            "marker_index": 1,
+            "is_region": False
+        }
+    )
+    print(f"Delete marker result: {result}")
+    # Note: This might fail if the marker doesn't exist, which is fine for the test
+
+@pytest.mark.asyncio
+async def test_time_selection(reaper_mcp_client):
+    """Test time selection and loop range functionality"""
+    # Get current time selection
+    result = await reaper_mcp_client.call_tool(
+        "get_loop_time_range",
+        {"is_loop": False}
+    )
+    print(f"Initial time selection: {result}")
+    
+    # Set a time selection from 5 to 15 seconds
+    result = await reaper_mcp_client.call_tool(
+        "set_loop_time_range",
+        {
+            "is_loop": False,
+            "start": 5.0,
+            "end": 15.0
+        }
+    )
+    print(f"Set time selection result: {result}")
+    assert "Successfully set time selection from 5.000s to 15.000s" in result.content[0].text
+    
+    # Verify the time selection was set
+    result = await reaper_mcp_client.call_tool(
+        "get_loop_time_range",
+        {"is_loop": False}
+    )
+    print(f"Get time selection result: {result}")
+    assert "5.000s to 15.000s" in result.content[0].text
+    assert "duration: 10.000s" in result.content[0].text
+    
+    # Set a loop range from 20 to 25 seconds
+    result = await reaper_mcp_client.call_tool(
+        "set_loop_time_range",
+        {
+            "is_loop": True,
+            "start": 20.0,
+            "end": 25.0,
+            "allow_autoseek": True
+        }
+    )
+    print(f"Set loop range result: {result}")
+    assert "Successfully set loop from 20.000s to 25.000s" in result.content[0].text
+    
+    # Get the loop range
+    result = await reaper_mcp_client.call_tool(
+        "get_loop_time_range",
+        {"is_loop": True}
+    )
+    print(f"Get loop range result: {result}")
+    assert "20.000s to 25.000s" in result.content[0].text

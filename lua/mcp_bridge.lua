@@ -422,6 +422,86 @@ function main()
             elseif fname == "UpdateTimeline" then
                     reaper.UpdateTimeline()
                     response.ok = true
+            elseif fname == "AddProjectMarker" then
+                if #args >= 5 then
+                    local is_region = args[1]
+                    local position = args[2]
+                    local region_end = args[3]
+                    local name = args[4]
+                    local want_index = args[5]
+                    
+                    local index = reaper.AddProjectMarker(0, is_region, position, region_end, name, want_index)
+                    response.ok = true
+                    response.ret = index
+                else
+                    response.error = "AddProjectMarker requires 5 arguments (is_region, position, region_end, name, want_index)"
+                end
+            elseif fname == "DeleteProjectMarker" then
+                if #args >= 2 then
+                    local marker_index = args[1]
+                    local is_region = args[2]
+                    
+                    local success = reaper.DeleteProjectMarker(0, marker_index, is_region)
+                    response.ok = success
+                    if not success then
+                        response.error = "Failed to delete marker/region"
+                    end
+                else
+                    response.error = "DeleteProjectMarker requires 2 arguments (marker_index, is_region)"
+                end
+            elseif fname == "CountProjectMarkers" then
+                local ret, num_markers, num_regions = reaper.CountProjectMarkers(0)
+                response.ok = true
+                response.ret = ret
+                response.marker_count = num_markers
+                response.region_count = num_regions
+            elseif fname == "EnumProjectMarkers" then
+                if #args >= 1 then
+                    local marker_index = args[1]
+                    
+                    local ret, is_region, pos, region_end, name, number = reaper.EnumProjectMarkers(marker_index)
+                    if ret then
+                        response.ok = true
+                        response.found = true
+                        response.is_region = is_region
+                        response.position = pos
+                        response.region_end = region_end
+                        response.name = name
+                        response.number = number
+                    else
+                        response.ok = true
+                        response.found = false
+                    end
+                else
+                    response.error = "EnumProjectMarkers requires 1 argument (marker_index)"
+                end
+            elseif fname == "GetSet_LoopTimeRange" then
+                if #args >= 2 then
+                    local is_set = args[1]
+                    local is_loop = args[2]
+                    
+                    if is_set then
+                        -- Set mode
+                        if #args >= 5 then
+                            local start_time = args[3]
+                            local end_time = args[4]
+                            local allow_autoseek = args[5]
+                            
+                            reaper.GetSet_LoopTimeRange(true, is_loop, start_time, end_time, allow_autoseek)
+                            response.ok = true
+                        else
+                            response.error = "GetSet_LoopTimeRange set mode requires 5 arguments"
+                        end
+                    else
+                        -- Get mode
+                        local start_time, end_time = reaper.GetSet_LoopTimeRange(false, is_loop, 0, 0, false)
+                        response.ok = true
+                        response.start = start_time
+                        response["end"] = end_time
+                    end
+                else
+                    response.error = "GetSet_LoopTimeRange requires at least 2 arguments"
+                end
 
             else
                 response.error = "Unknown function: " .. fname

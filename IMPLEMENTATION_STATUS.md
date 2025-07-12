@@ -3,7 +3,7 @@
 This document tracks which ReaScript API methods have been implemented in the REAPER MCP Server.
 
 ## Implementation Statistics
-- **Total Implemented**: 39 methods (17 original + 22 new)
+- **Total Implemented**: 45 methods (17 original + 28 new)
 - **Ready to Implement**: Many more available in ReaScript API
 - **ReaScript API Version**: REAPER 6.83+ (embedded Lua 5.4)
 
@@ -66,16 +66,24 @@ This document tracks which ReaScript API methods have been implemented in the RE
 - [x] `UpdateArrange` - Update the arrange view
 - [x] `UpdateTimeline` - Update the timeline display
 
+### ✅ Markers & Regions (4/4 implemented)
+- [x] `AddProjectMarker` - Add a marker or region to the project
+- [x] `DeleteProjectMarker` - Delete a marker or region by displayed number
+- [x] `CountProjectMarkers` - Count total markers and regions
+- [x] `EnumProjectMarkers` - Get information about a marker/region by index
+
+### ✅ Time Selection & Loop Range (2/2 implemented)
+- [x] `GetSet_LoopTimeRange` (get mode) - Get current time selection or loop range
+- [x] `GetSet_LoopTimeRange` (set mode) - Set time selection or loop range
+
 ### 🔮 Future Implementations (not yet implemented)
 These categories represent additional ReaScript API functionality that could be added:
 
 - [ ] MIDI Editor functions (MIDI_InsertNote, MIDI_DeleteNote, etc.)
 - [ ] FX/Plugin management (TrackFX_AddByName, TrackFX_Delete, etc.)
 - [ ] Envelope/Automation (GetTrackEnvelope, InsertEnvelopePoint, etc.)
-- [ ] Markers/Regions (AddProjectMarker, DeleteProjectMarker, etc.)
 - [ ] Routing (CreateTrackSend, RemoveTrackSend, etc.)
 - [ ] Take management (AddTakeToMediaItem, GetMediaItemTake, etc.)
-- [ ] Time selection (GetSet_LoopTimeRange, GetSet_LoopTimeRange2, etc.)
 - [ ] Recording (CSurf_OnRecord, GetSetTrackSendInfo, etc.)
 - [ ] Track grouping and folders
 - [ ] Color management
@@ -104,7 +112,7 @@ Each implemented method should have:
 - Edge case tests where applicable
 
 ## Recent Updates (2025-07-12)
-Added 22 new methods covering:
+Added 28 new methods covering:
 - Track volume and pan controls
 - Media item management
 - Project management
@@ -112,6 +120,8 @@ Added 22 new methods covering:
 - Action execution
 - Undo system
 - UI updates
+- Markers and regions management (4 methods)
+- Time selection and loop range (2 methods)
 
 ## Notes
 - Track indices are 0-based

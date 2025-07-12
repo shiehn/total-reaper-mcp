@@ -645,6 +645,119 @@ async def list_tools():
                 },
                 "required": []
             }
+        ),
+        Tool(
+            name="add_project_marker",
+            description="Add a marker or region to the project",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "is_region": {
+                        "type": "boolean",
+                        "description": "True for region, false for marker"
+                    },
+                    "position": {
+                        "type": "number",
+                        "description": "Position in seconds"
+                    },
+                    "region_end": {
+                        "type": "number",
+                        "description": "End position for regions (ignored for markers)"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Name of the marker/region"
+                    },
+                    "want_index": {
+                        "type": "integer",
+                        "description": "Desired index number (-1 to auto-assign)",
+                        "default": -1
+                    }
+                },
+                "required": ["is_region", "position", "name"]
+            }
+        ),
+        Tool(
+            name="delete_project_marker",
+            description="Delete a marker or region by its displayed number",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "marker_index": {
+                        "type": "integer",
+                        "description": "The displayed marker/region number to delete"
+                    },
+                    "is_region": {
+                        "type": "boolean",
+                        "description": "True if deleting a region, false for marker"
+                    }
+                },
+                "required": ["marker_index", "is_region"]
+            }
+        ),
+        Tool(
+            name="count_project_markers",
+            description="Count the number of markers and regions in the project",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        ),
+        Tool(
+            name="enum_project_markers",
+            description="Get information about a specific marker/region by its index",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "marker_index": {
+                        "type": "integer",
+                        "description": "The index of the marker/region (0-based)",
+                        "minimum": 0
+                    }
+                },
+                "required": ["marker_index"]
+            }
+        ),
+        Tool(
+            name="get_loop_time_range",
+            description="Get the current time selection or loop range",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "is_loop": {
+                        "type": "boolean",
+                        "description": "True to get loop range, false for time selection",
+                        "default": False
+                    }
+                }
+            }
+        ),
+        Tool(
+            name="set_loop_time_range",
+            description="Set the time selection or loop range",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "is_loop": {
+                        "type": "boolean",
+                        "description": "True to set loop range, false for time selection"
+                    },
+                    "start": {
+                        "type": "number",
+                        "description": "Start time in seconds"
+                    },
+                    "end": {
+                        "type": "number",
+                        "description": "End time in seconds"
+                    },
+                    "allow_autoseek": {
+                        "type": "boolean",
+                        "description": "Allow automatic seeking to the new range",
+                        "default": False
+                    }
+                },
+                "required": ["is_loop", "start", "end"]
+            }
         )
     ]
 
@@ -1363,6 +1476,142 @@ async def call_tool(name: str, arguments: dict):
             return [TextContent(
                 type="text",
                 text=f"Failed to update_timeline: {result.get('error', 'Unknown error')}"
+            )]
+    elif name == "add_project_marker":
+        is_region = arguments["is_region"]
+        position = arguments["position"]
+        region_end = arguments.get("region_end", position)
+        name = arguments["name"]
+        want_index = arguments.get("want_index", -1)
+        
+        result = bridge.call_lua("AddProjectMarker", [is_region, position, region_end, name, want_index])
+        
+        if result.get("ok"):
+            marker_type = "region" if is_region else "marker"
+            index = result.get("ret", -1)
+            if index >= 0:
+                return [TextContent(
+                    type="text",
+                    text=f"Successfully added {marker_type} '{name}' at index {index}"
+                )]
+            else:
+                return [TextContent(
+                    type="text",
+                    text=f"Failed to add {marker_type}: unable to create at desired index"
+                )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to add marker/region: {result.get('error', 'Unknown error')}"
+            )]
+    elif name == "delete_project_marker":
+        marker_index = arguments["marker_index"]
+        is_region = arguments["is_region"]
+        
+        result = bridge.call_lua("DeleteProjectMarker", [marker_index, is_region])
+        
+        if result.get("ok"):
+            marker_type = "region" if is_region else "marker"
+            return [TextContent(
+                type="text",
+                text=f"Successfully deleted {marker_type} at index {marker_index}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to delete marker/region: {result.get('error', 'Unknown error')}"
+            )]
+    elif name == "count_project_markers":
+        
+        result = bridge.call_lua("CountProjectMarkers", [])
+        
+        if result.get("ok"):
+            count = result.get("ret", 0)
+            marker_count = result.get("marker_count", 0)
+            region_count = result.get("region_count", 0)
+            return [TextContent(
+                type="text",
+                text=f"Total markers/regions: {count} ({marker_count} markers, {region_count} regions)"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to count markers: {result.get('error', 'Unknown error')}"
+            )]
+    elif name == "enum_project_markers":
+        marker_index = arguments["marker_index"]
+        
+        result = bridge.call_lua("EnumProjectMarkers", [marker_index])
+        
+        if result.get("ok"):
+            if result.get("found"):
+                marker_type = "Region" if result.get("is_region") else "Marker"
+                name = result.get("name", "")
+                position = result.get("position", 0)
+                region_end = result.get("region_end", 0)
+                number = result.get("number", 0)
+                
+                text = f"{marker_type} {number}: '{name}' at {position:.3f}s"
+                if result.get("is_region"):
+                    text += f" to {region_end:.3f}s"
+                
+                return [TextContent(
+                    type="text",
+                    text=text
+                )]
+            else:
+                return [TextContent(
+                    type="text",
+                    text=f"No marker/region found at index {marker_index}"
+                )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get marker info: {result.get('error', 'Unknown error')}"
+            )]
+    elif name == "get_loop_time_range":
+        is_loop = arguments.get("is_loop", False)
+        
+        result = bridge.call_lua("GetSet_LoopTimeRange", [False, is_loop])
+        
+        if result.get("ok"):
+            start = result.get("start", 0)
+            end = result.get("end", 0)
+            range_type = "loop" if is_loop else "time selection"
+            
+            if start == end:
+                return [TextContent(
+                    type="text",
+                    text=f"No {range_type} is set"
+                )]
+            else:
+                return [TextContent(
+                    type="text",
+                    text=f"Current {range_type}: {start:.3f}s to {end:.3f}s (duration: {end-start:.3f}s)"
+                )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get time range: {result.get('error', 'Unknown error')}"
+            )]
+    elif name == "set_loop_time_range":
+        is_loop = arguments["is_loop"]
+        start = arguments["start"]
+        end = arguments["end"]
+        allow_autoseek = arguments.get("allow_autoseek", False)
+        
+        result = bridge.call_lua("GetSet_LoopTimeRange", [True, is_loop, start, end, allow_autoseek])
+        
+        if result.get("ok"):
+            range_type = "loop" if is_loop else "time selection"
+            return [TextContent(
+                type="text",
+                text=f"Successfully set {range_type} from {start:.3f}s to {end:.3f}s"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set time range: {result.get('error', 'Unknown error')}"
             )]
 
     
