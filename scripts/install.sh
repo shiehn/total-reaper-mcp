@@ -32,6 +32,19 @@ echo "📝 Installing Lua bridge script..."
 cp "$REPO_DIR/lua/mcp_bridge.lua" "$SCRIPTS_DIR/"
 xattr -rd com.apple.quarantine "$SCRIPTS_DIR/mcp_bridge.lua" 2>/dev/null || true
 
+# Install LuaSocket if not already installed
+if [ ! -f "$SCRIPTS_DIR/socket.lua" ] || [ ! -d "$SCRIPTS_DIR/socket" ]; then
+    echo "🔌 Installing LuaSocket for REAPER..."
+    if [ -f "$REPO_DIR/scripts/install_luasocket.sh" ]; then
+        "$REPO_DIR/scripts/install_luasocket.sh"
+    else
+        echo "⚠️  LuaSocket not found. You may need to install it manually."
+        echo "   Run: $REPO_DIR/scripts/install_luasocket.sh"
+    fi
+else
+    echo "✅ LuaSocket already installed"
+fi
+
 # Create startup script for REAPER
 STARTUP_SCRIPT="$SCRIPTS_DIR/__startup.lua"
 if [ -f "$STARTUP_SCRIPT" ]; then

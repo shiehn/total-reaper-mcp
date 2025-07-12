@@ -1,45 +1,85 @@
+#!/usr/bin/env python3
+"""
+REAPER MCP Server - File-based Bridge Version with Full API
+This version implements all tools from app.py but uses file-based communication
+"""
+
+import os
 import json
-import socket
+import time
 import asyncio
-from mcp.server import Server
+import logging
+from pathlib import Path
 from mcp import Tool
 from mcp.types import TextContent
-import logging
+from mcp.server import Server
 
-logging.basicConfig(level=logging.INFO)
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-UDP_HOST = '127.0.0.1'
-UDP_PORT = 9000
+# Get the bridge directory from environment or use default
+BRIDGE_DIR = Path(os.environ.get(
+    'REAPER_MCP_BRIDGE_DIR',
+    os.path.expanduser('~/Library/Application Support/REAPER/Scripts/mcp_bridge_data')
+))
 
-class ReaperBridge:
+# Ensure bridge directory exists
+BRIDGE_DIR.mkdir(parents=True, exist_ok=True)
+
+logger.info(f"Bridge directory: {BRIDGE_DIR}")
+
+class ReaperFileBridge:
+    """File-based bridge for communicating with REAPER"""
+    
     def __init__(self):
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.settimeout(5.0)
-        # Bind once to receive responses
-        self.sock.bind(('127.0.0.1', 9001))
+        self.bridge_dir = BRIDGE_DIR
+        self.request_id = 0
         
-    def call_lua(self, fname: str, args: list = None):
-        if args is None:
-            args = []
+    async def call_lua(self, func_name, args=None):
+        """Call a Lua function and wait for response"""
+        self.request_id += 1
+        request_file = self.bridge_dir / f"request_{self.request_id}.json"
+        response_file = self.bridge_dir / f"response_{self.request_id}.json"
         
-        message = json.dumps({'call': fname, 'args': args})
-        logger.info(f"Sending to Lua: {message}")
+        # Write request
+        request_data = {
+            "id": self.request_id,
+            "func": func_name,
+            "args": args or []
+        }
         
         try:
-            self.sock.sendto(message.encode(), (UDP_HOST, UDP_PORT))
-            data, addr = self.sock.recvfrom(65536)
-            response = json.loads(data.decode())
-            logger.info(f"Received from Lua: {response}")
-            return response
-        except socket.timeout:
-            logger.error("Socket timeout waiting for REAPER response")
+            with open(request_file, 'w') as f:
+                json.dump(request_data, f)
+            
+            # Wait for response (with timeout)
+            start_time = time.time()
+            timeout = 5.0  # 5 second timeout
+            
+            while time.time() - start_time < timeout:
+                if response_file.exists():
+                    try:
+                        with open(response_file, 'r') as f:
+                            response = json.load(f)
+                        # Clean up files
+                        request_file.unlink(missing_ok=True)
+                        response_file.unlink(missing_ok=True)
+                        return response
+                    except json.JSONDecodeError:
+                        # File might be partially written, wait a bit
+                        await asyncio.sleep(0.01)
+                await asyncio.sleep(0.1)
+            
+            # Timeout
+            logger.error("Timeout waiting for REAPER response")
             return {"ok": False, "error": "Timeout waiting for REAPER"}
+            
         except Exception as e:
             logger.error(f"Error communicating with REAPER: {e}")
             return {"ok": False, "error": str(e)}
 
-bridge = ReaperBridge()
+bridge = ReaperFileBridge()
 
 app = Server("reaper-mcp")
 
@@ -815,7 +855,7 @@ async def call_tool(name: str, arguments: dict):
         index = arguments["index"]
         use_defaults = arguments.get("use_defaults", True)
         
-        result = bridge.call_lua("InsertTrackAtIndex", [index, use_defaults])
+        result = await bridge.call_lua("InsertTrackAtIndex", [index, use_defaults])
         
         if result.get("ok"):
             return [TextContent(
@@ -829,7 +869,7 @@ async def call_tool(name: str, arguments: dict):
             )]
     
     elif name == "get_track_count":
-        result = bridge.call_lua("CountTracks", [0])
+        result = await bridge.call_lua("CountTracks", [0])
         
         if result.get("ok"):
             count = result.get("ret", 0)
@@ -844,7 +884,7 @@ async def call_tool(name: str, arguments: dict):
             )]
     
     elif name == "get_reaper_version":
-        result = bridge.call_lua("GetAppVersion")
+        result = await bridge.call_lua("GetAppVersion")
         
         if result.get("ok"):
             version = result.get("ret", "Unknown")
@@ -860,7 +900,7 @@ async def call_tool(name: str, arguments: dict):
     
     elif name == "get_track":
         index = arguments["index"]
-        result = bridge.call_lua("GetTrack", [0, index])
+        result = await bridge.call_lua("GetTrack", [0, index])
         
         if result.get("ok"):
             track_ptr = result.get("ret")
@@ -885,7 +925,7 @@ async def call_tool(name: str, arguments: dict):
         selected = arguments["selected"]
         
         # First get the track pointer
-        track_result = bridge.call_lua("GetTrack", [0, track_index])
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
         if not track_result.get("ok") or not track_result.get("ret"):
             return [TextContent(
                 type="text",
@@ -893,7 +933,7 @@ async def call_tool(name: str, arguments: dict):
             )]
         
         # Then set its selection state
-        result = bridge.call_lua("SetTrackSelected", [track_index, selected])
+        result = await bridge.call_lua("SetTrackSelected", [track_index, selected])
         
         if result.get("ok"):
             action = "selected" if selected else "deselected"
@@ -910,7 +950,7 @@ async def call_tool(name: str, arguments: dict):
     elif name == "get_track_name":
         track_index = arguments["track_index"]
         
-        result = bridge.call_lua("GetTrackName", [track_index])
+        result = await bridge.call_lua("GetTrackName", [track_index])
         
         if result.get("ok"):
             track_name = result.get("ret", "")
@@ -934,7 +974,7 @@ async def call_tool(name: str, arguments: dict):
         track_index = arguments["track_index"]
         name = arguments["name"]
         
-        result = bridge.call_lua("SetTrackName", [track_index, name])
+        result = await bridge.call_lua("SetTrackName", [track_index, name])
         
         if result.get("ok"):
             return [TextContent(
@@ -946,182 +986,201 @@ async def call_tool(name: str, arguments: dict):
                 type="text",
                 text=f"Failed to set track name: {result.get('error', 'Unknown error')}"
             )]
-    
+            
     elif name == "get_master_track":
-        
-        result = bridge.call_lua("GetMasterTrack", [0])
+        result = await bridge.call_lua("GetMasterTrack", [0])
         
         if result.get("ok"):
+            master_track = result.get("ret")
             return [TextContent(
                 type="text",
-                text=f"Master track: {result.get('ret')}"
+                text=f"Master track: {master_track}"
             )]
         else:
             return [TextContent(
                 type="text",
                 text=f"Failed to get master track: {result.get('error', 'Unknown error')}"
             )]
-
+    
     elif name == "delete_track":
         track_index = arguments["track_index"]
         
-        # First check if track exists
-        track_result = bridge.call_lua("GetTrack", [0, track_index])
+        # Get track first
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
         if not track_result.get("ok") or not track_result.get("ret"):
             return [TextContent(
                 type="text",
                 text=f"Failed to find track at index {track_index}"
             )]
         
-        result = bridge.call_lua("DeleteTrack", [track_index])
+        # Delete track
+        result = await bridge.call_lua("DeleteTrack", [track_result.get("ret")])
         
         if result.get("ok"):
             return [TextContent(
                 type="text",
-                text=f"Track {track_index} deleted successfully"
+                text=f"Successfully deleted track at index {track_index}"
             )]
         else:
             return [TextContent(
                 type="text",
                 text=f"Failed to delete track: {result.get('error', 'Unknown error')}"
             )]
-
+    
     elif name == "get_track_mute":
         track_index = arguments["track_index"]
         
-        # First check if track exists
-        track_result = bridge.call_lua("GetTrack", [0, track_index])
+        # Get track first
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
         if not track_result.get("ok") or not track_result.get("ret"):
             return [TextContent(
                 type="text",
                 text=f"Failed to find track at index {track_index}"
             )]
         
-        result = bridge.call_lua("GetTrackMute", [track_index])
+        result = await bridge.call_lua("GetMediaTrackInfo_Value", [track_result.get("ret"), "B_MUTE"])
         
         if result.get("ok"):
+            is_muted = bool(result.get("ret", 0))
             return [TextContent(
                 type="text",
-                text=f"Track {track_index} mute state: {'muted' if result.get('ret') else 'unmuted'}"
+                text=f"Track {track_index} mute state: {is_muted}"
             )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to get track mute: {result.get('error', 'Unknown error')}"
+                text=f"Failed to get track mute state: {result.get('error', 'Unknown error')}"
             )]
-
+    
     elif name == "set_track_mute":
         track_index = arguments["track_index"]
         mute = arguments["mute"]
         
-        # First check if track exists
-        track_result = bridge.call_lua("GetTrack", [0, track_index])
+        # Get track first
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
         if not track_result.get("ok") or not track_result.get("ret"):
             return [TextContent(
                 type="text",
                 text=f"Failed to find track at index {track_index}"
             )]
         
-        result = bridge.call_lua("SetTrackMute", [track_index, mute])
+        result = await bridge.call_lua("SetMediaTrackInfo_Value", [track_result.get("ret"), "B_MUTE", 1 if mute else 0])
         
         if result.get("ok"):
+            state = "muted" if mute else "unmuted"
             return [TextContent(
                 type="text",
-                text=f"Track {track_index} {'muted' if mute else 'unmuted'}"
+                text=f"Track {track_index} has been {state}"
             )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to set track mute: {result.get('error', 'Unknown error')}"
+                text=f"Failed to set track mute state: {result.get('error', 'Unknown error')}"
             )]
-
+    
     elif name == "get_track_solo":
         track_index = arguments["track_index"]
         
-        # First check if track exists
-        track_result = bridge.call_lua("GetTrack", [0, track_index])
+        # Get track first
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
         if not track_result.get("ok") or not track_result.get("ret"):
             return [TextContent(
                 type="text",
                 text=f"Failed to find track at index {track_index}"
             )]
         
-        result = bridge.call_lua("GetTrackSolo", [track_index])
+        result = await bridge.call_lua("GetMediaTrackInfo_Value", [track_result.get("ret"), "I_SOLO"])
         
         if result.get("ok"):
+            solo_state = int(result.get("ret", 0))
+            solo_text = "not soloed" if solo_state == 0 else "soloed"
             return [TextContent(
                 type="text",
-                text=f"Track {track_index} solo state: {'soloed' if result.get('ret') else 'not soloed'}"
+                text=f"Track {track_index} solo state: {solo_text}"
             )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to get track solo: {result.get('error', 'Unknown error')}"
+                text=f"Failed to get track solo state: {result.get('error', 'Unknown error')}"
             )]
-
+    
     elif name == "set_track_solo":
         track_index = arguments["track_index"]
         solo = arguments["solo"]
         
-        # First check if track exists
-        track_result = bridge.call_lua("GetTrack", [0, track_index])
+        # Get track first
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
         if not track_result.get("ok") or not track_result.get("ret"):
             return [TextContent(
                 type="text",
                 text=f"Failed to find track at index {track_index}"
             )]
         
-        result = bridge.call_lua("SetTrackSolo", [track_index, solo])
+        result = await bridge.call_lua("SetMediaTrackInfo_Value", [track_result.get("ret"), "I_SOLO", 1 if solo else 0])
         
         if result.get("ok"):
+            state = "soloed" if solo else "unsoloed"
             return [TextContent(
                 type="text",
-                text=f"Track {track_index} {'soloed' if solo else 'unsoloed'}"
+                text=f"Track {track_index} has been {state}"
             )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to set track solo: {result.get('error', 'Unknown error')}"
+                text=f"Failed to set track solo state: {result.get('error', 'Unknown error')}"
             )]
-
+    
     elif name == "get_track_volume":
         track_index = arguments["track_index"]
         
-        # First check if track exists
-        track_result = bridge.call_lua("GetTrack", [0, track_index])
+        # Get track first
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
         if not track_result.get("ok") or not track_result.get("ret"):
             return [TextContent(
                 type="text",
                 text=f"Failed to find track at index {track_index}"
             )]
         
-        result = bridge.call_lua("GetTrackVolume", [track_index])
+        result = await bridge.call_lua("GetMediaTrackInfo_Value", [track_result.get("ret"), "D_VOL"])
         
         if result.get("ok"):
-            volume_db = result.get("ret", 0.0)
+            vol_linear = result.get("ret", 1.0)
+            # Convert to dB
+            import math
+            if vol_linear > 0:
+                vol_db = 20 * math.log10(vol_linear)
+            else:
+                vol_db = -math.inf
             return [TextContent(
                 type="text",
-                text=f"Track {track_index} volume: {volume_db:.2f} dB"
+                text=f"Track {track_index} volume: {vol_db:.2f} dB"
             )]
         else:
             return [TextContent(
                 type="text",
                 text=f"Failed to get track volume: {result.get('error', 'Unknown error')}"
             )]
-
+    
     elif name == "set_track_volume":
         track_index = arguments["track_index"]
         volume_db = arguments["volume_db"]
         
-        # First check if track exists
-        track_result = bridge.call_lua("GetTrack", [0, track_index])
+        # Get track first
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
         if not track_result.get("ok") or not track_result.get("ret"):
             return [TextContent(
                 type="text",
                 text=f"Failed to find track at index {track_index}"
             )]
         
-        result = bridge.call_lua("SetTrackVolume", [track_index, volume_db])
+        # Convert dB to linear
+        import math
+        if volume_db > -150:
+            vol_linear = 10 ** (volume_db / 20)
+        else:
+            vol_linear = 0
+        
+        result = await bridge.call_lua("SetMediaTrackInfo_Value", [track_result.get("ret"), "D_VOL", vol_linear])
         
         if result.get("ok"):
             return [TextContent(
@@ -1133,45 +1192,48 @@ async def call_tool(name: str, arguments: dict):
                 type="text",
                 text=f"Failed to set track volume: {result.get('error', 'Unknown error')}"
             )]
-
+    
     elif name == "get_track_pan":
         track_index = arguments["track_index"]
         
-        # First check if track exists
-        track_result = bridge.call_lua("GetTrack", [0, track_index])
+        # Get track first
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
         if not track_result.get("ok") or not track_result.get("ret"):
             return [TextContent(
                 type="text",
                 text=f"Failed to find track at index {track_index}"
             )]
         
-        result = bridge.call_lua("GetTrackPan", [track_index])
+        result = await bridge.call_lua("GetMediaTrackInfo_Value", [track_result.get("ret"), "D_PAN"])
         
         if result.get("ok"):
             pan = result.get("ret", 0.0)
             return [TextContent(
                 type="text",
-                text=f"Track {track_index} pan: {pan:.2f} (L={-pan:.0%} R={pan:.0%})"
+                text=f"Track {track_index} pan: {pan:.2f}"
             )]
         else:
             return [TextContent(
                 type="text",
                 text=f"Failed to get track pan: {result.get('error', 'Unknown error')}"
             )]
-
+    
     elif name == "set_track_pan":
         track_index = arguments["track_index"]
         pan = arguments["pan"]
         
-        # First check if track exists
-        track_result = bridge.call_lua("GetTrack", [0, track_index])
+        # Get track first
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
         if not track_result.get("ok") or not track_result.get("ret"):
             return [TextContent(
                 type="text",
                 text=f"Failed to find track at index {track_index}"
             )]
         
-        result = bridge.call_lua("SetTrackPan", [track_index, pan])
+        # Clamp pan value
+        pan = max(-1.0, min(1.0, pan))
+        
+        result = await bridge.call_lua("SetMediaTrackInfo_Value", [track_result.get("ret"), "D_PAN", pan])
         
         if result.get("ok"):
             return [TextContent(
@@ -1187,393 +1249,490 @@ async def call_tool(name: str, arguments: dict):
     elif name == "add_media_item_to_track":
         track_index = arguments["track_index"]
         
-        # First check if track exists
-        track_result = bridge.call_lua("GetTrack", [0, track_index])
+        # Get track first
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
         if not track_result.get("ok") or not track_result.get("ret"):
             return [TextContent(
                 type="text",
                 text=f"Failed to find track at index {track_index}"
             )]
         
-        result = bridge.call_lua("AddMediaItemToTrack", [track_index])
+        result = await bridge.call_lua("AddMediaItemToTrack", [track_result.get("ret")])
         
         if result.get("ok"):
+            item = result.get("ret")
             return [TextContent(
                 type="text",
-                text=f"Added media item to track {track_index}"
+                text=f"Added media item to track {track_index}: {item}"
             )]
         else:
             return [TextContent(
                 type="text",
                 text=f"Failed to add media item: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "count_media_items":
         project_index = arguments.get("project_index", 0)
         
-        result = bridge.call_lua("CountMediaItems", [project_index])
+        result = await bridge.call_lua("CountMediaItems", [project_index])
         
         if result.get("ok"):
+            count = result.get("ret", 0)
             return [TextContent(
                 type="text",
-                text=f"Count total media items in project: {result.get('ret', 'Unknown')}"
+                text=f"Project has {count} media items"
             )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to count_media_items: {result.get('error', 'Unknown error')}"
+                text=f"Failed to count media items: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "get_media_item":
         project_index = arguments.get("project_index", 0)
         item_index = arguments["item_index"]
         
-        result = bridge.call_lua("GetMediaItem", [project_index, item_index])
+        result = await bridge.call_lua("GetMediaItem", [project_index, item_index])
         
         if result.get("ok"):
-            return [TextContent(
-                type="text",
-                text=f"Get media item by index: {result.get('ret', 'Unknown')}"
-            )]
+            item = result.get("ret")
+            if item:
+                return [TextContent(
+                    type="text",
+                    text=f"Media item at index {item_index}: {item}"
+                )]
+            else:
+                return [TextContent(
+                    type="text",
+                    text=f"No media item found at index {item_index}"
+                )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to get_media_item: {result.get('error', 'Unknown error')}"
+                text=f"Failed to get media item: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "delete_track_media_item":
         track_index = arguments["track_index"]
         item_index = arguments["item_index"]
         
-        result = bridge.call_lua("DeleteTrackMediaItem", [track_index, item_index])
+        # Get track first
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
+        if not track_result.get("ok") or not track_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find track at index {track_index}"
+            )]
+        
+        # Get item on track
+        item_result = await bridge.call_lua("GetTrackMediaItem", [track_result.get("ret"), item_index])
+        if not item_result.get("ok") or not item_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find media item {item_index} on track {track_index}"
+            )]
+        
+        # Delete item
+        result = await bridge.call_lua("DeleteTrackMediaItem", [track_result.get("ret"), item_result.get("ret")])
         
         if result.get("ok"):
             return [TextContent(
                 type="text",
-                text=f"Successfully executed delete_track_media_item"
+                text=f"Deleted media item {item_index} from track {track_index}"
             )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to delete_track_media_item: {result.get('error', 'Unknown error')}"
+                text=f"Failed to delete media item: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "get_media_item_length":
         item_index = arguments["item_index"]
         
-        result = bridge.call_lua("GetMediaItemLength", [item_index])
-        
-        if result.get("ok"):
+        # Get item first
+        item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
+        if not item_result.get("ok") or not item_result.get("ret"):
             return [TextContent(
                 type="text",
-                text=f"Get media item length: {result.get('ret', 'Unknown')}"
+                text=f"Failed to find media item at index {item_index}"
+            )]
+        
+        result = await bridge.call_lua("GetMediaItemInfo_Value", [item_result.get("ret"), "D_LENGTH"])
+        
+        if result.get("ok"):
+            length = result.get("ret", 0.0)
+            return [TextContent(
+                type="text",
+                text=f"Media item {item_index} length: {length:.3f} seconds"
             )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to get_media_item_length: {result.get('error', 'Unknown error')}"
+                text=f"Failed to get media item length: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "set_media_item_length":
         item_index = arguments["item_index"]
         length = arguments["length"]
         
-        result = bridge.call_lua("SetMediaItemLength", [item_index, length])
+        # Get item first
+        item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
+        if not item_result.get("ok") or not item_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find media item at index {item_index}"
+            )]
+        
+        result = await bridge.call_lua("SetMediaItemLength", [item_result.get("ret"), length, True])
         
         if result.get("ok"):
             return [TextContent(
                 type="text",
-                text=f"Successfully executed set_media_item_length"
+                text=f"Set media item {item_index} length to {length:.3f} seconds"
             )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to set_media_item_length: {result.get('error', 'Unknown error')}"
+                text=f"Failed to set media item length: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "get_media_item_position":
         item_index = arguments["item_index"]
         
-        result = bridge.call_lua("GetMediaItemPosition", [item_index])
-        
-        if result.get("ok"):
+        # Get item first
+        item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
+        if not item_result.get("ok") or not item_result.get("ret"):
             return [TextContent(
                 type="text",
-                text=f"Get media item position: {result.get('ret', 'Unknown')}"
+                text=f"Failed to find media item at index {item_index}"
+            )]
+        
+        result = await bridge.call_lua("GetMediaItemInfo_Value", [item_result.get("ret"), "D_POSITION"])
+        
+        if result.get("ok"):
+            position = result.get("ret", 0.0)
+            return [TextContent(
+                type="text",
+                text=f"Media item {item_index} position: {position:.3f} seconds"
             )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to get_media_item_position: {result.get('error', 'Unknown error')}"
+                text=f"Failed to get media item position: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "set_media_item_position":
         item_index = arguments["item_index"]
         position = arguments["position"]
         
-        result = bridge.call_lua("SetMediaItemPosition", [item_index, position])
+        # Get item first
+        item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
+        if not item_result.get("ok") or not item_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find media item at index {item_index}"
+            )]
+        
+        result = await bridge.call_lua("SetMediaItemPosition", [item_result.get("ret"), position, True])
         
         if result.get("ok"):
             return [TextContent(
                 type="text",
-                text=f"Successfully executed set_media_item_position"
+                text=f"Set media item {item_index} position to {position:.3f} seconds"
             )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to set_media_item_position: {result.get('error', 'Unknown error')}"
+                text=f"Failed to set media item position: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "get_project_name":
         project_index = arguments.get("project_index", 0)
         
-        result = bridge.call_lua("GetProjectName", [project_index])
+        result = await bridge.call_lua("GetProjectName", [project_index, "", 512])
         
         if result.get("ok"):
-            return [TextContent(
-                type="text",
-                text=f"Get the current project name: {result.get('ret', 'Unknown')}"
-            )]
+            ret = result.get("ret", [])
+            if isinstance(ret, list) and len(ret) > 0:
+                project_name = ret[0] if len(ret) > 0 else "Untitled"
+                return [TextContent(
+                    type="text",
+                    text=f"Project name: {project_name}"
+                )]
+            else:
+                return [TextContent(
+                    type="text",
+                    text="Project name: Untitled"
+                )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to get_project_name: {result.get('error', 'Unknown error')}"
+                text=f"Failed to get project name: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "get_project_path":
         project_index = arguments.get("project_index", 0)
         
-        result = bridge.call_lua("GetProjectPath", [project_index])
+        result = await bridge.call_lua("GetProjectPath", ["", 2048])
         
         if result.get("ok"):
+            path = result.get("ret", "")
             return [TextContent(
                 type="text",
-                text=f"Get the current project path: {result.get('ret', 'Unknown')}"
+                text=f"Project path: {path}"
             )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to get_project_path: {result.get('error', 'Unknown error')}"
+                text=f"Failed to get project path: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "save_project":
         project_index = arguments.get("project_index", 0)
         force_save_as = arguments.get("force_save_as", False)
         
-        result = bridge.call_lua("Main_SaveProject", [project_index, force_save_as])
+        result = await bridge.call_lua("Main_SaveProject", [project_index, force_save_as])
         
         if result.get("ok"):
             return [TextContent(
                 type="text",
-                text=f"Successfully executed save_project"
+                text="Project saved successfully"
             )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to save_project: {result.get('error', 'Unknown error')}"
+                text=f"Failed to save project: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "get_cursor_position":
-        
-        result = bridge.call_lua("GetCursorPosition", [])
+        result = await bridge.call_lua("GetCursorPosition")
         
         if result.get("ok"):
+            position = result.get("ret", 0.0)
             return [TextContent(
                 type="text",
-                text=f"Get the edit cursor position in seconds: {result.get('ret', 'Unknown')}"
+                text=f"Edit cursor position: {position:.3f} seconds"
             )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to get_cursor_position: {result.get('error', 'Unknown error')}"
+                text=f"Failed to get cursor position: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "set_edit_cursor_position":
         time = arguments["time"]
         move_view = arguments.get("move_view", True)
         seek_play = arguments.get("seek_play", False)
         
-        result = bridge.call_lua("SetEditCurPos", [time, move_view, seek_play])
+        result = await bridge.call_lua("SetEditCurPos", [time, move_view, seek_play])
         
         if result.get("ok"):
             return [TextContent(
                 type="text",
-                text=f"Successfully executed set_edit_cursor_position"
+                text=f"Set cursor position to {time:.3f} seconds"
             )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to set_edit_cursor_position: {result.get('error', 'Unknown error')}"
+                text=f"Failed to set cursor position: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "get_play_state":
-        
-        result = bridge.call_lua("GetPlayState", [])
+        result = await bridge.call_lua("GetPlayState")
         
         if result.get("ok"):
+            state = int(result.get("ret", 0))
+            state_text = {
+                0: "stopped",
+                1: "playing",
+                2: "paused",
+                4: "recording",
+                5: "record paused"
+            }.get(state, f"unknown ({state})")
+            
             return [TextContent(
                 type="text",
-                text=f"Get current playback state: {result.get('ret', 'Unknown')}"
+                text=f"Playback state: {state_text}"
             )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to get_play_state: {result.get('error', 'Unknown error')}"
+                text=f"Failed to get play state: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "play":
-        
-        result = bridge.call_lua("CSurf_OnPlay", [])
+        result = await bridge.call_lua("Main_OnCommand", [1007, 0])  # Transport: Play
         
         if result.get("ok"):
             return [TextContent(
                 type="text",
-                text=f"Successfully executed play"
+                text="Started playback"
             )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to play: {result.get('error', 'Unknown error')}"
+                text=f"Failed to start playback: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "stop":
-        
-        result = bridge.call_lua("CSurf_OnStop", [])
+        result = await bridge.call_lua("Main_OnCommand", [1016, 0])  # Transport: Stop
         
         if result.get("ok"):
             return [TextContent(
                 type="text",
-                text=f"Successfully executed stop"
+                text="Stopped playback"
             )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to stop: {result.get('error', 'Unknown error')}"
+                text=f"Failed to stop playback: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "pause":
-        
-        result = bridge.call_lua("CSurf_OnPause", [])
+        result = await bridge.call_lua("Main_OnCommand", [1008, 0])  # Transport: Pause
         
         if result.get("ok"):
             return [TextContent(
                 type="text",
-                text=f"Successfully executed pause"
+                text="Paused playback"
             )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to pause: {result.get('error', 'Unknown error')}"
+                text=f"Failed to pause playback: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "record":
-        
-        result = bridge.call_lua("Main_OnCommand", [1013, 0])
+        result = await bridge.call_lua("Main_OnCommand", [1013, 0])  # Transport: Record
         
         if result.get("ok"):
             return [TextContent(
                 type="text",
-                text=f"Successfully started recording"
+                text="Started recording"
             )]
         else:
             return [TextContent(
                 type="text",
                 text=f"Failed to start recording: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "set_play_state":
         play = arguments["play"]
         pause = arguments["pause"]
         record = arguments["record"]
         
-        result = bridge.call_lua("CSurf_SetPlayState", [play, pause, record])
+        result = await bridge.call_lua("SetPlayState", [play, pause, record])
         
         if result.get("ok"):
             states = []
             if play: states.append("play")
-            if pause: states.append("pause") 
+            if pause: states.append("pause")
             if record: states.append("record")
             state_str = ", ".join(states) if states else "stopped"
+            
             return [TextContent(
                 type="text",
-                text=f"Transport state set to: {state_str}"
+                text=f"Set play state: {state_str}"
             )]
         else:
             return [TextContent(
                 type="text",
                 text=f"Failed to set play state: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "set_repeat_state":
         repeat = arguments["repeat"]
         
-        result = bridge.call_lua("CSurf_SetRepeatState", [repeat])
+        result = await bridge.call_lua("GetSetRepeat", [1 if repeat else 0])
         
         if result.get("ok"):
+            state = "enabled" if repeat else "disabled"
             return [TextContent(
                 type="text",
-                text=f"Repeat/loop {'enabled' if repeat else 'disabled'}"
+                text=f"Repeat {state}"
             )]
         else:
             return [TextContent(
                 type="text",
                 text=f"Failed to set repeat state: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "execute_action":
         command_id = arguments["command_id"]
         flag = arguments.get("flag", 0)
         
-        result = bridge.call_lua("Main_OnCommand", [command_id, flag])
+        result = await bridge.call_lua("Main_OnCommand", [command_id, flag])
         
         if result.get("ok"):
             return [TextContent(
                 type="text",
-                text=f"Successfully executed execute_action"
+                text=f"Executed action {command_id}"
             )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to execute_action: {result.get('error', 'Unknown error')}"
+                text=f"Failed to execute action: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "undo_begin_block":
-        
-        result = bridge.call_lua("Undo_BeginBlock", [])
+        result = await bridge.call_lua("Undo_BeginBlock")
         
         if result.get("ok"):
             return [TextContent(
                 type="text",
-                text=f"Successfully executed undo_begin_block"
+                text="Started undo block"
             )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to undo_begin_block: {result.get('error', 'Unknown error')}"
+                text=f"Failed to begin undo block: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "undo_end_block":
         description = arguments["description"]
         flags = arguments.get("flags", -1)
         
-        result = bridge.call_lua("Undo_EndBlock", [description, flags])
+        result = await bridge.call_lua("Undo_EndBlock", [description, flags])
         
         if result.get("ok"):
             return [TextContent(
                 type="text",
-                text=f"Successfully executed undo_end_block"
+                text=f"Ended undo block: {description}"
             )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to undo_end_block: {result.get('error', 'Unknown error')}"
+                text=f"Failed to end undo block: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "update_arrange":
-        
-        result = bridge.call_lua("UpdateArrange", [])
+        result = await bridge.call_lua("UpdateArrange")
         
         if result.get("ok"):
             return [TextContent(
                 type="text",
-                text=f"Successfully executed update_arrange"
+                text="Updated arrange view"
             )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to update_arrange: {result.get('error', 'Unknown error')}"
+                text=f"Failed to update arrange: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "update_timeline":
-        
-        result = bridge.call_lua("UpdateTimeline", [])
+        result = await bridge.call_lua("UpdateTimeline")
         
         if result.get("ok"):
             return [TextContent(
                 type="text",
-                text=f"Successfully executed update_timeline"
+                text="Updated timeline"
             )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to update_timeline: {result.get('error', 'Unknown error')}"
+                text=f"Failed to update timeline: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "add_project_marker":
         is_region = arguments["is_region"]
         position = arguments["position"]
@@ -1581,81 +1740,85 @@ async def call_tool(name: str, arguments: dict):
         name = arguments["name"]
         want_index = arguments.get("want_index", -1)
         
-        result = bridge.call_lua("AddProjectMarker", [is_region, position, region_end, name, want_index])
+        result = await bridge.call_lua("AddProjectMarker", [0, is_region, position, region_end, name, want_index])
         
         if result.get("ok"):
             marker_type = "region" if is_region else "marker"
-            index = result.get("ret", -1)
-            if index >= 0:
-                return [TextContent(
-                    type="text",
-                    text=f"Successfully added {marker_type} '{name}' at index {index}"
-                )]
-            else:
-                return [TextContent(
-                    type="text",
-                    text=f"Failed to add {marker_type}: unable to create at desired index"
-                )]
+            index = result.get("ret", want_index)
+            return [TextContent(
+                type="text",
+                text=f"Added {marker_type} '{name}' at {position:.3f}s (index: {index})"
+            )]
         else:
             return [TextContent(
                 type="text",
                 text=f"Failed to add marker/region: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "delete_project_marker":
         marker_index = arguments["marker_index"]
         is_region = arguments["is_region"]
         
-        result = bridge.call_lua("DeleteProjectMarker", [marker_index, is_region])
+        result = await bridge.call_lua("DeleteProjectMarker", [0, marker_index, is_region])
         
         if result.get("ok"):
             marker_type = "region" if is_region else "marker"
             return [TextContent(
                 type="text",
-                text=f"Successfully deleted {marker_type} at index {marker_index}"
+                text=f"Deleted {marker_type} {marker_index}"
             )]
         else:
             return [TextContent(
                 type="text",
                 text=f"Failed to delete marker/region: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "count_project_markers":
-        
-        result = bridge.call_lua("CountProjectMarkers", [])
+        result = await bridge.call_lua("CountProjectMarkers", [0])
         
         if result.get("ok"):
-            count = result.get("ret", 0)
-            marker_count = result.get("marker_count", 0)
-            region_count = result.get("region_count", 0)
-            return [TextContent(
-                type="text",
-                text=f"Total markers/regions: {count} ({marker_count} markers, {region_count} regions)"
-            )]
+            ret = result.get("ret", [0, 0])
+            if isinstance(ret, list) and len(ret) >= 2:
+                num_markers = ret[0]
+                num_regions = ret[1]
+                return [TextContent(
+                    type="text",
+                    text=f"Project has {num_markers} markers and {num_regions} regions"
+                )]
+            else:
+                return [TextContent(
+                    type="text",
+                    text="Failed to count markers/regions: Invalid response"
+                )]
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to count markers: {result.get('error', 'Unknown error')}"
+                text=f"Failed to count markers/regions: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "enum_project_markers":
         marker_index = arguments["marker_index"]
         
-        result = bridge.call_lua("EnumProjectMarkers", [marker_index])
+        result = await bridge.call_lua("EnumProjectMarkers", [marker_index])
         
         if result.get("ok"):
-            if result.get("found"):
-                marker_type = "Region" if result.get("is_region") else "Marker"
-                name = result.get("name", "")
-                position = result.get("position", 0)
-                region_end = result.get("region_end", 0)
-                number = result.get("number", 0)
+            ret = result.get("ret", [])
+            if isinstance(ret, list) and len(ret) >= 5:
+                is_region = ret[1]
+                position = ret[2]
+                region_end = ret[3]
+                name = ret[4]
                 
-                text = f"{marker_type} {number}: '{name}' at {position:.3f}s"
-                if result.get("is_region"):
-                    text += f" to {region_end:.3f}s"
-                
-                return [TextContent(
-                    type="text",
-                    text=text
-                )]
+                if is_region:
+                    return [TextContent(
+                        type="text",
+                        text=f"Region {marker_index}: '{name}' from {position:.3f}s to {region_end:.3f}s"
+                    )]
+                else:
+                    return [TextContent(
+                        type="text",
+                        text=f"Marker {marker_index}: '{name}' at {position:.3f}s"
+                    )]
             else:
                 return [TextContent(
                     type="text",
@@ -1664,53 +1827,54 @@ async def call_tool(name: str, arguments: dict):
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to get marker info: {result.get('error', 'Unknown error')}"
+                text=f"Failed to get marker/region info: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "get_loop_time_range":
         is_loop = arguments.get("is_loop", False)
         
-        result = bridge.call_lua("GetSet_LoopTimeRange", [False, is_loop])
+        result = await bridge.call_lua("GetSet_LoopTimeRange", [False, is_loop, 0, 0, False])
         
         if result.get("ok"):
-            start = result.get("start", 0)
-            end = result.get("end", 0)
-            range_type = "loop" if is_loop else "time selection"
-            
-            if start == end:
+            ret = result.get("ret", [0, 0])
+            if isinstance(ret, list) and len(ret) >= 2:
+                start = ret[0]
+                end = ret[1]
+                range_type = "loop" if is_loop else "time selection"
                 return [TextContent(
                     type="text",
-                    text=f"No {range_type} is set"
+                    text=f"Current {range_type}: {start:.3f}s to {end:.3f}s"
                 )]
             else:
                 return [TextContent(
                     type="text",
-                    text=f"Current {range_type}: {start:.3f}s to {end:.3f}s (duration: {end-start:.3f}s)"
+                    text="No time range selected"
                 )]
         else:
             return [TextContent(
                 type="text",
                 text=f"Failed to get time range: {result.get('error', 'Unknown error')}"
             )]
+    
     elif name == "set_loop_time_range":
         is_loop = arguments["is_loop"]
         start = arguments["start"]
         end = arguments["end"]
         allow_autoseek = arguments.get("allow_autoseek", False)
         
-        result = bridge.call_lua("GetSet_LoopTimeRange", [True, is_loop, start, end, allow_autoseek])
+        result = await bridge.call_lua("GetSet_LoopTimeRange", [True, is_loop, start, end, allow_autoseek])
         
         if result.get("ok"):
             range_type = "loop" if is_loop else "time selection"
             return [TextContent(
                 type="text",
-                text=f"Successfully set {range_type} from {start:.3f}s to {end:.3f}s"
+                text=f"Set {range_type}: {start:.3f}s to {end:.3f}s"
             )]
         else:
             return [TextContent(
                 type="text",
                 text=f"Failed to set time range: {result.get('error', 'Unknown error')}"
             )]
-
     
     else:
         return [TextContent(
@@ -1721,8 +1885,9 @@ async def call_tool(name: str, arguments: dict):
 async def amain():
     from mcp.server.stdio import stdio_server
     
-    logger.info("Starting REAPER MCP Server...")
-    logger.info(f"Will communicate with REAPER on {UDP_HOST}:{UDP_PORT}")
+    logger.info("Starting REAPER MCP Server (File-based Bridge)...")
+    logger.info(f"Bridge directory: {BRIDGE_DIR}")
+    logger.info("Make sure to run mcp_bridge_no_socket.lua in REAPER!")
     
     async with stdio_server() as (read_stream, write_stream):
         await app.run(read_stream, write_stream, app.create_initialization_options())

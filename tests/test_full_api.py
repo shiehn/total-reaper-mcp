@@ -1,26 +1,11 @@
 import pytest
 import pytest_asyncio
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
-
-@pytest_asyncio.fixture
-async def reaper_mcp_client():
-    """Create an MCP client connected to the REAPER server"""
-    server_params = StdioServerParameters(
-        command="python",
-        args=["-m", "server.app"],
-        env=None
-    )
-    
-    async with stdio_client(server_params) as (read, write):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
-            yield session
 
 @pytest.mark.asyncio
 async def test_full_api_availability(reaper_mcp_client):
     """Test that all ReaScript API methods are available"""
-    tools = await reaper_mcp_client.list_tools()
+    result = await reaper_mcp_client.list_tools()
+    tools = result.tools
     tool_names = [tool.name for tool in tools]
     
     # Check that we have a substantial number of tools

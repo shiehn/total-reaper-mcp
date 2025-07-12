@@ -1,7 +1,22 @@
 -- REAPER MCP Bridge
 -- This script runs inside REAPER and communicates with the MCP server
 
-local socket = require('socket')
+-- Add REAPER Scripts directory to package path
+local reaper_scripts = reaper.GetResourcePath() .. '/Scripts/'
+package.path = package.path .. ';' .. reaper_scripts .. '?.lua'
+package.cpath = package.cpath .. ';' .. reaper_scripts .. '?.so;' .. reaper_scripts .. '?/?.so'
+
+-- Try to load socket library
+local socket_ok, socket = pcall(require, 'socket')
+if not socket_ok then
+    reaper.ShowConsoleMsg("ERROR: LuaSocket not found!\n")
+    reaper.ShowConsoleMsg("Please install LuaSocket for REAPER:\n")
+    reaper.ShowConsoleMsg("1. Run: ./scripts/install_luasocket.sh\n")
+    reaper.ShowConsoleMsg("2. Or manually install LuaSocket in REAPER Scripts directory\n")
+    reaper.ShowConsoleMsg("\nError details: " .. tostring(socket) .. "\n")
+    return
+end
+
 local udp = socket.udp()
 udp:setsockname('127.0.0.1', 9000)
 udp:settimeout(0.1)
