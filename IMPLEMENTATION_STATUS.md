@@ -3,9 +3,8 @@
 This document tracks which ReaScript API methods have been implemented in the REAPER MCP Server.
 
 ## Implementation Statistics
-- **Total Implemented**: 13 methods
-- **Ready to Implement**: 20 methods  
-- **Total Coverage**: 33 methods
+- **Total Implemented**: 39 methods (17 original + 22 new)
+- **Ready to Implement**: Many more available in ReaScript API
 - **ReaScript API Version**: REAPER 6.83+ (embedded Lua 5.4)
 
 ## Implementation Checklist
@@ -27,47 +26,49 @@ This document tracks which ReaScript API methods have been implemented in the RE
 - [x] `GetTrackSolo` - Get track solo state (via GetMediaTrackInfo_Value)
 - [x] `SetTrackSolo` - Set track solo state (via SetMediaTrackInfo_Value)
 
-### 🚧 Track Controls - Volume/Pan (0/4 implemented)
-- [ ] `GetTrackVolume` - Get track volume in dB (via GetMediaTrackInfo_Value D_VOL)
-- [ ] `SetTrackVolume` - Set track volume in dB (via SetMediaTrackInfo_Value D_VOL)
-- [ ] `GetTrackPan` - Get track pan position (via GetMediaTrackInfo_Value D_PAN)
-- [ ] `SetTrackPan` - Set track pan position (via SetMediaTrackInfo_Value D_PAN)
+### ✅ Track Controls - Volume/Pan (4/4 implemented)
+- [x] `GetTrackVolume` - Get track volume in dB (via GetMediaTrackInfo_Value D_VOL)
+- [x] `SetTrackVolume` - Set track volume in dB (via SetMediaTrackInfo_Value D_VOL)
+- [x] `GetTrackPan` - Get track pan position (via GetMediaTrackInfo_Value D_PAN)
+- [x] `SetTrackPan` - Set track pan position (via SetMediaTrackInfo_Value D_PAN)
 
-### 🚧 Media Items (0/8 planned)
-- [ ] `AddMediaItemToTrack` - Add a new media item to a track
-- [ ] `CountMediaItems` - Count total media items in project
-- [ ] `GetMediaItem` - Get media item by index
-- [ ] `DeleteTrackMediaItem` - Delete a media item from track
-- [ ] `GetMediaItemInfo_Value` - Get media item property value
-- [ ] `SetMediaItemInfo_Value` - Set media item property value
-- [ ] `GetMediaItemLength` - Get media item length
-- [ ] `SetMediaItemLength` - Set media item length
+### ✅ Media Items (8/8 implemented)
+- [x] `AddMediaItemToTrack` - Add a new media item to a track
+- [x] `CountMediaItems` - Count total media items in project
+- [x] `GetMediaItem` - Get media item by index
+- [x] `DeleteTrackMediaItem` - Delete a media item from track
+- [x] `GetMediaItemLength` - Get media item length
+- [x] `SetMediaItemLength` - Set media item length
+- [x] `GetMediaItemPosition` - Get media item position
+- [x] `SetMediaItemPosition` - Set media item position
 
-### 🚧 Project Management (0/3 planned)
-- [ ] `GetProjectName` - Get the current project name
-- [ ] `GetProjectPath` - Get the current project path
-- [ ] `Main_SaveProject` - Save the current project
+### ✅ Project Management (3/3 implemented)
+- [x] `GetProjectName` - Get the current project name
+- [x] `GetProjectPath` - Get the current project path
+- [x] `Main_SaveProject` - Save the current project
 
-### 🚧 Transport & Playback (0/6 planned)
-- [ ] `GetCursorPosition` - Get the edit cursor position in seconds
-- [ ] `SetEditCurPos` - Set the edit cursor position
-- [ ] `GetPlayState` - Get current playback state
-- [ ] `CSurf_OnPlay` - Start playback
-- [ ] `CSurf_OnStop` - Stop playback
-- [ ] `CSurf_OnPause` - Pause playback
+### ✅ Transport & Playback (6/6 implemented)
+- [x] `GetCursorPosition` - Get the edit cursor position in seconds
+- [x] `SetEditCurPos` - Set the edit cursor position
+- [x] `GetPlayState` - Get current playback state
+- [x] `CSurf_OnPlay` - Start playback
+- [x] `CSurf_OnStop` - Stop playback
+- [x] `CSurf_OnPause` - Pause playback
 
-### 🚧 Actions & Commands (0/1 planned)
-- [ ] `Main_OnCommand` - Execute a REAPER action by command ID
+### ✅ Actions & Commands (1/1 implemented)
+- [x] `Main_OnCommand` - Execute a REAPER action by command ID
 
-### 🚧 Undo System (0/2 planned)
-- [ ] `Undo_BeginBlock` - Begin an undo block
-- [ ] `Undo_EndBlock` - End an undo block with description
+### ✅ Undo System (2/2 implemented)
+- [x] `Undo_BeginBlock` - Begin an undo block
+- [x] `Undo_EndBlock` - End an undo block with description
 
-### 🚧 UI Updates (0/2 planned)
-- [ ] `UpdateArrange` - Update the arrange view
-- [ ] `UpdateTimeline` - Update the timeline display
+### ✅ UI Updates (2/2 implemented)
+- [x] `UpdateArrange` - Update the arrange view
+- [x] `UpdateTimeline` - Update the timeline display
 
-### 🔮 Future Implementations (not yet planned)
+### 🔮 Future Implementations (not yet implemented)
+These categories represent additional ReaScript API functionality that could be added:
+
 - [ ] MIDI Editor functions (MIDI_InsertNote, MIDI_DeleteNote, etc.)
 - [ ] FX/Plugin management (TrackFX_AddByName, TrackFX_Delete, etc.)
 - [ ] Envelope/Automation (GetTrackEnvelope, InsertEnvelopePoint, etc.)
@@ -76,6 +77,12 @@ This document tracks which ReaScript API methods have been implemented in the RE
 - [ ] Take management (AddTakeToMediaItem, GetMediaItemTake, etc.)
 - [ ] Time selection (GetSet_LoopTimeRange, GetSet_LoopTimeRange2, etc.)
 - [ ] Recording (CSurf_OnRecord, GetSetTrackSendInfo, etc.)
+- [ ] Track grouping and folders
+- [ ] Color management
+- [ ] Tempo and time signature
+- [ ] MIDI hardware and control surfaces
+- [ ] Peak and loudness analysis
+- [ ] Render and bounce operations
 
 ## Method Naming Convention
 - **MCP Tool Name**: snake_case (e.g., `get_track_count`)
@@ -96,8 +103,20 @@ Each implemented method should have:
 - Error handling test (e.g., invalid indices)
 - Edge case tests where applicable
 
+## Recent Updates (2025-07-12)
+Added 22 new methods covering:
+- Track volume and pan controls
+- Media item management
+- Project management
+- Transport and playback control
+- Action execution
+- Undo system
+- UI updates
+
 ## Notes
 - Track indices are 0-based
 - Project parameter is typically 0 for current project
 - Some methods use GetMediaTrackInfo_Value/SetMediaTrackInfo_Value for properties
 - Error handling includes track existence checks where applicable
+- Volume is converted between dB (Python) and linear (Lua) representations
+- The complete ReaScript API contains hundreds of functions - we've implemented the most commonly used ones
