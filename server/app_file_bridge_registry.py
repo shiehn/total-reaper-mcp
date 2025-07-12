@@ -589,6 +589,110 @@ async def call_tool(name: str, arguments: dict):
         from server.app_file_bridge_full import call_tool as full_call_tool
         return await full_call_tool(name, arguments)
     
+    elif name == "get_track_volume":
+        track_index = arguments["track_index"]
+        
+        # Get track handle first
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
+        if not track_result.get("ok") or not track_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find track at index {track_index}"
+            )]
+        
+        track_handle = track_result.get("ret")
+        result = await bridge.call_lua("GetMediaTrackInfo_Value", [track_handle, "D_VOL"])
+        
+        if result.get("ok"):
+            volume = result.get("ret", 1.0)
+            return [TextContent(
+                type="text",
+                text=f"Track {track_index} volume: {volume:.3f}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get track volume: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "set_track_volume":
+        track_index = arguments["track_index"]
+        volume = arguments["volume"]
+        
+        # Get track handle first
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
+        if not track_result.get("ok") or not track_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find track at index {track_index}"
+            )]
+        
+        track_handle = track_result.get("ret")
+        result = await bridge.call_lua("SetMediaTrackInfo_Value", [track_handle, "D_VOL", volume])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Track {track_index} volume set to {volume:.3f}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set track volume: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_track_pan":
+        track_index = arguments["track_index"]
+        
+        # Get track handle first
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
+        if not track_result.get("ok") or not track_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find track at index {track_index}"
+            )]
+        
+        track_handle = track_result.get("ret")
+        result = await bridge.call_lua("GetMediaTrackInfo_Value", [track_handle, "D_PAN"])
+        
+        if result.get("ok"):
+            pan = result.get("ret", 0.0)
+            return [TextContent(
+                type="text",
+                text=f"Track {track_index} pan: {pan:.3f}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get track pan: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "set_track_pan":
+        track_index = arguments["track_index"]
+        pan = arguments["pan"]
+        
+        # Get track handle first
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
+        if not track_result.get("ok") or not track_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find track at index {track_index}"
+            )]
+        
+        track_handle = track_result.get("ret")
+        result = await bridge.call_lua("SetMediaTrackInfo_Value", [track_handle, "D_PAN", pan])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Track {track_index} pan set to {pan:.3f}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set track pan: {result.get('error', 'Unknown error')}"
+            )]
+    
     else:
         # Import the full implementation for other tools
         from server.app_file_bridge_full import call_tool as full_call_tool

@@ -13,7 +13,7 @@ async def test_track_fx_operations(reaper_mcp_client):
     
     # Add FX to track
     result = await reaper_mcp_client.call_tool(
-        "add_fx_to_track",
+        "track_fx_add_by_name",
         {"track_index": 0, "fx_name": "ReaEQ"}
     )
     print(f"Add FX result: {result}")
@@ -21,7 +21,7 @@ async def test_track_fx_operations(reaper_mcp_client):
     
     # Count FX on track
     result = await reaper_mcp_client.call_tool(
-        "count_track_fx",
+        "track_fx_get_count",
         {"track_index": 0}
     )
     print(f"Count FX result: {result}")
@@ -29,7 +29,7 @@ async def test_track_fx_operations(reaper_mcp_client):
     
     # Get FX name
     result = await reaper_mcp_client.call_tool(
-        "get_track_fx_name",
+        "track_fx_get_name",
         {"track_index": 0, "fx_index": 0}
     )
     print(f"Get FX name result: {result}")
@@ -37,7 +37,7 @@ async def test_track_fx_operations(reaper_mcp_client):
     
     # Enable/disable FX
     result = await reaper_mcp_client.call_tool(
-        "set_track_fx_enabled",
+        "track_fx_set_enabled",
         {"track_index": 0, "fx_index": 0, "enabled": False}
     )
     print(f"Disable FX result: {result}")
@@ -45,7 +45,7 @@ async def test_track_fx_operations(reaper_mcp_client):
     
     # Get FX enabled state
     result = await reaper_mcp_client.call_tool(
-        "get_track_fx_enabled",
+        "track_fx_get_enabled",
         {"track_index": 0, "fx_index": 0}
     )
     print(f"Get FX enabled state result: {result}")
@@ -53,14 +53,14 @@ async def test_track_fx_operations(reaper_mcp_client):
     
     # Re-enable FX
     result = await reaper_mcp_client.call_tool(
-        "set_track_fx_enabled",
+        "track_fx_set_enabled",
         {"track_index": 0, "fx_index": 0, "enabled": True}
     )
     assert "success" in result.content[0].text.lower() or "enabled" in result.content[0].text.lower()
     
     # Delete FX
     result = await reaper_mcp_client.call_tool(
-        "delete_track_fx",
+        "track_fx_delete",
         {"track_index": 0, "fx_index": 0}
     )
     print(f"Delete FX result: {result}")
@@ -71,7 +71,7 @@ async def test_fx_error_handling(reaper_mcp_client):
     """Test error handling for FX operations"""
     # Try to add FX to non-existent track
     result = await reaper_mcp_client.call_tool(
-        "add_fx_to_track",
+        "track_fx_add_by_name",
         {"track_index": 999, "fx_name": "ReaEQ"}
     )
     assert "failed" in result.content[0].text.lower() or "error" in result.content[0].text.lower()
@@ -83,7 +83,7 @@ async def test_fx_error_handling(reaper_mcp_client):
     )
     
     result = await reaper_mcp_client.call_tool(
-        "get_track_fx_name",
+        "track_fx_get_name",
         {"track_index": 0, "fx_index": 0}
     )
     assert "no fx" in result.content[0].text.lower() or "not found" in result.content[0].text.lower() or "error" in result.content[0].text.lower()

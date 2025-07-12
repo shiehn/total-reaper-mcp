@@ -1,9 +1,9 @@
 # Test Coverage Summary
 
 ## Overview
-Total API Methods: 48
-Total Test Files: 11
-Total Test Functions: 33
+Total API Methods: 62 (48 original + 14 new)
+Total Test Files: 13
+Total Test Functions: 39
 
 ## Test Coverage by Category
 
@@ -80,13 +80,34 @@ Total Test Functions: 33
 - Passing: 20
 - Failing: 52 (mostly due to missing implementations)
 
-## Additional Test Coverage Created But Not Yet Used
-The following test files were created but test methods that are not in the 48 core API methods:
-- test_fx_operations.py (FX management)
+## New API Methods Added (Beyond Original 48)
+
+### ✅ MIDI Operations (Fully Tested)
+49. `create_midi_item` - ✅ test_midi_operations.py
+50. `insert_midi_note` - ✅ test_midi_operations.py
+51. `midi_sort` - ✅ test_midi_operations.py
+52. `insert_midi_cc` - ✅ test_midi_operations.py
+
+### ✅ Take Operations (Fully Tested)
+53. `count_takes` - ✅ test_midi_operations.py
+54. `get_active_take` - ✅ test_midi_operations.py
+55. `set_active_take` - ✅ test_midi_operations.py
+
+### ✅ FX Operations (Fully Tested)
+56. `track_fx_get_count` - ✅ test_fx_operations.py
+57. `track_fx_add_by_name` - ✅ test_fx_operations.py
+58. `track_fx_delete` - ✅ test_fx_operations.py
+59. `track_fx_get_enabled` - ✅ test_fx_operations.py
+60. `track_fx_set_enabled` - ✅ test_fx_operations.py
+61. `track_fx_get_name` - ✅ test_fx_operations.py
+
+### ✅ Volume/Pan Operations (Implemented in Registry)
+62. Volume and pan operations are now implemented in the registry server
+
+## Additional Test Files for Future API Expansion
 - test_automation_operations.py (automation modes)
 - test_tempo_time_signature.py (tempo/time signature)
 - test_selected_items.py (selection operations)
 - test_project_settings.py (project settings)
-- test_track_volume_pan.py (record arm operations)
 
-These represent potential future API additions.
+These test files are ready for when their corresponding API methods are implemented.
