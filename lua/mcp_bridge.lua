@@ -154,6 +154,72 @@ function main()
                 else
                     response.error = "SetTrackName requires 2 arguments (trackidx, name)"
                 end
+            elseif fname == "GetMasterTrack" then
+                local master = reaper.GetMasterTrack(0)
+                response.ok = true
+                response.ret = master
+            elseif fname == "DeleteTrack" then
+                if #args >= 1 then
+                    local track = reaper.GetTrack(0, args[1])
+                    if track then
+                        reaper.DeleteTrack(track)
+                        response.ok = true
+                    else
+                        response.error = "Track not found at index " .. tostring(args[1])
+                    end
+                else
+                    response.error = "DeleteTrack requires 1 argument(s)"
+                end
+            elseif fname == "GetTrackMute" then
+                if #args >= 1 then
+                    local track = reaper.GetTrack(0, args[1])
+                    if track then
+                        local muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1
+                        response.ok = true
+                        response.ret = muted
+                    else
+                        response.error = "Track not found at index " .. tostring(args[1])
+                    end
+                else
+                    response.error = "GetTrackMute requires 1 argument(s)"
+                end
+            elseif fname == "SetTrackMute" then
+                if #args >= 2 then
+                    local track = reaper.GetTrack(0, args[1])
+                    if track then
+                        reaper.SetMediaTrackInfo_Value(track, "B_MUTE", args[2] and 1 or 0)
+                        response.ok = true
+                    else
+                        response.error = "Track not found at index " .. tostring(args[1])
+                    end
+                else
+                    response.error = "SetTrackMute requires 2 argument(s)"
+                end
+            elseif fname == "GetTrackSolo" then
+                if #args >= 1 then
+                    local track = reaper.GetTrack(0, args[1])
+                    if track then
+                        local solo = reaper.GetMediaTrackInfo_Value(track, "I_SOLO") > 0
+                        response.ok = true
+                        response.ret = solo
+                    else
+                        response.error = "Track not found at index " .. tostring(args[1])
+                    end
+                else
+                    response.error = "GetTrackSolo requires 1 argument(s)"
+                end
+            elseif fname == "SetTrackSolo" then
+                if #args >= 2 then
+                    local track = reaper.GetTrack(0, args[1])
+                    if track then
+                        reaper.SetMediaTrackInfo_Value(track, "I_SOLO", args[2] and 1 or 0)
+                        response.ok = true
+                    else
+                        response.error = "Track not found at index " .. tostring(args[1])
+                    end
+                else
+                    response.error = "SetTrackSolo requires 2 argument(s)"
+                end
             else
                 response.error = "Unknown function: " .. fname
             end

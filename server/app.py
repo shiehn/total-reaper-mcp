@@ -149,6 +149,97 @@ async def list_tools():
                 },
                 "required": ["track_index", "name"]
             }
+        ),
+        Tool(
+            name="get_master_track",
+            description="Get the master track",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        ),
+        Tool(
+            name="delete_track",
+            description="Delete a track by index",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "The track index (0-based)",
+                        "minimum": 0
+                    }
+                },
+                "required": ["track_index"]
+            }
+        ),
+        Tool(
+            name="get_track_mute",
+            description="Get track mute state",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "The track index (0-based)",
+                        "minimum": 0
+                    }
+                },
+                "required": ["track_index"]
+            }
+        ),
+        Tool(
+            name="set_track_mute",
+            description="Set track mute state",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "The track index (0-based)",
+                        "minimum": 0
+                    },
+                    "mute": {
+                        "type": "boolean",
+                        "description": "Whether to mute (true) or unmute (false) the track"
+                    }
+                },
+                "required": ["track_index", "mute"]
+            }
+        ),
+        Tool(
+            name="get_track_solo",
+            description="Get track solo state",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "The track index (0-based)",
+                        "minimum": 0
+                    }
+                },
+                "required": ["track_index"]
+            }
+        ),
+        Tool(
+            name="set_track_solo",
+            description="Set track solo state",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "The track index (0-based)",
+                        "minimum": 0
+                    },
+                    "solo": {
+                        "type": "boolean",
+                        "description": "Whether to solo (true) or unsolo (false) the track"
+                    }
+                },
+                "required": ["track_index", "solo"]
+            }
         )
     ]
 
@@ -290,6 +381,143 @@ async def call_tool(name: str, arguments: dict):
             return [TextContent(
                 type="text",
                 text=f"Failed to set track name: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_master_track":
+        
+        result = bridge.call_lua("GetMasterTrack", [0])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Master track: {result.get('ret')}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get master track: {result.get('error', 'Unknown error')}"
+            )]
+
+    elif name == "delete_track":
+        track_index = arguments["track_index"]
+        
+        # First check if track exists
+        track_result = bridge.call_lua("GetTrack", [0, track_index])
+        if not track_result.get("ok") or not track_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find track at index {track_index}"
+            )]
+        
+        result = bridge.call_lua("DeleteTrack", [track_index])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Track {track_index} deleted successfully"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to delete track: {result.get('error', 'Unknown error')}"
+            )]
+
+    elif name == "get_track_mute":
+        track_index = arguments["track_index"]
+        
+        # First check if track exists
+        track_result = bridge.call_lua("GetTrack", [0, track_index])
+        if not track_result.get("ok") or not track_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find track at index {track_index}"
+            )]
+        
+        result = bridge.call_lua("GetTrackMute", [track_index])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Track {track_index} mute state: {'muted' if result.get('ret') else 'unmuted'}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get track mute: {result.get('error', 'Unknown error')}"
+            )]
+
+    elif name == "set_track_mute":
+        track_index = arguments["track_index"]
+        mute = arguments["mute"]
+        
+        # First check if track exists
+        track_result = bridge.call_lua("GetTrack", [0, track_index])
+        if not track_result.get("ok") or not track_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find track at index {track_index}"
+            )]
+        
+        result = bridge.call_lua("SetTrackMute", [track_index, mute])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Track {track_index} {'muted' if mute else 'unmuted'}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set track mute: {result.get('error', 'Unknown error')}"
+            )]
+
+    elif name == "get_track_solo":
+        track_index = arguments["track_index"]
+        
+        # First check if track exists
+        track_result = bridge.call_lua("GetTrack", [0, track_index])
+        if not track_result.get("ok") or not track_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find track at index {track_index}"
+            )]
+        
+        result = bridge.call_lua("GetTrackSolo", [track_index])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Track {track_index} solo state: {'soloed' if result.get('ret') else 'not soloed'}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get track solo: {result.get('error', 'Unknown error')}"
+            )]
+
+    elif name == "set_track_solo":
+        track_index = arguments["track_index"]
+        solo = arguments["solo"]
+        
+        # First check if track exists
+        track_result = bridge.call_lua("GetTrack", [0, track_index])
+        if not track_result.get("ok") or not track_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find track at index {track_index}"
+            )]
+        
+        result = bridge.call_lua("SetTrackSolo", [track_index, solo])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Track {track_index} {'soloed' if solo else 'unsoloed'}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set track solo: {result.get('error', 'Unknown error')}"
             )]
     
     else:
