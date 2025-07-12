@@ -418,17 +418,17 @@ async def call_tool(name: str, arguments: dict):
         result = await bridge.call_lua("SetPlayState", [play, pause, record])
         
         if result.get("ok"):
-            states = []
-            if record:
-                states.append("recording")
-            if play:
-                states.append("playing")
+            if record and play:
+                state_text = "play+record"
+            elif record:
+                state_text = "record"
+            elif play:
+                state_text = "play"
             elif pause:
-                states.append("paused")
+                state_text = "pause"
             else:
-                states.append("stopped")
+                state_text = "stop"
             
-            state_text = " and ".join(states)
             return [TextContent(
                 type="text",
                 text=f"Transport state set to: {state_text}"
@@ -440,7 +440,7 @@ async def call_tool(name: str, arguments: dict):
             )]
     
     elif name == "set_repeat_state":
-        enabled = arguments["enabled"]
+        enabled = arguments["repeat"]
         
         result = await bridge.call_lua("GetSetRepeat", [enabled])
         
@@ -449,7 +449,7 @@ async def call_tool(name: str, arguments: dict):
             state = "enabled" if enabled else "disabled"
             return [TextContent(
                 type="text",
-                text=f"Repeat state set to: {state}"
+                text=f"Repeat/loop {state}"
             )]
         else:
             return [TextContent(
@@ -495,8 +495,8 @@ async def call_tool(name: str, arguments: dict):
             )]
     
     elif name == "set_loop_time_range":
-        start_time = arguments["start_time"]
-        end_time = arguments["end_time"]
+        start_time = arguments["start"]
+        end_time = arguments["end"]
         is_loop = arguments.get("is_loop", True)
         
         result = await bridge.call_lua("GetSet_LoopTimeRange", [True, is_loop, start_time, end_time, False])
@@ -504,7 +504,7 @@ async def call_tool(name: str, arguments: dict):
         if result.get("ok"):
             return [TextContent(
                 type="text",
-                text=f"Successfully set time selection from {start_time} to {end_time}"
+                text=f"Successfully set time selection from {start_time:.3f}s to {end_time:.3f}s"
             )]
         else:
             return [TextContent(
@@ -567,6 +567,26 @@ async def call_tool(name: str, arguments: dict):
                 type="text",
                 text=f"Failed to execute record command: {result.get('error', 'Unknown error')}"
             )]
+    
+    elif name == "count_project_markers":
+        # Import from full implementation - complex response handling
+        from server.app_file_bridge_full import call_tool as full_call_tool
+        return await full_call_tool(name, arguments)
+    
+    elif name == "enum_project_markers":
+        # Import from full implementation - complex response handling  
+        from server.app_file_bridge_full import call_tool as full_call_tool
+        return await full_call_tool(name, arguments)
+    
+    elif name == "delete_project_marker":
+        # Import from full implementation - needs specific handling
+        from server.app_file_bridge_full import call_tool as full_call_tool
+        return await full_call_tool(name, arguments)
+    
+    elif name == "get_loop_time_range":
+        # Import from full implementation - complex response
+        from server.app_file_bridge_full import call_tool as full_call_tool
+        return await full_call_tool(name, arguments)
     
     else:
         # Import the full implementation for other tools
