@@ -1,9 +1,9 @@
 # Test Coverage Summary
 
 ## Overview
-Total API Methods: 62 (48 original + 14 new)
-Total Test Files: 13
-Total Test Functions: 39
+Total API Methods: 73 (48 original + 25 new)
+Total Test Files: 15
+Total Test Functions: 51
 
 ## Test Coverage by Category
 
@@ -103,6 +103,21 @@ Total Test Functions: 39
 
 ### ✅ Volume/Pan Operations (Implemented in Registry)
 62. Volume and pan operations are now implemented in the registry server
+
+### ✅ Envelope Operations (Fully Tested)
+63. `get_track_envelope_by_name` - ✅ test_envelope_operations.py
+64. `count_envelope_points` - ✅ test_envelope_operations.py
+65. `insert_envelope_point` - ✅ test_envelope_operations.py
+66. `delete_envelope_point` - ✅ test_envelope_operations.py
+67. `get_envelope_point` - ✅ test_envelope_operations.py
+68. `set_envelope_point_value` - ✅ test_envelope_operations.py
+
+### ✅ Track Routing/Sends (Fully Tested)
+69. `create_track_send` - ✅ test_track_routing.py
+70. `remove_track_send` - ✅ test_track_routing.py
+71. `get_track_num_sends` - ✅ test_track_routing.py
+72. `set_track_send_volume` - ✅ test_track_routing.py
+73. `get_track_send_info` - ✅ test_track_routing.py
 
 ## Additional Test Files for Future API Expansion
 - test_automation_operations.py (automation modes)

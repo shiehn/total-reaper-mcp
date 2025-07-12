@@ -1169,6 +1169,261 @@ async def list_tools():
                 },
                 "required": ["track_index", "fx_index"]
             }
+        ),
+        Tool(
+            name="get_track_envelope_by_name",
+            description="Get a track envelope by name (e.g., 'Volume', 'Pan', 'Mute')",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "The track index (0-based)",
+                        "minimum": 0
+                    },
+                    "envelope_name": {
+                        "type": "string",
+                        "description": "The envelope name (e.g., 'Volume', 'Pan', 'Mute')"
+                    }
+                },
+                "required": ["track_index", "envelope_name"]
+            }
+        ),
+        Tool(
+            name="count_envelope_points",
+            description="Count the number of points in an envelope",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "The track index (0-based)",
+                        "minimum": 0
+                    },
+                    "envelope_name": {
+                        "type": "string",
+                        "description": "The envelope name"
+                    }
+                },
+                "required": ["track_index", "envelope_name"]
+            }
+        ),
+        Tool(
+            name="insert_envelope_point",
+            description="Insert an automation point in an envelope",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "The track index (0-based)",
+                        "minimum": 0
+                    },
+                    "envelope_name": {
+                        "type": "string",
+                        "description": "The envelope name"
+                    },
+                    "time": {
+                        "type": "number",
+                        "description": "Time position in seconds"
+                    },
+                    "value": {
+                        "type": "number",
+                        "description": "Value (0-1 for volume/pan, 0 or 1 for mute)"
+                    },
+                    "shape": {
+                        "type": "integer",
+                        "description": "Point shape (0=linear, 1=square, 2=slow start/end, 3=fast start, 4=fast end, 5=bezier)",
+                        "default": 0
+                    },
+                    "selected": {
+                        "type": "boolean",
+                        "description": "Whether the point is selected",
+                        "default": False
+                    }
+                },
+                "required": ["track_index", "envelope_name", "time", "value"]
+            }
+        ),
+        Tool(
+            name="delete_envelope_point",
+            description="Delete an automation point from an envelope",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "The track index (0-based)",
+                        "minimum": 0
+                    },
+                    "envelope_name": {
+                        "type": "string",
+                        "description": "The envelope name"
+                    },
+                    "point_index": {
+                        "type": "integer",
+                        "description": "The point index to delete (0-based)",
+                        "minimum": 0
+                    }
+                },
+                "required": ["track_index", "envelope_name", "point_index"]
+            }
+        ),
+        Tool(
+            name="get_envelope_point",
+            description="Get information about an envelope point",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "The track index (0-based)",
+                        "minimum": 0
+                    },
+                    "envelope_name": {
+                        "type": "string",
+                        "description": "The envelope name"
+                    },
+                    "point_index": {
+                        "type": "integer",
+                        "description": "The point index (0-based)",
+                        "minimum": 0
+                    }
+                },
+                "required": ["track_index", "envelope_name", "point_index"]
+            }
+        ),
+        Tool(
+            name="set_envelope_point_value",
+            description="Set the value of an existing envelope point",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "The track index (0-based)",
+                        "minimum": 0
+                    },
+                    "envelope_name": {
+                        "type": "string",
+                        "description": "The envelope name"
+                    },
+                    "point_index": {
+                        "type": "integer",
+                        "description": "The point index (0-based)",
+                        "minimum": 0
+                    },
+                    "time": {
+                        "type": "number",
+                        "description": "New time position in seconds",
+                        "default": null
+                    },
+                    "value": {
+                        "type": "number",
+                        "description": "New value"
+                    }
+                },
+                "required": ["track_index", "envelope_name", "point_index", "value"]
+            }
+        ),
+        Tool(
+            name="create_track_send",
+            description="Create a send from one track to another",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "source_track_index": {
+                        "type": "integer",
+                        "description": "Source track index (0-based)",
+                        "minimum": 0
+                    },
+                    "dest_track_index": {
+                        "type": "integer",
+                        "description": "Destination track index (0-based)",
+                        "minimum": 0
+                    }
+                },
+                "required": ["source_track_index", "dest_track_index"]
+            }
+        ),
+        Tool(
+            name="remove_track_send",
+            description="Remove a send from a track",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index (0-based)",
+                        "minimum": 0
+                    },
+                    "send_index": {
+                        "type": "integer",
+                        "description": "Send index (0-based)",
+                        "minimum": 0
+                    }
+                },
+                "required": ["track_index", "send_index"]
+            }
+        ),
+        Tool(
+            name="get_track_num_sends",
+            description="Get the number of sends on a track",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index (0-based)",
+                        "minimum": 0
+                    }
+                },
+                "required": ["track_index"]
+            }
+        ),
+        Tool(
+            name="set_track_send_volume",
+            description="Set the volume of a track send",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index (0-based)",
+                        "minimum": 0
+                    },
+                    "send_index": {
+                        "type": "integer",
+                        "description": "Send index (0-based)",
+                        "minimum": 0
+                    },
+                    "volume": {
+                        "type": "number",
+                        "description": "Volume (0.0-1.0)"
+                    }
+                },
+                "required": ["track_index", "send_index", "volume"]
+            }
+        ),
+        Tool(
+            name="get_track_send_info",
+            description="Get information about a track send",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index (0-based)",
+                        "minimum": 0
+                    },
+                    "send_index": {
+                        "type": "integer",
+                        "description": "Send index (0-based)",
+                        "minimum": 0
+                    }
+                },
+                "required": ["track_index", "send_index"]
+            }
         )
     ]
 
@@ -2668,6 +2923,434 @@ async def call_tool(name: str, arguments: dict):
             return [TextContent(
                 type="text",
                 text=f"Failed to get FX name: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_track_envelope_by_name":
+        track_index = arguments["track_index"]
+        envelope_name = arguments["envelope_name"]
+        
+        # Get track
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
+        if not track_result.get("ok") or not track_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find track at index {track_index}"
+            )]
+        
+        track_handle = track_result.get("ret")
+        
+        # Get envelope by name
+        result = await bridge.call_lua("GetTrackEnvelopeByName", [track_handle, envelope_name])
+        
+        if result.get("ok"):
+            envelope_handle = result.get("ret")
+            if envelope_handle:
+                return [TextContent(
+                    type="text",
+                    text=f"Found envelope '{envelope_name}' on track {track_index}"
+                )]
+            else:
+                return [TextContent(
+                    type="text",
+                    text=f"Envelope '{envelope_name}' not found on track {track_index}"
+                )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get envelope: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "count_envelope_points":
+        track_index = arguments["track_index"]
+        envelope_name = arguments["envelope_name"]
+        
+        # Get track and envelope
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
+        if not track_result.get("ok") or not track_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find track at index {track_index}"
+            )]
+        
+        track_handle = track_result.get("ret")
+        env_result = await bridge.call_lua("GetTrackEnvelopeByName", [track_handle, envelope_name])
+        
+        if not env_result.get("ok") or not env_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find envelope '{envelope_name}' on track {track_index}"
+            )]
+        
+        envelope_handle = env_result.get("ret")
+        
+        # Count points
+        result = await bridge.call_lua("CountEnvelopePoints", [envelope_handle])
+        
+        if result.get("ok"):
+            count = result.get("ret", 0)
+            return [TextContent(
+                type="text",
+                text=f"Envelope '{envelope_name}' has {count} points"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to count envelope points: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "insert_envelope_point":
+        track_index = arguments["track_index"]
+        envelope_name = arguments["envelope_name"]
+        time = arguments["time"]
+        value = arguments["value"]
+        shape = arguments.get("shape", 0)
+        selected = arguments.get("selected", False)
+        
+        # Get track and envelope
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
+        if not track_result.get("ok") or not track_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find track at index {track_index}"
+            )]
+        
+        track_handle = track_result.get("ret")
+        env_result = await bridge.call_lua("GetTrackEnvelopeByName", [track_handle, envelope_name])
+        
+        if not env_result.get("ok") or not env_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find envelope '{envelope_name}' on track {track_index}"
+            )]
+        
+        envelope_handle = env_result.get("ret")
+        
+        # Insert point
+        result = await bridge.call_lua("InsertEnvelopePoint", [
+            envelope_handle, time, value, shape, 0, selected, True
+        ])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Inserted point at {time:.3f}s with value {value:.3f} in '{envelope_name}' envelope"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to insert envelope point: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "delete_envelope_point":
+        track_index = arguments["track_index"]
+        envelope_name = arguments["envelope_name"]
+        point_index = arguments["point_index"]
+        
+        # Get track and envelope
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
+        if not track_result.get("ok") or not track_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find track at index {track_index}"
+            )]
+        
+        track_handle = track_result.get("ret")
+        env_result = await bridge.call_lua("GetTrackEnvelopeByName", [track_handle, envelope_name])
+        
+        if not env_result.get("ok") or not env_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find envelope '{envelope_name}' on track {track_index}"
+            )]
+        
+        envelope_handle = env_result.get("ret")
+        
+        # Delete point
+        result = await bridge.call_lua("DeleteEnvelopePointEx", [envelope_handle, -1, point_index])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Deleted point {point_index} from '{envelope_name}' envelope"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to delete envelope point: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_envelope_point":
+        track_index = arguments["track_index"]
+        envelope_name = arguments["envelope_name"]
+        point_index = arguments["point_index"]
+        
+        # Get track and envelope
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
+        if not track_result.get("ok") or not track_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find track at index {track_index}"
+            )]
+        
+        track_handle = track_result.get("ret")
+        env_result = await bridge.call_lua("GetTrackEnvelopeByName", [track_handle, envelope_name])
+        
+        if not env_result.get("ok") or not env_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find envelope '{envelope_name}' on track {track_index}"
+            )]
+        
+        envelope_handle = env_result.get("ret")
+        
+        # Get point info
+        result = await bridge.call_lua("GetEnvelopePoint", [envelope_handle, point_index, 0, 0, 0, 0, 0])
+        
+        if result.get("ok"):
+            ret_values = result.get("ret", [])
+            if isinstance(ret_values, list) and len(ret_values) >= 6:
+                retval, time, value, shape, tension, selected = ret_values[:6]
+                if retval:
+                    return [TextContent(
+                        type="text",
+                        text=f"Point {point_index}: time={time:.3f}s, value={value:.3f}, shape={shape}, selected={bool(selected)}"
+                    )]
+            return [TextContent(
+                type="text",
+                text=f"Point {point_index} not found"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get envelope point: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "set_envelope_point_value":
+        track_index = arguments["track_index"]
+        envelope_name = arguments["envelope_name"]
+        point_index = arguments["point_index"]
+        new_value = arguments["value"]
+        new_time = arguments.get("time", None)
+        
+        # Get track and envelope
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
+        if not track_result.get("ok") or not track_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find track at index {track_index}"
+            )]
+        
+        track_handle = track_result.get("ret")
+        env_result = await bridge.call_lua("GetTrackEnvelopeByName", [track_handle, envelope_name])
+        
+        if not env_result.get("ok") or not env_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find envelope '{envelope_name}' on track {track_index}"
+            )]
+        
+        envelope_handle = env_result.get("ret")
+        
+        # Get current point info
+        get_result = await bridge.call_lua("GetEnvelopePoint", [envelope_handle, point_index, 0, 0, 0, 0, 0])
+        
+        if get_result.get("ok"):
+            ret_values = get_result.get("ret", [])
+            if isinstance(ret_values, list) and len(ret_values) >= 6:
+                retval, time, old_value, shape, tension, selected = ret_values[:6]
+                if retval:
+                    # Use new time if provided, otherwise keep existing
+                    if new_time is not None:
+                        time = new_time
+                    
+                    # Set point value
+                    result = await bridge.call_lua("SetEnvelopePoint", [
+                        envelope_handle, point_index, time, new_value, shape, tension, selected, True
+                    ])
+                    
+                    if result.get("ok"):
+                        return [TextContent(
+                            type="text",
+                            text=f"Updated point {point_index} to value {new_value:.3f} at {time:.3f}s"
+                        )]
+                    else:
+                        return [TextContent(
+                            type="text",
+                            text=f"Failed to set envelope point: {result.get('error', 'Unknown error')}"
+                        )]
+        
+        return [TextContent(
+            type="text",
+            text=f"Failed to get envelope point {point_index}"
+        )]
+    
+    elif name == "create_track_send":
+        source_track_index = arguments["source_track_index"]
+        dest_track_index = arguments["dest_track_index"]
+        
+        # Get source and destination tracks
+        source_result = await bridge.call_lua("GetTrack", [0, source_track_index])
+        if not source_result.get("ok") or not source_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find source track at index {source_track_index}"
+            )]
+        
+        dest_result = await bridge.call_lua("GetTrack", [0, dest_track_index])
+        if not dest_result.get("ok") or not dest_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find destination track at index {dest_track_index}"
+            )]
+        
+        source_track = source_result.get("ret")
+        dest_track = dest_result.get("ret")
+        
+        # Create send
+        result = await bridge.call_lua("CreateTrackSend", [source_track, dest_track])
+        
+        if result.get("ok"):
+            send_index = result.get("ret", -1)
+            if send_index >= 0:
+                return [TextContent(
+                    type="text",
+                    text=f"Created send from track {source_track_index} to track {dest_track_index} (send index: {send_index})"
+                )]
+            else:
+                return [TextContent(
+                    type="text",
+                    text=f"Failed to create send"
+                )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to create send: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "remove_track_send":
+        track_index = arguments["track_index"]
+        send_index = arguments["send_index"]
+        
+        # Get track
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
+        if not track_result.get("ok") or not track_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find track at index {track_index}"
+            )]
+        
+        track_handle = track_result.get("ret")
+        
+        # Remove send
+        result = await bridge.call_lua("RemoveTrackSend", [track_handle, 0, send_index])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Removed send {send_index} from track {track_index}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to remove send: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_track_num_sends":
+        track_index = arguments["track_index"]
+        
+        # Get track
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
+        if not track_result.get("ok") or not track_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find track at index {track_index}"
+            )]
+        
+        track_handle = track_result.get("ret")
+        
+        # Get number of sends
+        result = await bridge.call_lua("GetTrackNumSends", [track_handle, 0])
+        
+        if result.get("ok"):
+            num_sends = result.get("ret", 0)
+            return [TextContent(
+                type="text",
+                text=f"Track {track_index} has {num_sends} sends"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get number of sends: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "set_track_send_volume":
+        track_index = arguments["track_index"]
+        send_index = arguments["send_index"]
+        volume = arguments["volume"]
+        
+        # Get track
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
+        if not track_result.get("ok") or not track_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find track at index {track_index}"
+            )]
+        
+        track_handle = track_result.get("ret")
+        
+        # Set send volume
+        result = await bridge.call_lua("SetTrackSendInfo_Value", [track_handle, 0, send_index, "D_VOL", volume])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Set send {send_index} volume to {volume:.3f}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set send volume: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_track_send_info":
+        track_index = arguments["track_index"]
+        send_index = arguments["send_index"]
+        
+        # Get track
+        track_result = await bridge.call_lua("GetTrack", [0, track_index])
+        if not track_result.get("ok") or not track_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find track at index {track_index}"
+            )]
+        
+        track_handle = track_result.get("ret")
+        
+        # Get send volume
+        vol_result = await bridge.call_lua("GetTrackSendInfo_Value", [track_handle, 0, send_index, "D_VOL"])
+        
+        # Get destination track
+        dest_result = await bridge.call_lua("GetTrackSendInfo_Value", [track_handle, 0, send_index, "P_DESTTRACK"])
+        
+        if vol_result.get("ok"):
+            volume = vol_result.get("ret", 0.0)
+            dest_info = ""
+            if dest_result.get("ok") and dest_result.get("ret"):
+                # Try to find destination track index
+                for i in range(100):  # Check first 100 tracks
+                    check_result = await bridge.call_lua("GetTrack", [0, i])
+                    if check_result.get("ok") and check_result.get("ret") == dest_result.get("ret"):
+                        dest_info = f", destination: track {i}"
+                        break
+            
+            return [TextContent(
+                type="text",
+                text=f"Send {send_index}: volume={volume:.3f}{dest_info}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get send info: {vol_result.get('error', 'Unknown error')}"
             )]
     
     else:
