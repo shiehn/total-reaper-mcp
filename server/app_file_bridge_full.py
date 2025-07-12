@@ -1524,6 +1524,184 @@ async def list_tools():
                 },
                 "required": ["position", "tempo"]
             }
+        ),
+        Tool(
+            name="set_media_item_selected",
+            description="Set whether a media item is selected",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "item_index": {
+                        "type": "integer",
+                        "description": "Media item index (0-based)",
+                        "minimum": 0
+                    },
+                    "selected": {
+                        "type": "boolean",
+                        "description": "Whether to select or deselect the item"
+                    }
+                },
+                "required": ["item_index", "selected"]
+            }
+        ),
+        Tool(
+            name="count_selected_media_items",
+            description="Count the number of selected media items",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        ),
+        Tool(
+            name="get_selected_media_item",
+            description="Get a selected media item by index",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "index": {
+                        "type": "integer",
+                        "description": "Index in the selected items list (0-based)",
+                        "minimum": 0
+                    }
+                },
+                "required": ["index"]
+            }
+        ),
+        Tool(
+            name="count_selected_tracks",
+            description="Count the number of selected tracks",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        ),
+        Tool(
+            name="get_selected_track",
+            description="Get a selected track by index",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "index": {
+                        "type": "integer",
+                        "description": "Index in the selected tracks list (0-based)",
+                        "minimum": 0
+                    }
+                },
+                "required": ["index"]
+            }
+        ),
+        Tool(
+            name="get_project_sample_rate",
+            description="Get the project sample rate",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        ),
+        Tool(
+            name="set_project_sample_rate",
+            description="Set the project sample rate",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "sample_rate": {
+                        "type": "integer",
+                        "description": "Sample rate in Hz",
+                        "enum": [22050, 44100, 48000, 88200, 96000, 176400, 192000]
+                    }
+                },
+                "required": ["sample_rate"]
+            }
+        ),
+        Tool(
+            name="get_project_length",
+            description="Get the project length in seconds",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        ),
+        Tool(
+            name="set_project_length",
+            description="Set the project length in seconds",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "length": {
+                        "type": "number",
+                        "description": "Project length in seconds",
+                        "minimum": 1
+                    }
+                },
+                "required": ["length"]
+            }
+        ),
+        Tool(
+            name="get_project_grid_division",
+            description="Get the project grid division",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        ),
+        Tool(
+            name="set_project_grid_division",
+            description="Set the project grid division",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "division": {
+                        "type": "number",
+                        "description": "Grid division (e.g., 0.25 for 1/4, 0.125 for 1/8, 0.0625 for 1/16)"
+                    }
+                },
+                "required": ["division"]
+            }
+        ),
+        Tool(
+            name="get_project_render_bounds",
+            description="Get the project render bounds mode",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        ),
+        Tool(
+            name="set_project_render_bounds",
+            description="Set the project render bounds mode",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "bounds_mode": {
+                        "type": "integer",
+                        "description": "Render bounds mode (0=entire project, 1=time selection, 2=custom)",
+                        "enum": [0, 1, 2]
+                    }
+                },
+                "required": ["bounds_mode"]
+            }
+        ),
+        Tool(
+            name="get_project_notes",
+            description="Get the project notes",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        ),
+        Tool(
+            name="set_project_notes",
+            description="Set the project notes",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "notes": {
+                        "type": "string",
+                        "description": "Project notes text"
+                    }
+                },
+                "required": ["notes"]
+            }
         )
     ]
 
@@ -3586,6 +3764,351 @@ async def call_tool(name: str, arguments: dict):
             return [TextContent(
                 type="text",
                 text=f"Failed to convert position to beats: {measures_result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "set_media_item_selected":
+        item_index = arguments["item_index"]
+        selected = arguments["selected"]
+        
+        # Get media item
+        item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
+        if not item_result.get("ok") or not item_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find media item at index {item_index}"
+            )]
+        
+        item_handle = item_result.get("ret")
+        
+        # Set selection state
+        result = await bridge.call_lua("SetMediaItemSelected", [item_handle, selected])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"{'Selected' if selected else 'Deselected'} media item at index {item_index}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set selection state: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "count_selected_media_items":
+        result = await bridge.call_lua("CountSelectedMediaItems", [0])
+        
+        if result.get("ok"):
+            count = result.get("ret", 0)
+            return [TextContent(
+                type="text",
+                text=f"{count} selected media items"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to count selected items: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_selected_media_item":
+        index = arguments["index"]
+        
+        result = await bridge.call_lua("GetSelectedMediaItem", [0, index])
+        
+        if result.get("ok"):
+            item_handle = result.get("ret")
+            if item_handle:
+                return [TextContent(
+                    type="text",
+                    text=f"Selected item handle: {item_handle}"
+                )]
+            else:
+                return [TextContent(
+                    type="text",
+                    text=f"No selected item at index {index}"
+                )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get selected item: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "count_selected_tracks":
+        result = await bridge.call_lua("CountSelectedTracks", [0])
+        
+        if result.get("ok"):
+            count = result.get("ret", 0)
+            return [TextContent(
+                type="text",
+                text=f"{count} selected tracks"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to count selected tracks: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_selected_track":
+        index = arguments["index"]
+        
+        result = await bridge.call_lua("GetSelectedTrack", [0, index])
+        
+        if result.get("ok"):
+            track_handle = result.get("ret")
+            if track_handle:
+                return [TextContent(
+                    type="text",
+                    text=f"Selected track handle: {track_handle}"
+                )]
+            else:
+                return [TextContent(
+                    type="text",
+                    text=f"No selected track at index {index}"
+                )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get selected track: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_project_sample_rate":
+        result = await bridge.call_lua("GetSetProjectInfo_String", [0, "RENDER_SRATE", "", False])
+        
+        if result.get("ok"):
+            sample_rate_str = result.get("ret", "44100")
+            try:
+                sample_rate = int(float(sample_rate_str))
+                return [TextContent(
+                    type="text",
+                    text=f"Project sample rate: {sample_rate} Hz"
+                )]
+            except:
+                # Try alternate method
+                result2 = await bridge.call_lua("GetSetProjectInfo", [0, "PROJECT_SRATE", 0, False])
+                if result2.get("ok"):
+                    sample_rate = int(result2.get("ret", 44100))
+                    return [TextContent(
+                        type="text",
+                        text=f"Project sample rate: {sample_rate} Hz"
+                    )]
+                return [TextContent(
+                    type="text",
+                    text="Failed to parse sample rate"
+                )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get sample rate: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "set_project_sample_rate":
+        sample_rate = arguments["sample_rate"]
+        
+        # Set sample rate
+        result = await bridge.call_lua("GetSetProjectInfo", [0, "PROJECT_SRATE", sample_rate, True])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Set project sample rate to {sample_rate} Hz"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set sample rate: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_project_length":
+        result = await bridge.call_lua("GetProjectLength", [0])
+        
+        if result.get("ok"):
+            length = result.get("ret", 0.0)
+            return [TextContent(
+                type="text",
+                text=f"Project length: {length:.3f} seconds"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get project length: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "set_project_length":
+        length = arguments["length"]
+        
+        # Get current cursor position
+        cursor_result = await bridge.call_lua("GetCursorPosition", [])
+        cursor_pos = cursor_result.get("ret", 0.0) if cursor_result.get("ok") else 0.0
+        
+        # Move cursor to desired length
+        await bridge.call_lua("SetEditCurPos", [length, False, False])
+        
+        # Insert marker to extend project
+        await bridge.call_lua("Main_OnCommand", [40157, 0])  # Insert marker at current position
+        
+        # Delete the marker (we just needed it to extend project)
+        await bridge.call_lua("Main_OnCommand", [40613, 0])  # Delete marker near cursor
+        
+        # Restore cursor position
+        await bridge.call_lua("SetEditCurPos", [cursor_pos, False, False])
+        
+        return [TextContent(
+            type="text",
+            text=f"Set project length to {length:.3f} seconds"
+        )]
+    
+    elif name == "get_project_grid_division":
+        result = await bridge.call_lua("GetSetProjectGrid", [0, False, 0, 0, 0])
+        
+        if result.get("ok") and isinstance(result.get("ret"), list) and len(result.get("ret", [])) >= 1:
+            division = result.get("ret")[0]
+            # Convert to fraction string
+            if division == 0.25:
+                division_str = "1/4"
+            elif division == 0.125:
+                division_str = "1/8"
+            elif division == 0.0625:
+                division_str = "1/16"
+            elif division == 0.5:
+                division_str = "1/2"
+            elif division == 1.0:
+                division_str = "1/1"
+            else:
+                division_str = f"{division:.4f}"
+            
+            return [TextContent(
+                type="text",
+                text=f"Project grid division: {division_str}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get grid division: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "set_project_grid_division":
+        division = arguments["division"]
+        
+        result = await bridge.call_lua("GetSetProjectGrid", [0, True, division, 0, 0])
+        
+        if result.get("ok"):
+            # Convert to fraction string for display
+            if division == 0.25:
+                division_str = "1/4"
+            elif division == 0.125:
+                division_str = "1/8"
+            elif division == 0.0625:
+                division_str = "1/16"
+            elif division == 0.5:
+                division_str = "1/2"
+            elif division == 1.0:
+                division_str = "1/1"
+            else:
+                division_str = f"{division:.4f}"
+            
+            return [TextContent(
+                type="text",
+                text=f"Set project grid division to {division_str}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set grid division: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_project_render_bounds":
+        result = await bridge.call_lua("GetSetProjectInfo", [0, "RENDER_SETTINGS", 0, False])
+        
+        if result.get("ok"):
+            settings = int(result.get("ret", 0))
+            # Extract bounds mode from render settings (bits 0-1)
+            bounds_mode = settings & 0x03
+            
+            if bounds_mode == 0:
+                bounds_str = "Entire project"
+            elif bounds_mode == 1:
+                bounds_str = "Time selection"
+            elif bounds_mode == 2:
+                bounds_str = "Custom"
+            else:
+                bounds_str = f"Unknown ({bounds_mode})"
+            
+            return [TextContent(
+                type="text",
+                text=f"Render bounds: {bounds_str}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get render bounds: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "set_project_render_bounds":
+        bounds_mode = arguments["bounds_mode"]
+        
+        # Get current render settings
+        settings_result = await bridge.call_lua("GetSetProjectInfo", [0, "RENDER_SETTINGS", 0, False])
+        current_settings = int(settings_result.get("ret", 0)) if settings_result.get("ok") else 0
+        
+        # Clear bounds bits (0-1) and set new mode
+        new_settings = (current_settings & ~0x03) | (bounds_mode & 0x03)
+        
+        result = await bridge.call_lua("GetSetProjectInfo", [0, "RENDER_SETTINGS", new_settings, True])
+        
+        if result.get("ok"):
+            if bounds_mode == 0:
+                bounds_str = "Entire project"
+            elif bounds_mode == 1:
+                bounds_str = "Time selection"
+            elif bounds_mode == 2:
+                bounds_str = "Custom"
+            else:
+                bounds_str = f"Mode {bounds_mode}"
+            
+            return [TextContent(
+                type="text",
+                text=f"Set render bounds to: {bounds_str}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set render bounds: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_project_notes":
+        result = await bridge.call_lua("GetSetProjectNotes", [0, False, ""])
+        
+        if result.get("ok"):
+            notes = result.get("ret", "")
+            if notes:
+                return [TextContent(
+                    type="text",
+                    text=f"Project notes: {notes}"
+                )]
+            else:
+                return [TextContent(
+                    type="text",
+                    text="Project notes: (empty)"
+                )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get project notes: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "set_project_notes":
+        notes = arguments["notes"]
+        
+        result = await bridge.call_lua("GetSetProjectNotes", [0, True, notes])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Set project notes successfully"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set project notes: {result.get('error', 'Unknown error')}"
             )]
     
     else:
