@@ -328,3 +328,157 @@ async def test_time_selection(reaper_mcp_client):
     )
     print(f"Get loop range result: {result}")
     assert "20.000s to 25.000s" in result.content[0].text
+
+@pytest.mark.asyncio
+async def test_transport_controls(reaper_mcp_client):
+    """Test basic transport controls"""
+    # Test play
+    result = await reaper_mcp_client.call_tool(
+        "play",
+        {}
+    )
+    print(f"Play result: {result}")
+    assert "Successfully executed play" in result.content[0].text
+    
+    # Test pause
+    result = await reaper_mcp_client.call_tool(
+        "pause",
+        {}
+    )
+    print(f"Pause result: {result}")
+    assert "Successfully executed pause" in result.content[0].text
+    
+    # Test stop
+    result = await reaper_mcp_client.call_tool(
+        "stop",
+        {}
+    )
+    print(f"Stop result: {result}")
+    assert "Successfully executed stop" in result.content[0].text
+    
+    # Test record
+    result = await reaper_mcp_client.call_tool(
+        "record",
+        {}
+    )
+    print(f"Record result: {result}")
+    assert "Successfully started recording" in result.content[0].text
+    
+    # Stop recording
+    result = await reaper_mcp_client.call_tool(
+        "stop",
+        {}
+    )
+    print(f"Stop recording result: {result}")
+
+@pytest.mark.asyncio
+async def test_set_play_state(reaper_mcp_client):
+    """Test setting play state with CSurf_SetPlayState"""
+    # Test play
+    result = await reaper_mcp_client.call_tool(
+        "set_play_state",
+        {
+            "play": True,
+            "pause": False,
+            "record": False
+        }
+    )
+    print(f"Set play state result: {result}")
+    assert "Transport state set to: play" in result.content[0].text
+    
+    # Test pause
+    result = await reaper_mcp_client.call_tool(
+        "set_play_state",
+        {
+            "play": False,
+            "pause": True,
+            "record": False
+        }
+    )
+    print(f"Set pause state result: {result}")
+    assert "Transport state set to: pause" in result.content[0].text
+    
+    # Test record
+    result = await reaper_mcp_client.call_tool(
+        "set_play_state",
+        {
+            "play": False,
+            "pause": False,
+            "record": True
+        }
+    )
+    print(f"Set record state result: {result}")
+    assert "Transport state set to: record" in result.content[0].text
+    
+    # Test stop (all false)
+    result = await reaper_mcp_client.call_tool(
+        "set_play_state",
+        {
+            "play": False,
+            "pause": False,
+            "record": False
+        }
+    )
+    print(f"Set stop state result: {result}")
+    assert "Transport state set to: stopped" in result.content[0].text
+    
+    # Test play + record
+    result = await reaper_mcp_client.call_tool(
+        "set_play_state",
+        {
+            "play": True,
+            "pause": False,
+            "record": True
+        }
+    )
+    print(f"Set play+record state result: {result}")
+    assert "play" in result.content[0].text
+    assert "record" in result.content[0].text
+
+@pytest.mark.asyncio
+async def test_set_repeat_state(reaper_mcp_client):
+    """Test setting repeat/loop state"""
+    # Enable repeat
+    result = await reaper_mcp_client.call_tool(
+        "set_repeat_state",
+        {"repeat": True}
+    )
+    print(f"Enable repeat result: {result}")
+    assert "Repeat/loop enabled" in result.content[0].text
+    
+    # Disable repeat
+    result = await reaper_mcp_client.call_tool(
+        "set_repeat_state",
+        {"repeat": False}
+    )
+    print(f"Disable repeat result: {result}")
+    assert "Repeat/loop disabled" in result.content[0].text
+
+@pytest.mark.asyncio
+async def test_get_play_state(reaper_mcp_client):
+    """Test getting playback state"""
+    # Stop first to ensure known state
+    await reaper_mcp_client.call_tool("stop", {})
+    
+    # Get play state when stopped
+    result = await reaper_mcp_client.call_tool(
+        "get_play_state",
+        {}
+    )
+    print(f"Get play state (stopped) result: {result}")
+    assert "playback state: 0" in result.content[0].text  # 0 = stopped
+    
+    # Start playing
+    await reaper_mcp_client.call_tool("play", {})
+    
+    # Get play state when playing
+    result = await reaper_mcp_client.call_tool(
+        "get_play_state",
+        {}
+    )
+    print(f"Get play state (playing) result: {result}")
+    assert "playback state:" in result.content[0].text
+    # Should be 1 (playing) but might change quickly
+    
+    # Stop playback
+    await reaper_mcp_client.call_tool("stop", {})

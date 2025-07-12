@@ -399,6 +399,24 @@ function main()
             elseif fname == "CSurf_OnPause" then
                     reaper.CSurf_OnPause()
                     response.ok = true
+            elseif fname == "CSurf_SetPlayState" then
+                if #args >= 3 then
+                    local play = args[1]
+                    local pause = args[2]
+                    local rec = args[3]
+                    reaper.CSurf_SetPlayState(play and 1 or 0, pause and 1 or 0, rec and 1 or 0, 0)
+                    response.ok = true
+                else
+                    response.error = "CSurf_SetPlayState requires 3 arguments (play, pause, rec)"
+                end
+            elseif fname == "CSurf_SetRepeatState" then
+                if #args >= 1 then
+                    local rep = args[1]
+                    reaper.CSurf_SetRepeatState(rep and 1 or 0, 0)
+                    response.ok = true
+                else
+                    response.error = "CSurf_SetRepeatState requires 1 argument (repeat)"
+                end
             elseif fname == "Main_OnCommand" then
                 if #args >= 1 then
                     reaper.Main_OnCommand(args[1], args[2])

@@ -579,6 +579,52 @@ async def list_tools():
             }
         ),
         Tool(
+            name="record",
+            description="Start recording",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="set_play_state",
+            description="Set the transport play state (play, pause, record)",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "play": {
+                        "type": "boolean",
+                        "description": "Set play state"
+                    },
+                    "pause": {
+                        "type": "boolean", 
+                        "description": "Set pause state"
+                    },
+                    "record": {
+                        "type": "boolean",
+                        "description": "Set record state"
+                    }
+                },
+                "required": ["play", "pause", "record"]
+            }
+        ),
+        Tool(
+            name="set_repeat_state",
+            description="Set the repeat/loop state",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "repeat": {
+                        "type": "boolean",
+                        "description": "Enable or disable repeat/loop"
+                    }
+                },
+                "required": ["repeat"]
+            }
+        ),
+        Tool(
             name="execute_action",
             description="Execute a REAPER action by command ID",
             inputSchema={
@@ -1402,6 +1448,57 @@ async def call_tool(name: str, arguments: dict):
             return [TextContent(
                 type="text",
                 text=f"Failed to pause: {result.get('error', 'Unknown error')}"
+            )]
+    elif name == "record":
+        
+        result = bridge.call_lua("Main_OnCommand", [1013, 0])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Successfully started recording"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to start recording: {result.get('error', 'Unknown error')}"
+            )]
+    elif name == "set_play_state":
+        play = arguments["play"]
+        pause = arguments["pause"]
+        record = arguments["record"]
+        
+        result = bridge.call_lua("CSurf_SetPlayState", [play, pause, record])
+        
+        if result.get("ok"):
+            states = []
+            if play: states.append("play")
+            if pause: states.append("pause") 
+            if record: states.append("record")
+            state_str = ", ".join(states) if states else "stopped"
+            return [TextContent(
+                type="text",
+                text=f"Transport state set to: {state_str}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set play state: {result.get('error', 'Unknown error')}"
+            )]
+    elif name == "set_repeat_state":
+        repeat = arguments["repeat"]
+        
+        result = bridge.call_lua("CSurf_SetRepeatState", [repeat])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Repeat/loop {'enabled' if repeat else 'disabled'}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set repeat state: {result.get('error', 'Unknown error')}"
             )]
     elif name == "execute_action":
         command_id = arguments["command_id"]

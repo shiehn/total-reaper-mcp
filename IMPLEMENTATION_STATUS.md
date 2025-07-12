@@ -3,7 +3,7 @@
 This document tracks which ReaScript API methods have been implemented in the REAPER MCP Server.
 
 ## Implementation Statistics
-- **Total Implemented**: 45 methods (17 original + 28 new)
+- **Total Implemented**: 49 methods (17 original + 32 new)
 - **Ready to Implement**: Many more available in ReaScript API
 - **ReaScript API Version**: REAPER 6.83+ (embedded Lua 5.4)
 
@@ -47,13 +47,17 @@ This document tracks which ReaScript API methods have been implemented in the RE
 - [x] `GetProjectPath` - Get the current project path
 - [x] `Main_SaveProject` - Save the current project
 
-### ✅ Transport & Playback (6/6 implemented)
+### ✅ Transport & Playback (10/10 implemented)
 - [x] `GetCursorPosition` - Get the edit cursor position in seconds
 - [x] `SetEditCurPos` - Set the edit cursor position
 - [x] `GetPlayState` - Get current playback state
 - [x] `CSurf_OnPlay` - Start playback
 - [x] `CSurf_OnStop` - Stop playback
 - [x] `CSurf_OnPause` - Pause playback
+- [x] `CSurf_SetPlayState` - Set play/pause/record state directly
+- [x] `CSurf_SetRepeatState` - Set repeat/loop state
+- [x] `Main_OnCommand(1013)` - Start recording (via record tool)
+- [x] Transport state management - Comprehensive play state control
 
 ### ✅ Actions & Commands (1/1 implemented)
 - [x] `Main_OnCommand` - Execute a REAPER action by command ID
@@ -112,11 +116,15 @@ Each implemented method should have:
 - Edge case tests where applicable
 
 ## Recent Updates (2025-07-12)
-Added 28 new methods covering:
+Added 32 new methods covering:
 - Track volume and pan controls
 - Media item management
 - Project management
-- Transport and playback control
+- Transport and playback control (including new methods):
+  - CSurf_SetPlayState for direct play/pause/record control
+  - CSurf_SetRepeatState for repeat/loop control
+  - Record command via Main_OnCommand(1013)
+  - Comprehensive transport state management
 - Action execution
 - Undo system
 - UI updates
