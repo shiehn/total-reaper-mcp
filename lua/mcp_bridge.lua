@@ -129,6 +129,19 @@ function main()
                 else
                     response.error = "SetTrackSelected requires 2 arguments (trackidx, selected)"
                 end
+            elseif fname == "GetTrackName" then
+                if #args >= 1 then
+                    local track = reaper.GetTrack(0, args[1])
+                    if track then
+                        local ok, name = reaper.GetTrackName(track)
+                        response.ok = true
+                        response.ret = name
+                    else
+                        response.error = "Track not found at index " .. tostring(args[1])
+                    end
+                else
+                    response.error = "GetTrackName requires 1 argument (trackidx)"
+                end
             else
                 response.error = "Unknown function: " .. fname
             end
