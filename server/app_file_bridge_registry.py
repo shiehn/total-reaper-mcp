@@ -458,7 +458,7 @@ async def call_tool(name: str, arguments: dict):
             )]
     
     elif name == "execute_action":
-        action_id = arguments["action_id"]
+        action_id = arguments["command_id"]
         
         result = await bridge.call_lua("Main_OnCommand", [action_id, 0])
         
