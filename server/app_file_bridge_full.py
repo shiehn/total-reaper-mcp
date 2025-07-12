@@ -1424,6 +1424,106 @@ async def list_tools():
                 },
                 "required": ["track_index", "send_index"]
             }
+        ),
+        Tool(
+            name="get_project_tempo",
+            description="Get the current project tempo in BPM",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        ),
+        Tool(
+            name="set_project_tempo",
+            description="Set the project tempo in BPM",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "tempo": {
+                        "type": "number",
+                        "description": "Tempo in BPM",
+                        "minimum": 1,
+                        "maximum": 960
+                    }
+                },
+                "required": ["tempo"]
+            }
+        ),
+        Tool(
+            name="get_project_time_signature",
+            description="Get the current project time signature",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        ),
+        Tool(
+            name="set_project_time_signature",
+            description="Set the project time signature",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "numerator": {
+                        "type": "integer",
+                        "description": "Time signature numerator (e.g., 4 for 4/4)",
+                        "minimum": 1,
+                        "maximum": 32
+                    },
+                    "denominator": {
+                        "type": "integer",
+                        "description": "Time signature denominator (e.g., 4 for 4/4)",
+                        "enum": [1, 2, 4, 8, 16, 32]
+                    }
+                },
+                "required": ["numerator", "denominator"]
+            }
+        ),
+        Tool(
+            name="get_tempo_at_position",
+            description="Get the tempo at a specific time position",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "position": {
+                        "type": "number",
+                        "description": "Time position in seconds"
+                    }
+                },
+                "required": ["position"]
+            }
+        ),
+        Tool(
+            name="insert_tempo_marker",
+            description="Insert a tempo/time signature marker",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "position": {
+                        "type": "number",
+                        "description": "Position in seconds"
+                    },
+                    "tempo": {
+                        "type": "number",
+                        "description": "Tempo in BPM",
+                        "minimum": 1,
+                        "maximum": 960
+                    },
+                    "time_sig_numerator": {
+                        "type": "integer",
+                        "description": "Time signature numerator",
+                        "minimum": 1,
+                        "maximum": 32,
+                        "default": null
+                    },
+                    "time_sig_denominator": {
+                        "type": "integer",
+                        "description": "Time signature denominator",
+                        "enum": [1, 2, 4, 8, 16, 32],
+                        "default": null
+                    }
+                },
+                "required": ["position", "tempo"]
+            }
         )
     ]
 
@@ -3351,6 +3451,141 @@ async def call_tool(name: str, arguments: dict):
             return [TextContent(
                 type="text",
                 text=f"Failed to get send info: {vol_result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_project_tempo":
+        # Get master tempo
+        result = await bridge.call_lua("Master_GetTempo")
+        
+        if result.get("ok"):
+            tempo = result.get("ret", 120.0)
+            return [TextContent(
+                type="text",
+                text=f"Project tempo: {tempo:.1f} BPM"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get project tempo: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "set_project_tempo":
+        tempo = arguments["tempo"]
+        
+        # Set master tempo
+        result = await bridge.call_lua("SetTempoTimeSigMarker", [0, -1, -1, -1, -1, tempo, 0, 0, False])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Set project tempo to {tempo:.1f} BPM"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set project tempo: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_project_time_signature":
+        # Get time signature at edit cursor
+        result = await bridge.call_lua("TimeMap_GetTimeSigAtTime", [0, 0, 0, 0])
+        
+        if result.get("ok"):
+            ret_values = result.get("ret", [])
+            if isinstance(ret_values, list) and len(ret_values) >= 3:
+                num, denom = ret_values[1], ret_values[2]
+                return [TextContent(
+                    type="text",
+                    text=f"Time signature: {num}/{denom}"
+                )]
+            else:
+                return [TextContent(
+                    type="text",
+                    text="Failed to parse time signature"
+                )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get time signature: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "set_project_time_signature":
+        numerator = arguments["numerator"]
+        denominator = arguments["denominator"]
+        
+        # Set time signature at project start
+        result = await bridge.call_lua("SetTempoTimeSigMarker", [0, -1, -1, -1, -1, -1, numerator, denominator, False])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Set time signature to {numerator}/{denominator}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set time signature: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_tempo_at_position":
+        position = arguments["position"]
+        
+        # Get tempo at specific time
+        result = await bridge.call_lua("TimeMap_GetDividedBpmAtTime", [position])
+        
+        if result.get("ok"):
+            tempo = result.get("ret", 120.0)
+            return [TextContent(
+                type="text",
+                text=f"Tempo at {position:.3f}s: {tempo:.1f} BPM"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get tempo at position: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "insert_tempo_marker":
+        position = arguments["position"]
+        tempo = arguments["tempo"]
+        numerator = arguments.get("time_sig_numerator", None)
+        denominator = arguments.get("time_sig_denominator", None)
+        
+        # Convert position to measure and beat
+        measures_result = await bridge.call_lua("TimeMap_timeToBeats", [position])
+        
+        if measures_result.get("ok"):
+            beats = measures_result.get("ret", 0.0)
+            
+            # If time signature not provided, get current
+            if numerator is None or denominator is None:
+                ts_result = await bridge.call_lua("TimeMap_GetTimeSigAtTime", [0, position, 0, 0])
+                if ts_result.get("ok") and isinstance(ts_result.get("ret"), list) and len(ts_result.get("ret", [])) >= 3:
+                    if numerator is None:
+                        numerator = ts_result.get("ret")[1]
+                    if denominator is None:
+                        denominator = ts_result.get("ret")[2]
+                else:
+                    numerator = numerator or 4
+                    denominator = denominator or 4
+            
+            # Insert tempo marker
+            result = await bridge.call_lua("SetTempoTimeSigMarker", [0, -1, position, -1, -1, tempo, numerator, denominator, True])
+            
+            if result.get("ok"):
+                return [TextContent(
+                    type="text",
+                    text=f"Inserted tempo marker at {position:.3f}s: {tempo:.1f} BPM, {numerator}/{denominator}"
+                )]
+            else:
+                return [TextContent(
+                    type="text",
+                    text=f"Failed to insert tempo marker: {result.get('error', 'Unknown error')}"
+                )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to convert position to beats: {measures_result.get('error', 'Unknown error')}"
             )]
     
     else:
