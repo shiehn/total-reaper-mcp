@@ -502,9 +502,10 @@ async def call_tool(name: str, arguments: dict):
         result = await bridge.call_lua("GetSet_LoopTimeRange", [True, is_loop, start_time, end_time, False])
         
         if result.get("ok"):
+            range_type = "loop" if is_loop else "time selection"
             return [TextContent(
                 type="text",
-                text=f"Successfully set time selection from {start_time:.3f}s to {end_time:.3f}s"
+                text=f"Successfully set {range_type} from {start_time:.3f}s to {end_time:.3f}s"
             )]
         else:
             return [TextContent(

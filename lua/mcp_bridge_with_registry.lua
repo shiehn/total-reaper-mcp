@@ -502,6 +502,11 @@ local function process_request()
                             response.error = "AddProjectMarker requires at least 5 arguments"
                         end
                     
+                    elseif fname == "CountProjectMarkers" then
+                        local ret, num_markers, num_regions = reaper.CountProjectMarkers(args[1] or 0)
+                        response.ok = true
+                        response.ret = {num_markers, num_regions}
+                    
                     elseif fname == "GetSet_LoopTimeRange" then
                         if #args >= 2 then
                             if args[1] then  -- Set mode

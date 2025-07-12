@@ -1775,7 +1775,7 @@ async def call_tool(name: str, arguments: dict):
                 num_regions = ret[1]
                 return [TextContent(
                     type="text",
-                    text=f"Project has {num_markers} markers and {num_regions} regions"
+                    text=f"Total markers/regions: {num_markers} markers, {num_regions} regions"
                 )]
             else:
                 return [TextContent(
