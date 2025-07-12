@@ -96,6 +96,25 @@ async def list_tools():
                 },
                 "required": ["index"]
             }
+        ),
+        Tool(
+            name="set_track_selected",
+            description="Select or deselect a track",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "The track index (0-based)",
+                        "minimum": 0
+                    },
+                    "selected": {
+                        "type": "boolean",
+                        "description": "Whether to select (true) or deselect (false) the track"
+                    }
+                },
+                "required": ["track_index", "selected"]
+            }
         )
     ]
 
@@ -170,6 +189,33 @@ async def call_tool(name: str, arguments: dict):
             return [TextContent(
                 type="text",
                 text=f"Failed to get track: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "set_track_selected":
+        track_index = arguments["track_index"]
+        selected = arguments["selected"]
+        
+        # First get the track pointer
+        track_result = bridge.call_lua("GetTrack", [0, track_index])
+        if not track_result.get("ok") or not track_result.get("ret"):
+            return [TextContent(
+                type="text",
+                text=f"Failed to find track at index {track_index}"
+            )]
+        
+        # Then set its selection state
+        result = bridge.call_lua("SetTrackSelected", [track_index, selected])
+        
+        if result.get("ok"):
+            action = "selected" if selected else "deselected"
+            return [TextContent(
+                type="text",
+                text=f"Track at index {track_index} has been {action}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set track selection: {result.get('error', 'Unknown error')}"
             )]
     
     else:

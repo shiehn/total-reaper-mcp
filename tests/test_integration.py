@@ -82,6 +82,39 @@ async def test_get_track(reaper_mcp_client):
     assert "No track found at index 999" in result.content[0].text
 
 @pytest.mark.asyncio
+async def test_set_track_selected(reaper_mcp_client):
+    """Test selecting and deselecting tracks"""
+    # First ensure we have at least one track
+    result = await reaper_mcp_client.call_tool(
+        "insert_track",
+        {"index": 0, "use_defaults": True}
+    )
+    
+    # Select the track
+    result = await reaper_mcp_client.call_tool(
+        "set_track_selected",
+        {"track_index": 0, "selected": True}
+    )
+    print(f"Select track result: {result}")
+    assert "Track at index 0 has been selected" in result.content[0].text
+    
+    # Deselect the track
+    result = await reaper_mcp_client.call_tool(
+        "set_track_selected",
+        {"track_index": 0, "selected": False}
+    )
+    print(f"Deselect track result: {result}")
+    assert "Track at index 0 has been deselected" in result.content[0].text
+    
+    # Try to select a non-existent track
+    result = await reaper_mcp_client.call_tool(
+        "set_track_selected",
+        {"track_index": 999, "selected": True}
+    )
+    print(f"Select non-existent track result: {result}")
+    assert "Failed to find track at index 999" in result.content[0].text
+
+@pytest.mark.asyncio
 async def test_list_tools(reaper_mcp_client):
     """Test listing available tools"""
     tools = await reaper_mcp_client.list_tools()
@@ -91,6 +124,7 @@ async def test_list_tools(reaper_mcp_client):
     assert "get_track_count" in tool_names
     assert "get_reaper_version" in tool_names
     assert "get_track" in tool_names
+    assert "set_track_selected" in tool_names
     
     # Verify tool schemas
     insert_track_tool = next(t for t in tools if t.name == "insert_track")
@@ -99,3 +133,7 @@ async def test_list_tools(reaper_mcp_client):
     
     get_track_tool = next(t for t in tools if t.name == "get_track")
     assert "index" in get_track_tool.inputSchema["properties"]
+    
+    set_track_selected_tool = next(t for t in tools if t.name == "set_track_selected")
+    assert "track_index" in set_track_selected_tool.inputSchema["properties"]
+    assert "selected" in set_track_selected_tool.inputSchema["properties"]
