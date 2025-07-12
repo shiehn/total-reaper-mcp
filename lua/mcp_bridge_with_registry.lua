@@ -456,10 +456,20 @@ local function process_request()
                     
                     elseif fname == "SetPlayState" then
                         if #args >= 3 then
-                            local play = args[1] and 1 or 0
-                            local pause = args[2] and 1 or 0
-                            local rec = args[3] and 1 or 0
-                            reaper.CSurf_SetPlayState(play, pause, rec, 0)
+                            local play = args[1]
+                            local pause = args[2]
+                            local rec = args[3]
+                            
+                            if rec then
+                                reaper.CSurf_OnRecord()
+                            elseif play then
+                                reaper.CSurf_OnPlay()
+                            elseif pause then
+                                reaper.CSurf_OnPause()
+                            else
+                                reaper.CSurf_OnStop()
+                            end
+                            
                             response.ok = true
                         else
                             response.error = "SetPlayState requires 3 arguments"
@@ -467,7 +477,8 @@ local function process_request()
                     
                     elseif fname == "GetSetRepeat" then
                         if #args >= 1 then
-                            local prev = reaper.GetSetRepeat(args[1])
+                            local val = args[1] and 1 or 0
+                            local prev = reaper.GetSetRepeat(val)
                             response.ok = true
                             response.ret = prev
                         else

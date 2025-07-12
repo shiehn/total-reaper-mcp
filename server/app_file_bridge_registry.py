@@ -427,7 +427,7 @@ async def call_tool(name: str, arguments: dict):
             elif pause:
                 state_text = "pause"
             else:
-                state_text = "stop"
+                state_text = "stopped"
             
             return [TextContent(
                 type="text",

@@ -1835,7 +1835,7 @@ async def call_tool(name: str, arguments: dict):
                 range_type = "loop" if is_loop else "time selection"
                 return [TextContent(
                     type="text",
-                    text=f"Current {range_type}: {start:.3f}s to {end:.3f}s"
+                    text=f"Current {range_type}: {start:.3f}s to {end:.3f}s (duration: {end - start:.3f}s)"
                 )]
             else:
                 return [TextContent(
