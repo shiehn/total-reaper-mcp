@@ -307,15 +307,17 @@ local function process_request()
                     elseif fname == "SetTrackSelected" then
                         if #args >= 2 then
                             local track = args[1]
+                            local track_index = track
                             if type(track) == "number" then
                                 -- Track index provided
+                                track_index = track
                                 track = reaper.GetTrack(0, track)
                             end
                             if track then
                                 reaper.SetTrackSelected(track, args[2])
                                 response.ok = true
                             else
-                                response.error = "Track not found"
+                                response.error = "Failed to find track at index " .. tostring(track_index)
                             end
                         else
                             response.error = "SetTrackSelected requires 2 arguments"
@@ -393,7 +395,7 @@ local function process_request()
                                     end
                                 end
                             else
-                                response.error = "Track not found at index " .. tostring(args[1])
+                                response.error = "Failed to find track at index " .. tostring(args[1])
                             end
                         else
                             response.error = "DeleteTrackByIndex requires track index"

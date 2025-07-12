@@ -263,7 +263,7 @@ async def call_tool(name: str, arguments: dict):
         else:
             return [TextContent(
                 type="text",
-                text=f"Failed to delete track: {result.get('error', 'Unknown error')}"
+                text=result.get('error', 'Failed to delete track')
             )]
     
     elif name == "get_track_mute":
@@ -402,7 +402,7 @@ async def call_tool(name: str, arguments: dict):
             
             return [TextContent(
                 type="text",
-                text=f"Play state: {state_text}"
+                text=f"playback state: {state}"
             )]
         else:
             return [TextContent(
@@ -510,6 +510,62 @@ async def call_tool(name: str, arguments: dict):
             return [TextContent(
                 type="text",
                 text=f"Failed to set time selection: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "play":
+        result = await bridge.call_lua("Main_OnCommand", [1007, 0])  # Play command
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text="Successfully executed play"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to execute play command: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "stop":
+        result = await bridge.call_lua("Main_OnCommand", [1016, 0])  # Stop command
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text="Successfully executed stop"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to execute stop command: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "pause":
+        result = await bridge.call_lua("Main_OnCommand", [1008, 0])  # Pause command
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text="Successfully executed pause"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to execute pause command: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "record":
+        result = await bridge.call_lua("Main_OnCommand", [1013, 0])  # Record command
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text="Successfully started recording"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to execute record command: {result.get('error', 'Unknown error')}"
             )]
     
     else:

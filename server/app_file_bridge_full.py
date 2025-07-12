@@ -1544,7 +1544,7 @@ async def call_tool(name: str, arguments: dict):
             
             return [TextContent(
                 type="text",
-                text=f"Playback state: {state_text}"
+                text=f"playback state: {state}"
             )]
         else:
             return [TextContent(
