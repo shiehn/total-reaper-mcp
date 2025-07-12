@@ -2,6 +2,12 @@
 
 An MCP (Model Context Protocol) server that exposes REAPER DAW functionality through a clean API interface.
 
+## Requirements
+
+- REAPER 6.83+ (includes embedded Lua 5.4 and full ReaScript API)
+- Python 3.8+
+- macOS, Windows, or Linux
+
 ## Architecture
 
 This project uses a hybrid Lua-Python approach:
@@ -52,9 +58,26 @@ pytest tests/test_integration.py -v
 
 ## Available Tools
 
+Currently implemented ReaScript methods (13 total):
+
+### Track Management
 - `insert_track`: Insert a new track at specified index
 - `get_track_count`: Get the number of tracks in current project  
+- `get_track`: Get track by index
+- `get_master_track`: Get the master track
+- `delete_track`: Delete a track by index
+- `set_track_selected`: Select or deselect a track
+- `get_track_name`: Get track name
+- `set_track_name`: Set track name
+
+### Track Controls
+- `get_track_mute` / `set_track_mute`: Get/set track mute state
+- `get_track_solo` / `set_track_solo`: Get/set track solo state
+
+### System
 - `get_reaper_version`: Get REAPER version string
+
+For a complete list of implemented and planned methods, see [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
 
 ## Communication Flow
 
@@ -69,3 +92,26 @@ pytest tests/test_integration.py -v
 ```bash
 ./scripts/uninstall.sh
 ```
+
+## API Reference
+
+This project implements a subset of the [REAPER ReaScript API](https://www.reaper.fm/sdk/reascript/reascripthelp.html). The ReaScript API provides comprehensive control over REAPER's functionality including:
+
+- Track management and routing
+- Media items and takes
+- MIDI editing
+- Envelopes and automation  
+- Effects and plugins
+- Project management
+- Transport control
+- And much more
+
+See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) for details on which methods are currently implemented.
+
+## Contributing
+
+When adding new ReaScript methods:
+1. Check the implementation checklist in IMPLEMENTATION_STATUS.md
+2. Follow the existing patterns in the codebase
+3. Include tests for all new methods
+4. Update the implementation status document
