@@ -926,6 +926,31 @@ function main()
                 else
                     response.error = "SetMediaItemColor requires 2 arguments"
                 end
+            elseif fname == "GetMediaTrackInfo_Value" then
+                if #args >= 2 then
+                    local track = reaper.GetTrack(0, args[1])
+                    if track then
+                        local value = reaper.GetMediaTrackInfo_Value(track, args[2])
+                        response.ok = true
+                        response.ret = value
+                    else
+                        response.error = "Track not found"
+                    end
+                else
+                    response.error = "GetMediaTrackInfo_Value requires 2 arguments"
+                end
+            elseif fname == "SetMediaTrackInfo_Value" then
+                if #args >= 3 then
+                    local track = reaper.GetTrack(0, args[1])
+                    if track then
+                        reaper.SetMediaTrackInfo_Value(track, args[2], args[3])
+                        response.ok = true
+                    else
+                        response.error = "Track not found"
+                    end
+                else
+                    response.error = "SetMediaTrackInfo_Value requires 3 arguments"
+                end
 
             else
                 response.error = "Unknown function: " .. fname

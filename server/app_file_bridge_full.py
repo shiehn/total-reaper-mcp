@@ -1974,6 +1974,103 @@ async def list_tools():
                 },
                 "required": ["item_index", "color"]
             }
+        ),
+        Tool(
+            name="get_track_record_mode",
+            description="Get track record mode",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index (0-based)"
+                    }
+                },
+                "required": ["track_index"]
+            }
+        ),
+        Tool(
+            name="set_track_record_mode",
+            description="Set track record mode",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index (0-based)"
+                    },
+                    "mode": {
+                        "type": "integer",
+                        "description": "Record mode (0=input, 1=stereo out, 2=none, 3=stereo out with latency compensation, 4=midi output, 5=mono out, 6=mono out with latency compensation, 7=midi overdub, 8=midi replace)",
+                        "enum": [0, 1, 2, 3, 4, 5, 6, 7, 8]
+                    }
+                },
+                "required": ["track_index", "mode"]
+            }
+        ),
+        Tool(
+            name="get_track_record_input",
+            description="Get track record input",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index (0-based)"
+                    }
+                },
+                "required": ["track_index"]
+            }
+        ),
+        Tool(
+            name="set_track_record_input",
+            description="Set track record input",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index (0-based)"
+                    },
+                    "input": {
+                        "type": "integer",
+                        "description": "Input index (-1=none, 0-511=mono hardware input, 512-1023=stereo hardware input pair, 1024+=ReaRoute/loopback)"
+                    }
+                },
+                "required": ["track_index", "input"]
+            }
+        ),
+        Tool(
+            name="get_track_record_arm",
+            description="Get track record arm state",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index (0-based)"
+                    }
+                },
+                "required": ["track_index"]
+            }
+        ),
+        Tool(
+            name="set_track_record_arm",
+            description="Set track record arm state",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index (0-based)"
+                    },
+                    "armed": {
+                        "type": "boolean",
+                        "description": "Whether to arm the track for recording"
+                    }
+                },
+                "required": ["track_index", "armed"]
+            }
         )
     ]
 
@@ -4723,6 +4820,152 @@ async def call_tool(name: str, arguments: dict):
             return [TextContent(
                 type="text",
                 text=f"Failed to set media item color: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_track_record_mode":
+        track_index = arguments["track_index"]
+        
+        result = await bridge.call_lua("GetMediaTrackInfo_Value", [track_index, "I_RECMODE"])
+        
+        if result.get("ok"):
+            mode = int(result.get("ret", 0))
+            mode_names = {
+                0: "Input",
+                1: "Stereo out",
+                2: "None (monitoring only)",
+                3: "Stereo out with latency compensation",
+                4: "MIDI output",
+                5: "Mono out",
+                6: "Mono out with latency compensation",
+                7: "MIDI overdub",
+                8: "MIDI replace"
+            }
+            mode_name = mode_names.get(mode, f"Unknown mode {mode}")
+            return [TextContent(
+                type="text",
+                text=f"Track {track_index} record mode: {mode_name} ({mode})"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get track record mode: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "set_track_record_mode":
+        track_index = arguments["track_index"]
+        mode = arguments["mode"]
+        
+        result = await bridge.call_lua("SetMediaTrackInfo_Value", [track_index, "I_RECMODE", mode])
+        
+        if result.get("ok"):
+            mode_names = {
+                0: "Input",
+                1: "Stereo out",
+                2: "None (monitoring only)",
+                3: "Stereo out with latency compensation",
+                4: "MIDI output",
+                5: "Mono out",
+                6: "Mono out with latency compensation",
+                7: "MIDI overdub",
+                8: "MIDI replace"
+            }
+            mode_name = mode_names.get(mode, f"mode {mode}")
+            return [TextContent(
+                type="text",
+                text=f"Set track {track_index} record mode to: {mode_name}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set track record mode: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_track_record_input":
+        track_index = arguments["track_index"]
+        
+        result = await bridge.call_lua("GetMediaTrackInfo_Value", [track_index, "I_RECINPUT"])
+        
+        if result.get("ok"):
+            input_val = int(result.get("ret", -1))
+            if input_val == -1:
+                input_name = "None"
+            elif input_val < 512:
+                input_name = f"Mono hardware input {input_val + 1}"
+            elif input_val < 1024:
+                pair = (input_val - 512) // 2 + 1
+                input_name = f"Stereo hardware input pair {pair}"
+            else:
+                input_name = f"ReaRoute/loopback {input_val - 1024 + 1}"
+            
+            return [TextContent(
+                type="text",
+                text=f"Track {track_index} record input: {input_name} ({input_val})"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get track record input: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "set_track_record_input":
+        track_index = arguments["track_index"]
+        input_val = arguments["input"]
+        
+        result = await bridge.call_lua("SetMediaTrackInfo_Value", [track_index, "I_RECINPUT", input_val])
+        
+        if result.get("ok"):
+            if input_val == -1:
+                input_name = "None"
+            elif input_val < 512:
+                input_name = f"Mono hardware input {input_val + 1}"
+            elif input_val < 1024:
+                pair = (input_val - 512) // 2 + 1
+                input_name = f"Stereo hardware input pair {pair}"
+            else:
+                input_name = f"ReaRoute/loopback {input_val - 1024 + 1}"
+            
+            return [TextContent(
+                type="text",
+                text=f"Set track {track_index} record input to: {input_name}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set track record input: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_track_record_arm":
+        track_index = arguments["track_index"]
+        
+        result = await bridge.call_lua("GetMediaTrackInfo_Value", [track_index, "I_RECARM"])
+        
+        if result.get("ok"):
+            armed = result.get("ret", 0) > 0
+            return [TextContent(
+                type="text",
+                text=f"Track {track_index} record arm: {'Armed' if armed else 'Not armed'}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get track record arm state: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "set_track_record_arm":
+        track_index = arguments["track_index"]
+        armed = arguments["armed"]
+        
+        result = await bridge.call_lua("SetMediaTrackInfo_Value", [track_index, "I_RECARM", 1 if armed else 0])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Track {track_index} record arm: {'Armed' if armed else 'Disarmed'}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set track record arm state: {result.get('error', 'Unknown error')}"
             )]
     
     else:

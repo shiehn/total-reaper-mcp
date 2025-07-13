@@ -3,10 +3,10 @@
 This is the consolidated master list tracking all ReaScript API methods implemented in the REAPER MCP Server.
 
 ## Implementation Statistics
-- **Total Implemented**: 181 methods
+- **Total Implemented**: 187 methods
 - **Test Coverage**: ~97%
-- **Categories**: 24
-- **Test Files**: 24
+- **Categories**: 25
+- **Test Files**: 25
 - **ReaScript API Version**: REAPER 6.83+ (embedded Lua 5.4)
 
 ## Implementation Status by Category
@@ -222,14 +222,17 @@ This is the consolidated master list tracking all ReaScript API methods implemen
 - [x] `DuplicateMediaItem` - Duplicate a media item
 - [x] `SetMediaItemColor` - Set item color
 
+### ✅ Recording Operations (6 methods)
+- [x] `GetTrackRecordMode` - Get track record mode
+- [x] `SetTrackRecordMode` - Set track record mode
+- [x] `GetTrackRecordInput` - Get track record input
+- [x] `SetTrackRecordInput` - Set track record input
+- [x] `GetTrackRecordArm` - Get track record arm state
+- [x] `SetTrackRecordArm` - Set track record arm state
+
 ## 🔮 Not Yet Implemented API Methods
 
 Based on the ReaScript API documentation, here are additional methods that could be implemented:
-
-### Recording
-- [ ] `GetSetTrackRecordMode` - Get/set record mode
-- [ ] `GetTrackRecordInput` - Get record input
-- [ ] `SetTrackRecordInput` - Set record input
 
 ### MIDI Hardware
 - [ ] `GetMIDIInputName` - Get MIDI input name
