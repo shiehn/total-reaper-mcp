@@ -9,6 +9,8 @@ import json
 import time
 import asyncio
 import logging
+import signal
+import atexit
 from pathlib import Path
 from mcp import Tool
 from mcp.types import TextContent
@@ -28,6 +30,32 @@ BRIDGE_DIR = Path(os.environ.get(
 BRIDGE_DIR.mkdir(parents=True, exist_ok=True)
 
 logger.info(f"Bridge directory: {BRIDGE_DIR}")
+
+def cleanup_bridge_files():
+    """Clean up any leftover request/response files"""
+    try:
+        for pattern in ['request_*.json', 'response_*.json']:
+            for file in BRIDGE_DIR.glob(pattern):
+                try:
+                    file.unlink()
+                    logger.debug(f"Cleaned up {file}")
+                except Exception as e:
+                    logger.warning(f"Failed to clean up {file}: {e}")
+    except Exception as e:
+        logger.error(f"Error during cleanup: {e}")
+
+# Register cleanup handlers
+atexit.register(cleanup_bridge_files)
+
+def signal_handler(signum, frame):
+    """Handle termination signals"""
+    logger.info(f"Received signal {signum}, cleaning up...")
+    cleanup_bridge_files()
+    exit(0)
+
+# Register signal handlers
+signal.signal(signal.SIGTERM, signal_handler)
+signal.signal(signal.SIGINT, signal_handler)
 
 class ReaperFileBridge:
     """File-based bridge for communicating with REAPER"""
@@ -4313,12 +4341,27 @@ async def amain():
     logger.info(f"Bridge directory: {BRIDGE_DIR}")
     logger.info("Make sure to run mcp_bridge_no_socket.lua in REAPER!")
     
-    async with stdio_server() as (read_stream, write_stream):
-        await app.run(read_stream, write_stream, app.create_initialization_options())
+    # Clean up any leftover files on startup
+    cleanup_bridge_files()
+    
+    try:
+        async with stdio_server() as (read_stream, write_stream):
+            await app.run(read_stream, write_stream, app.create_initialization_options())
+    finally:
+        # Clean up on exit
+        cleanup_bridge_files()
 
 def main():
     import sys
-    asyncio.run(amain())
+    try:
+        asyncio.run(amain())
+    except KeyboardInterrupt:
+        logger.info("Interrupted by user")
+        cleanup_bridge_files()
+    except Exception as e:
+        logger.error(f"Server error: {e}")
+        cleanup_bridge_files()
+        raise
 
 if __name__ == "__main__":
     main()
