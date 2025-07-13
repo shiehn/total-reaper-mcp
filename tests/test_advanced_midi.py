@@ -4,12 +4,18 @@ import pytest_asyncio
 import asyncio
 
 
+def assert_tools_available(available_tools, required_tools):
+    """Assert that all required tools are available, failing with clear message if not"""
+    for tool in required_tools:
+        assert tool in available_tools, f"MISSING IMPLEMENTATION: Tool '{tool}' is not implemented in the server but is required for MIDI functionality"
+
+
 @pytest.mark.asyncio
 async def test_midi_note_names(reaper_mcp_client):
     """Test MIDI note name operations"""
-    # Skip if tool not available
-    if "midi_get_note_name" not in getattr(reaper_mcp_client, '_available_tools', set()):
-        pytest.skip("midi_get_note_name tool not available in current server")
+    # Check if tool is available
+    available_tools = getattr(reaper_mcp_client, '_available_tools', set())
+    assert_tools_available(available_tools, ["midi_get_note_name"])
     
     # Test various note numbers
     test_notes = [
@@ -33,9 +39,9 @@ async def test_midi_note_names(reaper_mcp_client):
 @pytest.mark.asyncio
 async def test_midi_event_counts(reaper_mcp_client):
     """Test counting MIDI events"""
-    # Skip if required tools not available
-    if "midi_count_events" not in getattr(reaper_mcp_client, '_available_tools', set()):
-        pytest.skip("midi_count_events tool not available in current server")
+    # Check if required tools are available
+    available_tools = getattr(reaper_mcp_client, '_available_tools', set())
+    assert_tools_available(available_tools, ["midi_count_events"])
     
     # Create a track with MIDI item
     result = await reaper_mcp_client.call_tool(
@@ -85,10 +91,10 @@ async def test_midi_event_counts(reaper_mcp_client):
 @pytest.mark.asyncio
 async def test_midi_scale_operations(reaper_mcp_client):
     """Test MIDI scale operations"""
-    # Skip if required tools not available
+    # Check if required tools are available
     required_tools = ["midi_get_scale", "midi_set_scale"]
-    if not all(tool in getattr(reaper_mcp_client, '_available_tools', set()) for tool in required_tools):
-        pytest.skip("MIDI scale tools not available in current server")
+    available_tools = getattr(reaper_mcp_client, '_available_tools', set())
+    assert_tools_available(available_tools, required_tools)
     
     # Create a track with MIDI item
     result = await reaper_mcp_client.call_tool(
@@ -133,9 +139,9 @@ async def test_midi_scale_operations(reaper_mcp_client):
 @pytest.mark.asyncio
 async def test_midi_select_all_events(reaper_mcp_client):
     """Test selecting all MIDI events"""
-    # Skip if required tools not available
-    if "midi_select_all" not in getattr(reaper_mcp_client, '_available_tools', set()):
-        pytest.skip("midi_select_all tool not available in current server")
+    # Check if required tools are available
+    available_tools = getattr(reaper_mcp_client, '_available_tools', set())
+    assert_tools_available(available_tools, ["midi_select_all"])
     
     # Create a track with MIDI item
     result = await reaper_mcp_client.call_tool(
@@ -204,9 +210,9 @@ async def test_midi_select_all_events(reaper_mcp_client):
 @pytest.mark.asyncio
 async def test_midi_get_all_events(reaper_mcp_client):
     """Test getting all MIDI events data"""
-    # Skip if required tools not available
-    if "midi_get_all_events" not in getattr(reaper_mcp_client, '_available_tools', set()):
-        pytest.skip("midi_get_all_events tool not available in current server")
+    # Check if required tools are available
+    available_tools = getattr(reaper_mcp_client, '_available_tools', set())
+    assert_tools_available(available_tools, ["midi_get_all_events"])
     
     # Create a track with MIDI item
     result = await reaper_mcp_client.call_tool(

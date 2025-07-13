@@ -4,9 +4,22 @@ import pytest_asyncio
 import asyncio
 
 
+def assert_tools_available(available_tools, required_tools):
+    """Assert that all required tools are available, failing with clear message if not"""
+    for tool in required_tools:
+        assert tool in available_tools, f"MISSING IMPLEMENTATION: Tool '{tool}' is not implemented in the server but is required for audio source functionality"
+
+
 @pytest.mark.asyncio
 async def test_media_source_operations(reaper_mcp_client):
     """Test media source operations"""
+    # Check if required tools are available
+    required_tools = ["get_media_item_take_source", "get_media_source_filename", 
+                      "get_media_source_length", "get_media_source_type"]
+    available_tools = getattr(reaper_mcp_client, '_available_tools', set())
+    
+    assert_tools_available(available_tools, required_tools)
+    
     # Create a track with a media item
     result = await reaper_mcp_client.call_tool(
         "insert_track_at_index",
@@ -54,6 +67,10 @@ async def test_media_source_operations(reaper_mcp_client):
 @pytest.mark.asyncio
 async def test_pcm_source_creation(reaper_mcp_client):
     """Test PCM source creation from file"""
+    # Check if tool is available
+    available_tools = getattr(reaper_mcp_client, '_available_tools', set())
+    assert_tools_available(available_tools, ["pcm_source_create_from_file"])
+    
     # Create PCM source from file
     # Note: This test uses a placeholder filename as we don't have actual audio files
     result = await reaper_mcp_client.call_tool(
@@ -66,6 +83,10 @@ async def test_pcm_source_creation(reaper_mcp_client):
 @pytest.mark.asyncio
 async def test_media_take_peaks(reaper_mcp_client):
     """Test getting media take peak data"""
+    # Check if tool is available
+    available_tools = getattr(reaper_mcp_client, '_available_tools', set())
+    assert_tools_available(available_tools, ["get_media_item_take_peaks"])
+    
     # Create a track with a media item
     result = await reaper_mcp_client.call_tool(
         "insert_track_at_index",
@@ -104,6 +125,10 @@ async def test_media_take_peaks(reaper_mcp_client):
 @pytest.mark.asyncio
 async def test_set_media_take_source(reaper_mcp_client):
     """Test setting media take source"""
+    # Check if tool is available
+    available_tools = getattr(reaper_mcp_client, '_available_tools', set())
+    assert_tools_available(available_tools, ["set_media_item_take_source"])
+    
     # Create a track with a media item
     result = await reaper_mcp_client.call_tool(
         "insert_track_at_index",

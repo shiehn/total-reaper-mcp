@@ -3,10 +3,21 @@ import pytest
 import pytest_asyncio
 import asyncio
 
+def assert_tools_available(available_tools, required_tools):
+    """Assert that all required tools are available, failing with clear message if not"""
+    for tool in required_tools:
+        assert tool in available_tools, f"MISSING IMPLEMENTATION: Tool '{tool}' is not implemented in the server but is required for item/take property functionality"
+
 
 @pytest.mark.asyncio
 async def test_media_item_properties(reaper_mcp_client):
     """Test media item property operations"""
+    # Check if required tools are available
+    required_tools = ["get_media_item_info_value", "set_media_item_info_value"]
+    available_tools = getattr(reaper_mcp_client, '_available_tools', set())
+    
+    assert_tools_available(available_tools, required_tools)
+    
     # Create a track with item
     result = await reaper_mcp_client.call_tool(
         "insert_track_at_index",
@@ -67,6 +78,12 @@ async def test_media_item_properties(reaper_mcp_client):
 @pytest.mark.asyncio
 async def test_take_properties(reaper_mcp_client):
     """Test take property operations"""
+    # Check if required tools are available
+    required_tools = ["get_take_name", "set_take_name", "get_media_item_take_info_value", "set_media_item_take_info_value"]
+    available_tools = getattr(reaper_mcp_client, '_available_tools', set())
+    
+    assert_tools_available(available_tools, required_tools)
+    
     # Create track with item
     result = await reaper_mcp_client.call_tool(
         "insert_track_at_index",
@@ -123,6 +140,12 @@ async def test_take_properties(reaper_mcp_client):
 @pytest.mark.asyncio
 async def test_item_state_chunk(reaper_mcp_client):
     """Test item state chunk operations"""
+    # Check if required tools are available
+    required_tools = ["get_item_state_chunk", "set_item_state_chunk"]
+    available_tools = getattr(reaper_mcp_client, '_available_tools', set())
+    
+    assert_tools_available(available_tools, required_tools)
+    
     # Create track with item
     result = await reaper_mcp_client.call_tool(
         "insert_track_at_index",

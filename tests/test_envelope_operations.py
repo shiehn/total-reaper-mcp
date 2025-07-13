@@ -1,6 +1,11 @@
 import pytest
 import pytest_asyncio
 
+def assert_tools_available(available_tools, required_tools):
+    """Assert that all required tools are available, failing with clear message if not"""
+    for tool in required_tools:
+        assert tool in available_tools, f"MISSING IMPLEMENTATION: Tool '{tool}' is not implemented in the server but is required for envelope functionality"
+
 @pytest.mark.asyncio
 async def test_envelope_basic_operations(reaper_mcp_client):
     """Test basic envelope operations"""
@@ -17,7 +22,7 @@ async def test_envelope_basic_operations(reaper_mcp_client):
         {"track_index": 0, "envelope_name": "Volume"}
     )
     print(f"Get volume envelope result: {result}")
-    assert "found envelope" in result.content[0].text.lower() or "volume" in result.content[0].text.lower()
+    assert "Found envelope" in result.content[0].text and "Volume" in result.content[0].text
     
     # Count initial points (should be 0 or minimal)
     result = await reaper_mcp_client.call_tool(
@@ -39,7 +44,7 @@ async def test_envelope_basic_operations(reaper_mcp_client):
         }
     )
     print(f"Insert point result: {result}")
-    assert "inserted point" in result.content[0].text.lower()
+    assert "Inserted point at" in result.content[0].text
     
     # Insert another point at 2s with half volume
     result = await reaper_mcp_client.call_tool(
@@ -52,7 +57,7 @@ async def test_envelope_basic_operations(reaper_mcp_client):
             "shape": 0
         }
     )
-    assert "inserted point" in result.content[0].text.lower()
+    assert "Inserted point at" in result.content[0].text
     
     # Count points again
     result = await reaper_mcp_client.call_tool(
@@ -148,7 +153,7 @@ async def test_envelope_pan_automation(reaper_mcp_client):
             }
         )
         print(f"Insert pan point at {time}s: {result}")
-        assert "inserted point" in result.content[0].text.lower()
+        assert "Inserted point at" in result.content[0].text
     
     # Count pan envelope points
     result = await reaper_mcp_client.call_tool(
@@ -237,7 +242,7 @@ async def test_envelope_shapes(reaper_mcp_client):
             }
         )
         print(f"Insert {shape_name} point: {result}")
-        assert "inserted point" in result.content[0].text.lower()
+        assert "Inserted point at" in result.content[0].text
 
 @pytest.mark.asyncio
 async def test_envelope_error_handling(reaper_mcp_client):

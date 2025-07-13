@@ -3,6 +3,11 @@ import pytest
 import pytest_asyncio
 import asyncio
 
+def assert_tools_available(available_tools, required_tools):
+    """Assert that all required tools are available, failing with clear message if not"""
+    for tool in required_tools:
+        assert tool in available_tools, f"MISSING IMPLEMENTATION: Tool '{tool}' is not implemented in the server but is required for GUI/console functionality"
+
 
 @pytest.mark.asyncio
 async def test_console_operations(reaper_mcp_client):
@@ -33,6 +38,12 @@ async def test_console_operations(reaper_mcp_client):
 @pytest.mark.asyncio
 async def test_window_operations(reaper_mcp_client):
     """Test window-related operations"""
+    # Check if required tools are available
+    required_tools = ["get_main_hwnd", "get_mouse_position", "get_cursor_context"]
+    available_tools = getattr(reaper_mcp_client, '_available_tools', set())
+    
+    assert_tools_available(available_tools, required_tools)
+    
     # Get main window handle
     result = await reaper_mcp_client.call_tool(
         "get_main_hwnd",
@@ -60,6 +71,10 @@ async def test_window_operations(reaper_mcp_client):
 @pytest.mark.asyncio
 async def test_message_box(reaper_mcp_client):
     """Test message box operations"""
+    # Check if tool is available
+    available_tools = getattr(reaper_mcp_client, '_available_tools', set())
+    assert_tools_available(available_tools, ["show_message_box"])
+    
     # Note: In automation context, message boxes may not actually display
     result = await reaper_mcp_client.call_tool(
         "show_message_box",
@@ -75,6 +90,10 @@ async def test_message_box(reaper_mcp_client):
 @pytest.mark.asyncio
 async def test_dock_window(reaper_mcp_client):
     """Test dock window operations"""
+    # Check if tool is available
+    available_tools = getattr(reaper_mcp_client, '_available_tools', set())
+    assert_tools_available(available_tools, ["dock_window_add"])
+    
     # Note: This requires actual window handle, so will return placeholder
     result = await reaper_mcp_client.call_tool(
         "dock_window_add",

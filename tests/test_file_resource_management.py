@@ -4,6 +4,12 @@ import pytest_asyncio
 import asyncio
 
 
+def assert_tools_available(available_tools, required_tools):
+    """Assert that all required tools are available, failing with clear message if not"""
+    for tool in required_tools:
+        assert tool in available_tools, f"MISSING IMPLEMENTATION: Tool '{tool}' is not implemented in the server but is required for file/resource management functionality"
+
+
 @pytest.mark.asyncio
 async def test_resource_paths(reaper_mcp_client):
     """Test getting resource and executable paths"""
@@ -33,6 +39,9 @@ async def test_project_paths(reaper_mcp_client):
     assert "Project path:" in result.content[0].text
     
     # Get project state change count
+    available_tools = getattr(reaper_mcp_client, '_available_tools', set())
+    assert_tools_available(available_tools, ["get_project_state_change_count"])
+    
     result = await reaper_mcp_client.call_tool(
         "get_project_state_change_count",
         {"project_index": 0}
@@ -43,6 +52,10 @@ async def test_project_paths(reaper_mcp_client):
 @pytest.mark.asyncio
 async def test_directory_creation(reaper_mcp_client):
     """Test recursive directory creation"""
+    # Check if tool is available
+    available_tools = getattr(reaper_mcp_client, '_available_tools', set())
+    assert_tools_available(available_tools, ["recursive_create_directory"])
+    
     # Create a test directory
     result = await reaper_mcp_client.call_tool(
         "recursive_create_directory",
@@ -57,12 +70,18 @@ async def test_directory_creation(reaper_mcp_client):
 @pytest.mark.asyncio
 async def test_track_state_chunk(reaper_mcp_client):
     """Test track state chunk operations"""
+    # Check if required tools are available
+    required_tools = ["get_track_state_chunk", "set_track_state_chunk"]
+    available_tools = getattr(reaper_mcp_client, '_available_tools', set())
+    
+    assert_tools_available(available_tools, required_tools)
+    
     # Create a track
     result = await reaper_mcp_client.call_tool(
         "insert_track_at_index",
         {"index": 0, "want_defaults": True}
     )
-    assert "Created track" in result.content[0].text
+    assert "Successfully inserted track" in result.content[0].text
     
     # Set track name and color for identification
     await reaper_mcp_client.call_tool(
@@ -101,6 +120,10 @@ async def test_track_state_chunk(reaper_mcp_client):
 @pytest.mark.asyncio
 async def test_file_browser(reaper_mcp_client):
     """Test file browser dialog"""
+    # Check if tool is available
+    available_tools = getattr(reaper_mcp_client, '_available_tools', set())
+    assert_tools_available(available_tools, ["browse_for_file"])
+    
     # Note: This won't actually open a dialog in automation context
     result = await reaper_mcp_client.call_tool(
         "browse_for_file",
@@ -116,6 +139,10 @@ async def test_file_browser(reaper_mcp_client):
 @pytest.mark.asyncio
 async def test_project_state_tracking(reaper_mcp_client):
     """Test project state change tracking"""
+    # Check if tool is available
+    available_tools = getattr(reaper_mcp_client, '_available_tools', set())
+    assert_tools_available(available_tools, ["get_project_state_change_count"])
+    
     # Get initial state count
     result = await reaper_mcp_client.call_tool(
         "get_project_state_change_count",
