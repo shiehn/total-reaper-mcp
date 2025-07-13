@@ -1,21 +1,26 @@
 # REAPER MCP Server
 
-An MCP (Model Context Protocol) server that exposes REAPER DAW functionality through a clean API interface.
+An MCP (Model Context Protocol) server that exposes [REAPER DAW](https://www.reaper.fm/) functionality through a clean API interface.
 
 ![REAPER MCP Server](assets/repo-readme-image.png)
 
+## Platform Support
+
+This project is developed and tested on **macOS** but should work on Windows and Linux with minimal adaptation, as REAPER provides consistent cross-platform support.
+
 ## Requirements
 
-- REAPER 6.83+ (includes embedded Lua 5.4 and full ReaScript API)
+- [REAPER](https://www.reaper.fm/) 6.83+ (includes embedded Lua 5.4 and full ReaScript API)
 - Python 3.8+
-- macOS, Windows, or Linux
-- LuaSocket library (installed automatically on macOS)
+- LuaSocket library (optional - only needed for socket-based communication)
 
 ## Architecture
 
 This project uses a hybrid Lua-Python approach:
 - **Lua Bridge**: Runs inside REAPER, handles API calls using REAPER's built-in Lua interpreter
-- **Python MCP Server**: Provides the MCP interface, communicates with REAPER via UDP
+- **Python MCP Server**: Provides the MCP interface, communicates with REAPER via:
+  - **File-based communication** (recommended - no dependencies)
+  - **Socket-based communication** (faster but requires LuaSocket)
 
 ## Quick Install (macOS)
 
@@ -30,6 +35,8 @@ This will:
 - Create launch scripts
 - Optionally set up auto-start on login
 
+**Note:** The quick install script sets up socket-based communication. For the recommended file-based approach, follow the manual setup instructions below.
+
 ## Manual Setup
 
 ### 1. Install Python dependencies
@@ -40,38 +47,37 @@ pip install -e .
 
 ### 2. Choose a bridge method
 
-#### Option A: File-based Bridge (No dependencies required)
+#### Option A: File-based Bridge (Recommended - No dependencies)
 
-Use this if you have issues with LuaSocket installation:
+This method requires no additional dependencies and is the most reliable:
 
-1. Load `lua/mcp_bridge_no_socket.lua` in REAPER
-2. Start the file-based server: `python -m server.app_file_bridge`
+1. Load `lua/mcp_bridge_file_full.lua` in REAPER
+2. Start the file-based server: `python -m server.app_file_bridge_full`
 
-#### Option B: Socket-based Bridge (Faster, requires LuaSocket)
+#### Option B: Socket-based Bridge (Faster performance, requires LuaSocket)
 
-If you encounter a "socket.core not found" error:
+For better performance, you can use socket-based communication:
 
-```bash
-./scripts/install_luasocket.sh
-```
+1. Install LuaSocket (macOS): `./scripts/install_luasocket.sh`
+2. Load `lua/mcp_bridge.lua` in REAPER
+3. Start the socket-based server: `python -m server.app`
 
-1. Load `lua/mcp_bridge.lua` in REAPER
-2. Start the socket-based server: `python -m server.app`
+Note: If you encounter a "socket.core not found" error, use the file-based bridge instead.
 
 ### 3. Start REAPER and load the Lua bridge
 
 1. Open REAPER
 2. Go to Actions → Show action list
 3. Click "Load..." and select either:
-   - `lua/mcp_bridge_no_socket.lua` (for file-based, no dependencies)
+   - `lua/mcp_bridge_file_full.lua` (for file-based, recommended)
    - `lua/mcp_bridge.lua` (for socket-based, requires LuaSocket)
 4. Run the action (check the REAPER console for startup message)
 
 ### 4. Start the MCP server
 
-For file-based bridge:
+For file-based bridge (recommended):
 ```bash
-python -m server.app_file_bridge
+python -m server.app_file_bridge_full
 ```
 
 For socket-based bridge:
@@ -81,8 +87,17 @@ python -m server.app
 
 ## Testing
 
-With both REAPER (running the Lua bridge) and the MCP server running:
+Make sure you have:
+1. REAPER running with the appropriate Lua bridge loaded
+2. The corresponding MCP server running
 
+Then run the tests:
+
+```bash
+pytest tests/ -v
+```
+
+For integration tests specifically:
 ```bash
 pytest tests/test_integration.py -v
 ```
@@ -103,6 +118,14 @@ For the complete list of all implemented methods, see [IMPLEMENTATION_MASTER.md]
 
 ## Communication Flow
 
+### File-based (Recommended):
+1. MCP Client → MCP Server (stdio)
+2. MCP Server → REAPER Lua Bridge (via JSON files)
+3. Lua Bridge executes REAPER API call
+4. Lua Bridge → MCP Server (via JSON files)
+5. MCP Server → MCP Client (stdio)
+
+### Socket-based:
 1. MCP Client → MCP Server (stdio)
 2. MCP Server → REAPER Lua Bridge (UDP port 9000)
 3. Lua Bridge executes REAPER API call
@@ -114,6 +137,10 @@ For the complete list of all implemented methods, see [IMPLEMENTATION_MASTER.md]
 ```bash
 ./scripts/uninstall.sh
 ```
+
+## About REAPER
+
+[REAPER](https://www.reaper.fm/) is a complete digital audio production application for computers, offering a full multitrack audio and MIDI recording, editing, processing, mixing and mastering toolset. REAPER supports Windows, macOS, and Linux, providing consistent functionality across all platforms.
 
 ## API Reference
 
