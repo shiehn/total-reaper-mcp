@@ -1788,6 +1788,53 @@ async def list_tools():
                 },
                 "required": ["mode"]
             }
+        ),
+        Tool(
+            name="get_track_peak",
+            description="Get the current peak level of a track",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index (0-based, -1 for master track)"
+                    },
+                    "channel": {
+                        "type": "integer",
+                        "description": "Channel number (0=left/mono, 1=right)",
+                        "default": 0
+                    }
+                },
+                "required": ["track_index"]
+            }
+        ),
+        Tool(
+            name="get_track_peak_info",
+            description="Get detailed peak information for a track",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index (0-based, -1 for master track)"
+                    }
+                },
+                "required": ["track_index"]
+            }
+        ),
+        Tool(
+            name="get_media_item_peak",
+            description="Get the peak value of a media item",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "item_index": {
+                        "type": "integer",
+                        "description": "Media item index (0-based)"
+                    }
+                },
+                "required": ["item_index"]
+            }
         )
     ]
 
@@ -4326,6 +4373,62 @@ async def call_tool(name: str, arguments: dict):
             return [TextContent(
                 type="text",
                 text=f"Failed to set global automation override: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_track_peak":
+        track_index = arguments["track_index"]
+        channel = arguments.get("channel", 0)
+        
+        result = await bridge.call_lua("Track_GetPeakInfo", [track_index, channel])
+        
+        if result.get("ok"):
+            peak_value = result.get("result", 0.0)
+            peak_db = 20 * (peak_value / 0.0000000298023223876953125) if peak_value > 0 else -150.0
+            return [TextContent(
+                type="text",
+                text=f"Track {track_index} peak (channel {channel}): {peak_db:.2f} dB ({peak_value:.6f})"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get track peak: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_track_peak_info":
+        track_index = arguments["track_index"]
+        
+        result = await bridge.call_lua("Track_GetPeakHoldDB", [track_index])
+        
+        if result.get("ok"):
+            peak_data = result.get("result", {})
+            left_peak = peak_data.get("left", -150.0)
+            right_peak = peak_data.get("right", -150.0)
+            return [TextContent(
+                type="text",
+                text=f"Track {track_index} peak info - Left: {left_peak:.2f} dB, Right: {right_peak:.2f} dB"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get track peak info: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_media_item_peak":
+        item_index = arguments["item_index"]
+        
+        result = await bridge.call_lua("GetMediaItemTakePeakValue", [item_index])
+        
+        if result.get("ok"):
+            peak_value = result.get("result", 0.0)
+            peak_db = 20 * (peak_value / 0.0000000298023223876953125) if peak_value > 0 else -150.0
+            return [TextContent(
+                type="text",
+                text=f"Media item {item_index} peak: {peak_db:.2f} dB ({peak_value:.6f})"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get media item peak: {result.get('error', 'Unknown error')}"
             )]
     
     else:

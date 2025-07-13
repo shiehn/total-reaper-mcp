@@ -659,6 +659,66 @@ function main()
                 else
                     response.error = "GetMediaItemTake_Peaks requires at least 1 argument"
                 end
+            elseif fname == "Track_GetPeakInfo" then
+                if #args >= 2 then
+                    local track
+                    if args[1] == -1 then
+                        track = reaper.GetMasterTrack(0)
+                    else
+                        track = reaper.GetTrack(0, args[1])
+                    end
+                    if track then
+                        local peak = reaper.Track_GetPeakInfo(track, args[2])
+                        response.ok = true
+                        response.result = peak
+                    else
+                        response.error = "Track not found"
+                    end
+                else
+                    response.error = "Track_GetPeakInfo requires 2 arguments"
+                end
+            elseif fname == "Track_GetPeakHoldDB" then
+                if #args >= 1 then
+                    local track
+                    if args[1] == -1 then
+                        track = reaper.GetMasterTrack(0)
+                    else
+                        track = reaper.GetTrack(0, args[1])
+                    end
+                    if track then
+                        local left_peak = reaper.Track_GetPeakHoldDB(track, 0, false)
+                        local right_peak = reaper.Track_GetPeakHoldDB(track, 1, false)
+                        response.ok = true
+                        response.result = {left = left_peak, right = right_peak}
+                    else
+                        response.error = "Track not found"
+                    end
+                else
+                    response.error = "Track_GetPeakHoldDB requires 1 argument"
+                end
+            elseif fname == "GetMediaItemTakePeakValue" then
+                if #args >= 1 then
+                    local item = reaper.GetMediaItem(0, args[1])
+                    if item then
+                        local take = reaper.GetActiveTake(item)
+                        if take then
+                            local source = reaper.GetMediaItemTake_Source(take)
+                            if source then
+                                local peak = reaper.GetMediaSourcePeakValue(source, 0)
+                                response.ok = true
+                                response.result = peak
+                            else
+                                response.error = "No source found for take"
+                            end
+                        else
+                            response.error = "No active take found"
+                        end
+                    else
+                        response.error = "Media item not found"
+                    end
+                else
+                    response.error = "GetMediaItemTakePeakValue requires 1 argument"
+                end
 
             else
                 response.error = "Unknown function: " .. fname
