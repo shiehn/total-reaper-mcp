@@ -261,19 +261,14 @@ async def slider_to_db(slider: float) -> str:
 # Main entry point
 # ============================================================================
 
-async def main():
+def main():
     """Run the MCP server"""
-    from mcp.server.stdio import stdio_server
-    
     logger.info("Starting REAPER MCP Server (Modern Pattern)")
     logger.info(f"Bridge directory: {BRIDGE_DIR}")
     logger.info("Make sure to run mcp_bridge_no_socket.lua in REAPER!")
     
-    async with stdio_server() as (read_stream, write_stream):
-        # Initialize options for the server
-        init_options = mcp.create_initialization_options()
-        # Run the server
-        await mcp.run(read_stream, write_stream, init_options)
+    # FastMCP has its own built-in stdio handling
+    mcp.run(transport="stdio")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
