@@ -3,10 +3,10 @@
 This is the consolidated master list tracking all ReaScript API methods implemented in the REAPER MCP Server.
 
 ## Implementation Statistics
-- **Total Implemented**: 176 methods
+- **Total Implemented**: 181 methods
 - **Test Coverage**: ~97%
-- **Categories**: 23
-- **Test Files**: 23
+- **Categories**: 24
+- **Test Files**: 24
 - **ReaScript API Version**: REAPER 6.83+ (embedded Lua 5.4)
 
 ## Implementation Status by Category
@@ -215,16 +215,16 @@ This is the consolidated master list tracking all ReaScript API methods implemen
 - [x] `GetTrackGUID` - Get track GUID
 - [x] `GetTrackFromGUID` - Get track from GUID
 
+### ✅ Advanced Item/Take Operations (5 methods)
+- [x] `SplitMediaItem` - Split item at position
+- [x] `GlueMediaItems` - Glue items together
+- [x] `GetMediaItemTrack` - Get parent track of item
+- [x] `DuplicateMediaItem` - Duplicate a media item
+- [x] `SetMediaItemColor` - Set item color
+
 ## 🔮 Not Yet Implemented API Methods
 
 Based on the ReaScript API documentation, here are additional methods that could be implemented:
-
-### Advanced Item/Take Operations  
-- [ ] `GetMediaItemTake_Source` - Get take source
-- [ ] `GetMediaItemTake_Item` - Get parent item
-- [ ] `GetMediaItemTake_Track` - Get parent track
-- [ ] `SplitMediaItem` - Split item at position
-- [ ] `GlueMediaItem` - Glue items together
 
 ### Recording
 - [ ] `GetSetTrackRecordMode` - Get/set record mode

@@ -826,6 +826,106 @@ function main()
                 else
                     response.error = "GetTrackByGUID requires 1 argument"
                 end
+            elseif fname == "SplitMediaItem" then
+                if #args >= 2 then
+                    local item = reaper.GetMediaItem(0, args[1])
+                    if item then
+                        local new_item = reaper.SplitMediaItem(item, args[2])
+                        if new_item then
+                            -- Find index of new item
+                            local item_count = reaper.CountMediaItems(0)
+                            for i = 0, item_count - 1 do
+                                if reaper.GetMediaItem(0, i) == new_item then
+                                    response.ok = true
+                                    response.result = i
+                                    break
+                                end
+                            end
+                        else
+                            response.error = "Failed to split item"
+                        end
+                    else
+                        response.error = "Media item not found"
+                    end
+                else
+                    response.error = "SplitMediaItem requires 2 arguments"
+                end
+            elseif fname == "GlueMediaItems" then
+                local respect_time = args[1] or false
+                
+                -- Count selected items before gluing
+                local count = reaper.CountSelectedMediaItems(0)
+                
+                if count > 0 then
+                    -- Glue selected items (action 40362)
+                    reaper.Main_OnCommand(40362, 0)
+                    response.ok = true
+                    response.result = count
+                else
+                    response.error = "No items selected to glue"
+                end
+            elseif fname == "GetMediaItemTrack" then
+                if #args >= 1 then
+                    local item = reaper.GetMediaItem(0, args[1])
+                    if item then
+                        local track = reaper.GetMediaItem_Track(item)
+                        if track then
+                            local _, name = reaper.GetTrackName(track)
+                            -- Find track index
+                            local track_count = reaper.CountTracks(0)
+                            local track_idx = -1
+                            for i = 0, track_count - 1 do
+                                if reaper.GetTrack(0, i) == track then
+                                    track_idx = i
+                                    break
+                                end
+                            end
+                            
+                            response.ok = true
+                            response.result = {
+                                name = name,
+                                index = track_idx
+                            }
+                        else
+                            response.error = "No track found for item"
+                        end
+                    else
+                        response.error = "Media item not found"
+                    end
+                else
+                    response.error = "GetMediaItemTrack requires 1 argument"
+                end
+            elseif fname == "DuplicateMediaItem" then
+                if #args >= 1 then
+                    local item = reaper.GetMediaItem(0, args[1])
+                    if item then
+                        -- Select the item
+                        reaper.SetMediaItemSelected(item, true)
+                        -- Duplicate (action 40698)
+                        reaper.Main_OnCommand(40698, 0)
+                        
+                        -- Find the new item (it should be the next one)
+                        local item_count = reaper.CountMediaItems(0)
+                        response.ok = true
+                        response.result = item_count - 1
+                    else
+                        response.error = "Media item not found"
+                    end
+                else
+                    response.error = "DuplicateMediaItem requires 1 argument"
+                end
+            elseif fname == "SetMediaItemColor" then
+                if #args >= 2 then
+                    local item = reaper.GetMediaItem(0, args[1])
+                    if item then
+                        reaper.SetMediaItemInfo_Value(item, "I_CUSTOMCOLOR", args[2])
+                        response.ok = true
+                    else
+                        response.error = "Media item not found"
+                    end
+                else
+                    response.error = "SetMediaItemColor requires 2 arguments"
+                end
 
             else
                 response.error = "Unknown function: " .. fname

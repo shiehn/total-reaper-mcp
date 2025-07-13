@@ -1895,6 +1895,85 @@ async def list_tools():
                 },
                 "required": ["guid"]
             }
+        ),
+        Tool(
+            name="split_media_item",
+            description="Split a media item at a specific position",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "item_index": {
+                        "type": "integer",
+                        "description": "Media item index (0-based)"
+                    },
+                    "position": {
+                        "type": "number",
+                        "description": "Position in seconds where to split"
+                    }
+                },
+                "required": ["item_index", "position"]
+            }
+        ),
+        Tool(
+            name="glue_media_items",
+            description="Glue selected media items together",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "respect_time_selection": {
+                        "type": "boolean",
+                        "description": "Only glue within time selection",
+                        "default": False
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="get_media_item_take_track",
+            description="Get the parent track of a media item",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "item_index": {
+                        "type": "integer",
+                        "description": "Media item index (0-based)"
+                    }
+                },
+                "required": ["item_index"]
+            }
+        ),
+        Tool(
+            name="duplicate_media_item",
+            description="Duplicate a media item",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "item_index": {
+                        "type": "integer",
+                        "description": "Media item index (0-based)"
+                    }
+                },
+                "required": ["item_index"]
+            }
+        ),
+        Tool(
+            name="set_media_item_color",
+            description="Set the color of a media item",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "item_index": {
+                        "type": "integer",
+                        "description": "Media item index (0-based)"
+                    },
+                    "color": {
+                        "type": "integer",
+                        "description": "Color value (RGB packed as integer, or 0 for default)"
+                    }
+                },
+                "required": ["item_index", "color"]
+            }
         )
     ]
 
@@ -4558,6 +4637,92 @@ async def call_tool(name: str, arguments: dict):
             return [TextContent(
                 type="text",
                 text=f"Failed to get track from GUID: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "split_media_item":
+        item_index = arguments["item_index"]
+        position = arguments["position"]
+        
+        result = await bridge.call_lua("SplitMediaItem", [item_index, position])
+        
+        if result.get("ok"):
+            new_item = result.get("result")
+            return [TextContent(
+                type="text",
+                text=f"Split item at position {position}s. New item created: {new_item}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to split media item: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "glue_media_items":
+        respect_time_selection = arguments.get("respect_time_selection", False)
+        
+        result = await bridge.call_lua("GlueMediaItems", [respect_time_selection])
+        
+        if result.get("ok"):
+            count = result.get("result", 0)
+            return [TextContent(
+                type="text",
+                text=f"Glued {count} items together"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to glue media items: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_media_item_take_track":
+        item_index = arguments["item_index"]
+        
+        result = await bridge.call_lua("GetMediaItemTrack", [item_index])
+        
+        if result.get("ok"):
+            track_info = result.get("result", {})
+            return [TextContent(
+                type="text",
+                text=f"Item {item_index} is on track: {track_info.get('name', 'Unnamed')} (index {track_info.get('index', -1)})"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get item track: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "duplicate_media_item":
+        item_index = arguments["item_index"]
+        
+        result = await bridge.call_lua("DuplicateMediaItem", [item_index])
+        
+        if result.get("ok"):
+            new_item_index = result.get("result", -1)
+            return [TextContent(
+                type="text",
+                text=f"Duplicated item. New item index: {new_item_index}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to duplicate media item: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "set_media_item_color":
+        item_index = arguments["item_index"]
+        color = arguments["color"]
+        
+        result = await bridge.call_lua("SetMediaItemColor", [item_index, color])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Set item {item_index} color to {color}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set media item color: {result.get('error', 'Unknown error')}"
             )]
     
     else:
