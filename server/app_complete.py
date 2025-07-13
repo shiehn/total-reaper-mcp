@@ -1712,6 +1712,262 @@ Tool(
                 },
                 "required": ["track_index"]
             }
+        ),
+        Tool(
+            name="count_selected_tracks",
+            description="Count selected tracks in project",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_index": {
+                        "type": "integer",
+                        "description": "Project index (0=current)",
+                        "default": 0
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="get_selected_track",
+            description="Get selected track by index",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_index": {
+                        "type": "integer",
+                        "description": "Project index (0=current)",
+                        "default": 0
+                    },
+                    "selected_track_index": {
+                        "type": "integer",
+                        "description": "Selected track index (0-based)"
+                    }
+                },
+                "required": ["selected_track_index"]
+            }
+        ),
+        Tool(
+            name="set_track_selected",
+            description="Set track selection state",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index"
+                    },
+                    "selected": {
+                        "type": "boolean",
+                        "description": "Selection state"
+                    }
+                },
+                "required": ["track_index", "selected"]
+            }
+        ),
+        Tool(
+            name="count_selected_media_items",
+            description="Count selected media items in project",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_index": {
+                        "type": "integer",
+                        "description": "Project index (0=current)",
+                        "default": 0
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="get_selected_media_item",
+            description="Get selected media item by index",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_index": {
+                        "type": "integer",
+                        "description": "Project index (0=current)",
+                        "default": 0
+                    },
+                    "selected_item_index": {
+                        "type": "integer",
+                        "description": "Selected item index (0-based)"
+                    }
+                },
+                "required": ["selected_item_index"]
+            }
+        ),
+        Tool(
+            name="set_media_item_selected",
+            description="Set media item selection state",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "item_index": {
+                        "type": "integer",
+                        "description": "Media item index"
+                    },
+                    "selected": {
+                        "type": "boolean",
+                        "description": "Selection state"
+                    }
+                },
+                "required": ["item_index", "selected"]
+            }
+        ),
+        Tool(
+            name="select_all_media_items",
+            description="Select all media items in project",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_index": {
+                        "type": "integer",
+                        "description": "Project index (0=current)",
+                        "default": 0
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="unselect_all_media_items",
+            description="Unselect all media items in project",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_index": {
+                        "type": "integer",
+                        "description": "Project index (0=current)",
+                        "default": 0
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="get_media_item_take_source",
+            description="Get media source from take",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index"
+                    }
+                },
+                "required": ["take_index"]
+            }
+        ),
+        Tool(
+            name="get_media_source_filename",
+            description="Get filename of media source",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "source_index": {
+                        "type": "integer",
+                        "description": "Source index"
+                    }
+                },
+                "required": ["source_index"]
+            }
+        ),
+        Tool(
+            name="get_media_source_length",
+            description="Get length of media source in seconds",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "source_index": {
+                        "type": "integer",
+                        "description": "Source index"
+                    }
+                },
+                "required": ["source_index"]
+            }
+        ),
+        Tool(
+            name="get_media_source_type",
+            description="Get type of media source",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "source_index": {
+                        "type": "integer",
+                        "description": "Source index"
+                    }
+                },
+                "required": ["source_index"]
+            }
+        ),
+        Tool(
+            name="pcm_source_create_from_file",
+            description="Create PCM source from file",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "filename": {
+                        "type": "string",
+                        "description": "File path"
+                    }
+                },
+                "required": ["filename"]
+            }
+        ),
+        Tool(
+            name="set_media_item_take_source",
+            description="Set media source for take",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index"
+                    },
+                    "source_index": {
+                        "type": "integer",
+                        "description": "Source index"
+                    }
+                },
+                "required": ["take_index", "source_index"]
+            }
+        ),
+        Tool(
+            name="get_media_item_take_peaks",
+            description="Get peak data for take",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index"
+                    },
+                    "channel": {
+                        "type": "integer",
+                        "description": "Channel (0-based)",
+                        "default": 0
+                    },
+                    "sample_rate": {
+                        "type": "number",
+                        "description": "Sample rate",
+                        "default": 1000.0
+                    },
+                    "start_time": {
+                        "type": "number",
+                        "description": "Start time",
+                        "default": 0.0
+                    },
+                    "num_samples": {
+                        "type": "integer",
+                        "description": "Number of samples",
+                        "default": 1000
+                    }
+                },
+                "required": ["take_index"]
+            }
         )
     ]
 
@@ -3290,6 +3546,255 @@ async def call_tool(name: str, arguments: dict):
             return [TextContent(
                 type="text",
                 text=f"Failed to get track num sends: {result.get('error', 'Unknown error')}"
+            )]
+
+    elif name == "count_selected_tracks":
+        project_index = arguments.get("project_index", 0)
+        
+        result = bridge.call_lua("CountSelectedTracks", [project_index])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Count selected tracks: {result.get('ret')}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to count selected tracks: {result.get('error', 'Unknown error')}"
+            )]
+
+    elif name == "get_selected_track":
+        project_index = arguments.get("project_index", 0)
+        selected_track_index = arguments["selected_track_index"]
+        
+        result = bridge.call_lua("GetSelectedTrack", [project_index, selected_track_index])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Get selected track: {result.get('ret')}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get selected track: {result.get('error', 'Unknown error')}"
+            )]
+
+    elif name == "set_track_selected":
+        track_index = arguments["track_index"]
+        selected = arguments["selected"]
+        
+        result = bridge.call_lua("SetTrackSelected", [track_index, selected])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Set track selected: {result.get('ret')}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set track selected: {result.get('error', 'Unknown error')}"
+            )]
+
+    elif name == "count_selected_media_items":
+        project_index = arguments.get("project_index", 0)
+        
+        result = bridge.call_lua("CountSelectedMediaItems", [project_index])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Count selected media items: {result.get('ret')}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to count selected media items: {result.get('error', 'Unknown error')}"
+            )]
+
+    elif name == "get_selected_media_item":
+        project_index = arguments.get("project_index", 0)
+        selected_item_index = arguments["selected_item_index"]
+        
+        result = bridge.call_lua("GetSelectedMediaItem", [project_index, selected_item_index])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Get selected media item: {result.get('ret')}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get selected media item: {result.get('error', 'Unknown error')}"
+            )]
+
+    elif name == "set_media_item_selected":
+        item_index = arguments["item_index"]
+        selected = arguments["selected"]
+        
+        result = bridge.call_lua("SetMediaItemSelected", [item_index, selected])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Set media item selected: {result.get('ret')}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set media item selected: {result.get('error', 'Unknown error')}"
+            )]
+
+    elif name == "select_all_media_items":
+        project_index = arguments.get("project_index", 0)
+        
+        result = bridge.call_lua("SelectAllMediaItems", [project_index])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Select all media items: {result.get('ret')}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to select all media items: {result.get('error', 'Unknown error')}"
+            )]
+
+    elif name == "unselect_all_media_items":
+        project_index = arguments.get("project_index", 0)
+        
+        result = bridge.call_lua("UnselectAllMediaItems", [project_index])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Unselect all media items: {result.get('ret')}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to unselect all media items: {result.get('error', 'Unknown error')}"
+            )]
+
+    elif name == "get_media_item_take_source":
+        take_index = arguments["take_index"]
+        
+        result = bridge.call_lua("GetMediaItemTake_Source", [take_index])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Get media item take source: {result.get('ret')}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get media item take source: {result.get('error', 'Unknown error')}"
+            )]
+
+    elif name == "get_media_source_filename":
+        source_index = arguments["source_index"]
+        
+        result = bridge.call_lua("GetMediaSourceFileName", [source_index])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Media source filename: {result.get('ret')}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get media source filename: {result.get('error', 'Unknown error')}"
+            )]
+
+    elif name == "get_media_source_length":
+        source_index = arguments["source_index"]
+        
+        result = bridge.call_lua("GetMediaSourceLength", [source_index])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Media source length: {result.get('ret')} seconds"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get media source length: {result.get('error', 'Unknown error')}"
+            )]
+
+    elif name == "get_media_source_type":
+        source_index = arguments["source_index"]
+        
+        result = bridge.call_lua("GetMediaSourceType", [source_index])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Media source type: {result.get('ret')}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get media source type: {result.get('error', 'Unknown error')}"
+            )]
+
+    elif name == "pcm_source_create_from_file":
+        filename = arguments["filename"]
+        
+        result = bridge.call_lua("PCM_Source_CreateFromFile", [filename])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Created PCM source: {result.get('ret')}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to create PCM source: {result.get('error', 'Unknown error')}"
+            )]
+
+    elif name == "set_media_item_take_source":
+        take_index = arguments["take_index"]
+        source_index = arguments["source_index"]
+        
+        result = bridge.call_lua("SetMediaItemTake_Source", [take_index, source_index])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Set media item take source: {result.get('ret')}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set media item take source: {result.get('error', 'Unknown error')}"
+            )]
+
+    elif name == "get_media_item_take_peaks":
+        take_index = arguments["take_index"]
+        channel = arguments.get("channel", 0)
+        sample_rate = arguments.get("sample_rate", 1000.0)
+        start_time = arguments.get("start_time", 0.0)
+        num_samples = arguments.get("num_samples", 1000)
+        
+        result = bridge.call_lua("GetMediaItemTake_Peaks", [take_index, channel, sample_rate, start_time, num_samples])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Media item take peaks: {result.get('ret')}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get media item take peaks: {result.get('error', 'Unknown error')}"
             )]
 
 

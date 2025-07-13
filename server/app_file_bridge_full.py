@@ -1316,7 +1316,7 @@ async def list_tools():
                     "time": {
                         "type": "number",
                         "description": "New time position in seconds",
-                        "default": null
+                        "default": None
                     },
                     "value": {
                         "type": "number",
@@ -1513,13 +1513,13 @@ async def list_tools():
                         "description": "Time signature numerator",
                         "minimum": 1,
                         "maximum": 32,
-                        "default": null
+                        "default": None
                     },
                     "time_sig_denominator": {
                         "type": "integer",
                         "description": "Time signature denominator",
                         "enum": [1, 2, 4, 8, 16, 32],
-                        "default": null
+                        "default": None
                     }
                 },
                 "required": ["position", "tempo"]

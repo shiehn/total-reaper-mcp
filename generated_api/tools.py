@@ -1667,5 +1667,1334 @@ TOOLS = [
                 },
                 "required": ["track_index"]
             }
+        ),
+        Tool(
+            name="count_selected_tracks",
+            description="Count selected tracks in project",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_index": {
+                        "type": "integer",
+                        "description": "Project index (0=current)",
+                        "default": 0
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="get_selected_track",
+            description="Get selected track by index",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_index": {
+                        "type": "integer",
+                        "description": "Project index (0=current)",
+                        "default": 0
+                    },
+                    "selected_track_index": {
+                        "type": "integer",
+                        "description": "Selected track index (0-based)"
+                    }
+                },
+                "required": ["selected_track_index"]
+            }
+        ),
+        Tool(
+            name="set_track_selected",
+            description="Set track selection state",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index"
+                    },
+                    "selected": {
+                        "type": "boolean",
+                        "description": "Selection state"
+                    }
+                },
+                "required": ["track_index", "selected"]
+            }
+        ),
+        Tool(
+            name="count_selected_media_items",
+            description="Count selected media items in project",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_index": {
+                        "type": "integer",
+                        "description": "Project index (0=current)",
+                        "default": 0
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="get_selected_media_item",
+            description="Get selected media item by index",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_index": {
+                        "type": "integer",
+                        "description": "Project index (0=current)",
+                        "default": 0
+                    },
+                    "selected_item_index": {
+                        "type": "integer",
+                        "description": "Selected item index (0-based)"
+                    }
+                },
+                "required": ["selected_item_index"]
+            }
+        ),
+        Tool(
+            name="set_media_item_selected",
+            description="Set media item selection state",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "item_index": {
+                        "type": "integer",
+                        "description": "Media item index"
+                    },
+                    "selected": {
+                        "type": "boolean",
+                        "description": "Selection state"
+                    }
+                },
+                "required": ["item_index", "selected"]
+            }
+        ),
+        Tool(
+            name="select_all_media_items",
+            description="Select all media items in project",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_index": {
+                        "type": "integer",
+                        "description": "Project index (0=current)",
+                        "default": 0
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="unselect_all_media_items",
+            description="Unselect all media items in project",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_index": {
+                        "type": "integer",
+                        "description": "Project index (0=current)",
+                        "default": 0
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="get_media_item_take_source",
+            description="Get media source from take",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index"
+                    }
+                },
+                "required": ["take_index"]
+            }
+        ),
+        Tool(
+            name="get_media_source_filename",
+            description="Get filename of media source",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "source_index": {
+                        "type": "integer",
+                        "description": "Source index"
+                    }
+                },
+                "required": ["source_index"]
+            }
+        ),
+        Tool(
+            name="get_media_source_length",
+            description="Get length of media source in seconds",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "source_index": {
+                        "type": "integer",
+                        "description": "Source index"
+                    }
+                },
+                "required": ["source_index"]
+            }
+        ),
+        Tool(
+            name="get_media_source_type",
+            description="Get type of media source",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "source_index": {
+                        "type": "integer",
+                        "description": "Source index"
+                    }
+                },
+                "required": ["source_index"]
+            }
+        ),
+        Tool(
+            name="pcm_source_create_from_file",
+            description="Create PCM source from file",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "filename": {
+                        "type": "string",
+                        "description": "File path"
+                    }
+                },
+                "required": ["filename"]
+            }
+        ),
+        Tool(
+            name="set_media_item_take_source",
+            description="Set media source for take",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index"
+                    },
+                    "source_index": {
+                        "type": "integer",
+                        "description": "Source index"
+                    }
+                },
+                "required": ["take_index", "source_index"]
+            }
+        ),
+        Tool(
+            name="get_media_item_take_peaks",
+            description="Get peak data for take",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index"
+                    },
+                    "channel": {
+                        "type": "integer",
+                        "description": "Channel (0-based)",
+                        "default": 0
+                    },
+                    "sample_rate": {
+                        "type": "number",
+                        "description": "Sample rate",
+                        "default": 1000.0
+                    },
+                    "start_time": {
+                        "type": "number",
+                        "description": "Start time",
+                        "default": 0.0
+                    },
+                    "num_samples": {
+                        "type": "integer",
+                        "description": "Number of samples",
+                        "default": 1000
+                    }
+                },
+                "required": ["take_index"]
+            }
+        ),
+        Tool(
+            name="get_track_depth",
+            description="Get track folder depth",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index"
+                    }
+                },
+                "required": ["track_index"]
+            }
+        ),
+        Tool(
+            name="set_track_folder_state",
+            description="Set track folder state",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index"
+                    },
+                    "folder_state": {
+                        "type": "integer",
+                        "description": "Folder state: 0=normal, 1=folder parent, <0=last in folder"
+                    }
+                },
+                "required": ["track_index", "folder_state"]
+            }
+        ),
+        Tool(
+            name="get_track_folder_compact_state",
+            description="Get track folder compact state",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index"
+                    }
+                },
+                "required": ["track_index"]
+            }
+        ),
+        Tool(
+            name="set_track_folder_compact_state",
+            description="Set track folder compact state",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index"
+                    },
+                    "compact_state": {
+                        "type": "integer",
+                        "description": "Compact state: 0=open, 1=small, 2=tiny"
+                    }
+                },
+                "required": ["track_index", "compact_state"]
+            }
+        ),
+        Tool(
+            name="get_parent_track",
+            description="Get parent track of a track",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index"
+                    }
+                },
+                "required": ["track_index"]
+            }
+        ),
+        Tool(
+            name="set_track_height",
+            description="Set track height in TCP",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index"
+                    },
+                    "height": {
+                        "type": "integer",
+                        "description": "Height in pixels"
+                    },
+                    "lock_height": {
+                        "type": "boolean",
+                        "description": "Lock height",
+                        "default": false
+                    }
+                },
+                "required": ["track_index", "height"]
+            }
+        ),
+        Tool(
+            name="main_render_project",
+            description="Render project to file",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_index": {
+                        "type": "integer",
+                        "description": "Project index (0=current)",
+                        "default": 0
+                    },
+                    "render_tail_ms": {
+                        "type": "integer",
+                        "description": "Render tail in milliseconds",
+                        "default": 1000
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="freeze_track",
+            description="Freeze track",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index"
+                    }
+                },
+                "required": ["track_index"]
+            }
+        ),
+        Tool(
+            name="unfreeze_track",
+            description="Unfreeze track",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index"
+                    }
+                },
+                "required": ["track_index"]
+            }
+        ),
+        Tool(
+            name="is_track_frozen",
+            description="Check if track is frozen",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index"
+                    }
+                },
+                "required": ["track_index"]
+            }
+        ),
+        Tool(
+            name="render_time_selection",
+            description="Render time selection to new track",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "add_to_project": {
+                        "type": "boolean",
+                        "description": "Add rendered file to project",
+                        "default": true
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="apply_fx_to_items",
+            description="Apply track FX to items (destructive)",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index"
+                    }
+                },
+                "required": ["track_index"]
+            }
+        ),
+        Tool(
+            name="midi_get_all_events",
+            description="Get all MIDI events from take",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index"
+                    }
+                },
+                "required": ["take_index"]
+            }
+        ),
+        Tool(
+            name="midi_set_all_events",
+            description="Set all MIDI events in take",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index"
+                    },
+                    "events_data": {
+                        "type": "string",
+                        "description": "MIDI events data"
+                    }
+                },
+                "required": ["take_index", "events_data"]
+            }
+        ),
+        Tool(
+            name="midi_get_note_name",
+            description="Get MIDI note name",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "note_number": {
+                        "type": "integer",
+                        "description": "MIDI note number (0-127)"
+                    }
+                },
+                "required": ["note_number"]
+            }
+        ),
+        Tool(
+            name="midi_get_scale",
+            description="Get MIDI scale info for take",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index"
+                    }
+                },
+                "required": ["take_index"]
+            }
+        ),
+        Tool(
+            name="midi_set_scale",
+            description="Set MIDI scale for take",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index"
+                    },
+                    "root": {
+                        "type": "integer",
+                        "description": "Root note (0=C)"
+                    },
+                    "scale": {
+                        "type": "integer",
+                        "description": "Scale type (0=major, 1=minor, etc.)"
+                    },
+                    "channel": {
+                        "type": "integer",
+                        "description": "MIDI channel",
+                        "default": 0
+                    }
+                },
+                "required": ["take_index", "root", "scale"]
+            }
+        ),
+        Tool(
+            name="midi_get_text_sysex_event",
+            description="Get text/sysex event from take",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index"
+                    },
+                    "event_index": {
+                        "type": "integer",
+                        "description": "Event index"
+                    }
+                },
+                "required": ["take_index", "event_index"]
+            }
+        ),
+        Tool(
+            name="midi_set_text_sysex_event",
+            description="Set text/sysex event in take",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index"
+                    },
+                    "event_index": {
+                        "type": "integer",
+                        "description": "Event index (-1 for new)"
+                    },
+                    "selected": {
+                        "type": "boolean",
+                        "description": "Is selected"
+                    },
+                    "muted": {
+                        "type": "boolean",
+                        "description": "Is muted"
+                    },
+                    "ppq_pos": {
+                        "type": "number",
+                        "description": "Position in PPQ"
+                    },
+                    "type": {
+                        "type": "integer",
+                        "description": "Event type"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Event message"
+                    }
+                },
+                "required": ["take_index", "event_index", "selected", "muted", "ppq_pos", "type", "message"]
+            }
+        ),
+        Tool(
+            name="midi_count_events",
+            description="Count MIDI events in take",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index"
+                    }
+                },
+                "required": ["take_index"]
+            }
+        ),
+        Tool(
+            name="midi_enum_sel_notes",
+            description="Enumerate selected MIDI notes",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index"
+                    },
+                    "note_index": {
+                        "type": "integer",
+                        "description": "Selected note index"
+                    }
+                },
+                "required": ["take_index", "note_index"]
+            }
+        ),
+        Tool(
+            name="midi_select_all",
+            description="Select all MIDI events",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index"
+                    },
+                    "select_notes": {
+                        "type": "boolean",
+                        "description": "Select notes",
+                        "default": true
+                    },
+                    "select_cc": {
+                        "type": "boolean",
+                        "description": "Select CC",
+                        "default": true
+                    },
+                    "select_text": {
+                        "type": "boolean",
+                        "description": "Select text/sysex",
+                        "default": true
+                    }
+                },
+                "required": ["take_index"]
+            }
+        ),
+        Tool(
+            name="get_resource_path",
+            description="Get REAPER resource path",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        ),
+        Tool(
+            name="get_exe_path",
+            description="Get REAPER executable path",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        ),
+        Tool(
+            name="recursive_create_directory",
+            description="Recursively create directory",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Directory path to create"
+                    },
+                    "mode": {
+                        "type": "integer",
+                        "description": "Directory permissions mode",
+                        "default": 0
+                    }
+                },
+                "required": ["path"]
+            }
+        ),
+        Tool(
+            name="get_project_path",
+            description="Get project directory path",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_index": {
+                        "type": "integer",
+                        "description": "Project index (0=current)",
+                        "default": 0
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="get_project_state_change_count",
+            description="Get project state change count",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_index": {
+                        "type": "integer",
+                        "description": "Project index (0=current)",
+                        "default": 0
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="get_track_state_chunk",
+            description="Get track state chunk",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index"
+                    },
+                    "is_undo": {
+                        "type": "boolean",
+                        "description": "Is for undo",
+                        "default": false
+                    }
+                },
+                "required": ["track_index"]
+            }
+        ),
+        Tool(
+            name="set_track_state_chunk",
+            description="Set track state chunk",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index"
+                    },
+                    "state_chunk": {
+                        "type": "string",
+                        "description": "State chunk string"
+                    },
+                    "is_undo": {
+                        "type": "boolean",
+                        "description": "Is for undo",
+                        "default": false
+                    }
+                },
+                "required": ["track_index", "state_chunk"]
+            }
+        ),
+        Tool(
+            name="browse_for_file",
+            description="Open file browser dialog",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "Dialog title"
+                    },
+                    "extension": {
+                        "type": "string",
+                        "description": "File extension filter"
+                    }
+                },
+                "required": ["title", "extension"]
+            }
+        ),
+        Tool(
+            name="show_console_msg",
+            description="Show message in REAPER console",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "description": "Message to display"
+                    }
+                },
+                "required": ["message"]
+            }
+        ),
+        Tool(
+            name="clear_console",
+            description="Clear REAPER console",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        ),
+        Tool(
+            name="show_message_box",
+            description="Show message box dialog",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "description": "Message to display"
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "Dialog title"
+                    },
+                    "type": {
+                        "type": "integer",
+                        "description": "Message box type (0=OK, 1=OK/Cancel, etc.)",
+                        "default": 0
+                    }
+                },
+                "required": ["message", "title"]
+            }
+        ),
+        Tool(
+            name="get_main_hwnd",
+            description="Get main window handle",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        ),
+        Tool(
+            name="dock_window_add",
+            description="Add dock window",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "hwnd": {
+                        "type": "string",
+                        "description": "Window handle"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Dock name"
+                    },
+                    "pos": {
+                        "type": "integer",
+                        "description": "Dock position"
+                    },
+                    "allow_show": {
+                        "type": "boolean",
+                        "description": "Allow show",
+                        "default": true
+                    }
+                },
+                "required": ["hwnd", "name", "pos"]
+            }
+        ),
+        Tool(
+            name="get_mouse_position",
+            description="Get current mouse position",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        ),
+        Tool(
+            name="get_cursor_context",
+            description="Get cursor context",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        ),
+        Tool(
+            name="get_media_item_info_value",
+            description="Get media item property value",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "item_index": {
+                        "type": "integer",
+                        "description": "Media item index"
+                    },
+                    "param_name": {
+                        "type": "string",
+                        "description": "Parameter name (D_POSITION, D_LENGTH, etc.)"
+                    }
+                },
+                "required": ["item_index", "param_name"]
+            }
+        ),
+        Tool(
+            name="set_media_item_info_value",
+            description="Set media item property value",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "item_index": {
+                        "type": "integer",
+                        "description": "Media item index"
+                    },
+                    "param_name": {
+                        "type": "string",
+                        "description": "Parameter name (D_POSITION, D_LENGTH, etc.)"
+                    },
+                    "value": {
+                        "type": "number",
+                        "description": "New value"
+                    }
+                },
+                "required": ["item_index", "param_name", "value"]
+            }
+        ),
+        Tool(
+            name="get_take_name",
+            description="Get take name",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index"
+                    }
+                },
+                "required": ["take_index"]
+            }
+        ),
+        Tool(
+            name="set_take_name",
+            description="Set take name",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "New take name"
+                    }
+                },
+                "required": ["take_index", "name"]
+            }
+        ),
+        Tool(
+            name="get_media_item_take_info_value",
+            description="Get take property value",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index"
+                    },
+                    "param_name": {
+                        "type": "string",
+                        "description": "Parameter name (D_STARTOFFS, D_VOL, etc.)"
+                    }
+                },
+                "required": ["take_index", "param_name"]
+            }
+        ),
+        Tool(
+            name="set_media_item_take_info_value",
+            description="Set take property value",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index"
+                    },
+                    "param_name": {
+                        "type": "string",
+                        "description": "Parameter name (D_STARTOFFS, D_VOL, etc.)"
+                    },
+                    "value": {
+                        "type": "number",
+                        "description": "New value"
+                    }
+                },
+                "required": ["take_index", "param_name", "value"]
+            }
+        ),
+        Tool(
+            name="get_item_state_chunk",
+            description="Get item state chunk",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "item_index": {
+                        "type": "integer",
+                        "description": "Media item index"
+                    },
+                    "is_undo": {
+                        "type": "boolean",
+                        "description": "Is for undo",
+                        "default": false
+                    }
+                },
+                "required": ["item_index"]
+            }
+        ),
+        Tool(
+            name="set_item_state_chunk",
+            description="Set item state chunk",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "item_index": {
+                        "type": "integer",
+                        "description": "Media item index"
+                    },
+                    "state_chunk": {
+                        "type": "string",
+                        "description": "State chunk string"
+                    },
+                    "is_undo": {
+                        "type": "boolean",
+                        "description": "Is for undo",
+                        "default": false
+                    }
+                },
+                "required": ["item_index", "state_chunk"]
+            }
+        ),
+        Tool(
+            name="split_media_item",
+            description="Split media item at position",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "item_index": {
+                        "type": "integer",
+                        "description": "Media item index"
+                    },
+                    "position": {
+                        "type": "number",
+                        "description": "Split position in seconds"
+                    }
+                },
+                "required": ["item_index", "position"]
+            }
+        ),
+        Tool(
+            name="count_track_envelopes",
+            description="Count track envelopes",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index"
+                    }
+                },
+                "required": ["track_index"]
+            }
+        ),
+        Tool(
+            name="get_track_envelope_by_name",
+            description="Get track envelope by name",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index"
+                    },
+                    "envelope_name": {
+                        "type": "string",
+                        "description": "Envelope name"
+                    }
+                },
+                "required": ["track_index", "envelope_name"]
+            }
+        ),
+        Tool(
+            name="get_envelope_scaling_mode",
+            description="Get envelope scaling mode",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "envelope_index": {
+                        "type": "integer",
+                        "description": "Envelope index"
+                    }
+                },
+                "required": ["envelope_index"]
+            }
+        ),
+        Tool(
+            name="set_envelope_scaling_mode",
+            description="Set envelope scaling mode",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "envelope_index": {
+                        "type": "integer",
+                        "description": "Envelope index"
+                    },
+                    "scaling_mode": {
+                        "type": "integer",
+                        "description": "Scaling mode"
+                    }
+                },
+                "required": ["envelope_index", "scaling_mode"]
+            }
+        ),
+        Tool(
+            name="envelope_sort_points",
+            description="Sort envelope points by time",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "envelope_index": {
+                        "type": "integer",
+                        "description": "Envelope index"
+                    }
+                },
+                "required": ["envelope_index"]
+            }
+        ),
+        Tool(
+            name="envelope_sort_points_ex",
+            description="Sort envelope points with automation items",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "envelope_index": {
+                        "type": "integer",
+                        "description": "Envelope index"
+                    },
+                    "automation_item_index": {
+                        "type": "integer",
+                        "description": "Automation item index (-1 for all)",
+                        "default": -1
+                    }
+                },
+                "required": ["envelope_index"]
+            }
+        ),
+        Tool(
+            name="delete_envelope_point_range",
+            description="Delete envelope points in time range",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "envelope_index": {
+                        "type": "integer",
+                        "description": "Envelope index"
+                    },
+                    "start_time": {
+                        "type": "number",
+                        "description": "Start time"
+                    },
+                    "end_time": {
+                        "type": "number",
+                        "description": "End time"
+                    }
+                },
+                "required": ["envelope_index", "start_time", "end_time"]
+            }
+        ),
+        Tool(
+            name="scale_from_envelope",
+            description="Scale media item from envelope",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "envelope_index": {
+                        "type": "integer",
+                        "description": "Envelope index"
+                    },
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index"
+                    },
+                    "start_time": {
+                        "type": "number",
+                        "description": "Start time",
+                        "default": 0.0
+                    },
+                    "end_time": {
+                        "type": "number",
+                        "description": "End time (-1 for item end)",
+                        "default": -1.0
+                    }
+                },
+                "required": ["envelope_index", "take_index"]
+            }
+        ),
+        Tool(
+            name="get_project_time_signature2",
+            description="Get time signature at position",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_index": {
+                        "type": "integer",
+                        "description": "Project index (0=current)",
+                        "default": 0
+                    },
+                    "position": {
+                        "type": "number",
+                        "description": "Position in seconds"
+                    }
+                },
+                "required": ["position"]
+            }
+        ),
+        Tool(
+            name="set_project_grid",
+            description="Set project grid settings",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_index": {
+                        "type": "integer",
+                        "description": "Project index (0=current)",
+                        "default": 0
+                    },
+                    "division": {
+                        "type": "number",
+                        "description": "Grid division"
+                    },
+                    "swing_mode": {
+                        "type": "integer",
+                        "description": "Swing mode",
+                        "default": 0
+                    },
+                    "swing_amount": {
+                        "type": "number",
+                        "description": "Swing amount",
+                        "default": 0.0
+                    }
+                },
+                "required": ["division"]
+            }
+        ),
+        Tool(
+            name="get_set_project_info",
+            description="Get or set project info",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_index": {
+                        "type": "integer",
+                        "description": "Project index (0=current)",
+                        "default": 0
+                    },
+                    "param_name": {
+                        "type": "string",
+                        "description": "Parameter name"
+                    },
+                    "is_set": {
+                        "type": "boolean",
+                        "description": "Set mode (true) or get mode (false)",
+                        "default": false
+                    },
+                    "value": {
+                        "type": "number",
+                        "description": "Value to set (only for set mode)",
+                        "default": 0.0
+                    }
+                },
+                "required": ["param_name"]
+            }
+        ),
+        Tool(
+            name="get_project_time_offset",
+            description="Get project time offset",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_index": {
+                        "type": "integer",
+                        "description": "Project index (0=current)",
+                        "default": 0
+                    },
+                    "rounding": {
+                        "type": "boolean",
+                        "description": "Apply rounding",
+                        "default": false
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="count_project_markers",
+            description="Count all markers and regions",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_index": {
+                        "type": "integer",
+                        "description": "Project index (0=current)",
+                        "default": 0
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="get_last_marker_and_cur_region",
+            description="Get last marker and current region",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_index": {
+                        "type": "integer",
+                        "description": "Project index (0=current)",
+                        "default": 0
+                    },
+                    "position": {
+                        "type": "number",
+                        "description": "Position in seconds"
+                    }
+                },
+                "required": ["position"]
+            }
         )
 ]
