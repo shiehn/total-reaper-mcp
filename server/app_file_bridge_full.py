@@ -2071,6 +2071,96 @@ async def list_tools():
                 },
                 "required": ["track_index", "armed"]
             }
+        ),
+        Tool(
+            name="get_num_midi_inputs",
+            description="Get the number of MIDI inputs available",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        ),
+        Tool(
+            name="get_num_midi_outputs",
+            description="Get the number of MIDI outputs available",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        ),
+        Tool(
+            name="get_midi_input_name",
+            description="Get the name of a MIDI input",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "input_index": {
+                        "type": "integer",
+                        "description": "MIDI input index (0-based)"
+                    }
+                },
+                "required": ["input_index"]
+            }
+        ),
+        Tool(
+            name="get_midi_output_name",
+            description="Get the name of a MIDI output",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "output_index": {
+                        "type": "integer",
+                        "description": "MIDI output index (0-based)"
+                    }
+                },
+                "required": ["output_index"]
+            }
+        ),
+        Tool(
+            name="get_track_color",
+            description="Get the color of a track",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index (0-based, -1 for master track)"
+                    }
+                },
+                "required": ["track_index"]
+            }
+        ),
+        Tool(
+            name="set_track_color",
+            description="Set the color of a track",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index (0-based, -1 for master track)"
+                    },
+                    "color": {
+                        "type": "integer",
+                        "description": "Color value (RGB packed as integer, or 0 for default)"
+                    }
+                },
+                "required": ["track_index", "color"]
+            }
+        ),
+        Tool(
+            name="get_media_item_color",
+            description="Get the color of a media item",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "item_index": {
+                        "type": "integer",
+                        "description": "Media item index (0-based)"
+                    }
+                },
+                "required": ["item_index"]
+            }
         )
     ]
 
@@ -4966,6 +5056,143 @@ async def call_tool(name: str, arguments: dict):
             return [TextContent(
                 type="text",
                 text=f"Failed to set track record arm state: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_num_midi_inputs":
+        result = await bridge.call_lua("GetNumMIDIInputs", [])
+        
+        if result.get("ok"):
+            count = result.get("result", 0)
+            return [TextContent(
+                type="text",
+                text=f"Number of MIDI inputs: {count}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get number of MIDI inputs: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_num_midi_outputs":
+        result = await bridge.call_lua("GetNumMIDIOutputs", [])
+        
+        if result.get("ok"):
+            count = result.get("result", 0)
+            return [TextContent(
+                type="text",
+                text=f"Number of MIDI outputs: {count}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get number of MIDI outputs: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_midi_input_name":
+        input_index = arguments["input_index"]
+        
+        result = await bridge.call_lua("GetMIDIInputName", [input_index])
+        
+        if result.get("ok"):
+            name_info = result.get("result", {})
+            return [TextContent(
+                type="text",
+                text=f"MIDI input {input_index}: {name_info.get('name', 'Unknown')}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get MIDI input name: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_midi_output_name":
+        output_index = arguments["output_index"]
+        
+        result = await bridge.call_lua("GetMIDIOutputName", [output_index])
+        
+        if result.get("ok"):
+            name_info = result.get("result", {})
+            return [TextContent(
+                type="text",
+                text=f"MIDI output {output_index}: {name_info.get('name', 'Unknown')}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get MIDI output name: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_track_color":
+        track_index = arguments["track_index"]
+        
+        result = await bridge.call_lua("GetTrackColor", [track_index])
+        
+        if result.get("ok"):
+            color = result.get("result", 0)
+            # Extract RGB components
+            r = (color >> 16) & 0xFF
+            g = (color >> 8) & 0xFF
+            b = color & 0xFF
+            return [TextContent(
+                type="text",
+                text=f"Track {track_index} color: RGB({r}, {g}, {b}) (0x{color:06X})"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get track color: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "set_track_color":
+        track_index = arguments["track_index"]
+        color = arguments["color"]
+        
+        result = await bridge.call_lua("SetTrackColor", [track_index, color])
+        
+        if result.get("ok"):
+            if color == 0:
+                return [TextContent(
+                    type="text",
+                    text=f"Set track {track_index} color to default"
+                )]
+            else:
+                r = (color >> 16) & 0xFF
+                g = (color >> 8) & 0xFF
+                b = color & 0xFF
+                return [TextContent(
+                    type="text",
+                    text=f"Set track {track_index} color to RGB({r}, {g}, {b})"
+                )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to set track color: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_media_item_color":
+        item_index = arguments["item_index"]
+        
+        result = await bridge.call_lua("GetMediaItemColor", [item_index])
+        
+        if result.get("ok"):
+            color = result.get("result", 0)
+            if color == 0:
+                return [TextContent(
+                    type="text",
+                    text=f"Media item {item_index} color: Default"
+                )]
+            else:
+                r = (color >> 16) & 0xFF
+                g = (color >> 8) & 0xFF
+                b = color & 0xFF
+                return [TextContent(
+                    type="text",
+                    text=f"Media item {item_index} color: RGB({r}, {g}, {b}) (0x{color:06X})"
+                )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get media item color: {result.get('error', 'Unknown error')}"
             )]
     
     else:

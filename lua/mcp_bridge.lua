@@ -951,6 +951,86 @@ function main()
                 else
                     response.error = "SetMediaTrackInfo_Value requires 3 arguments"
                 end
+            elseif fname == "GetNumMIDIInputs" then
+                local count = reaper.GetNumMIDIInputs()
+                response.ok = true
+                response.result = count
+            elseif fname == "GetNumMIDIOutputs" then
+                local count = reaper.GetNumMIDIOutputs()
+                response.ok = true
+                response.result = count
+            elseif fname == "GetMIDIInputName" then
+                if #args >= 1 then
+                    local retval, name = reaper.GetMIDIInputName(args[1], "")
+                    if retval then
+                        response.ok = true
+                        response.result = {name = name}
+                    else
+                        response.error = "Invalid MIDI input index"
+                    end
+                else
+                    response.error = "GetMIDIInputName requires 1 argument"
+                end
+            elseif fname == "GetMIDIOutputName" then
+                if #args >= 1 then
+                    local retval, name = reaper.GetMIDIOutputName(args[1], "")
+                    if retval then
+                        response.ok = true
+                        response.result = {name = name}
+                    else
+                        response.error = "Invalid MIDI output index"
+                    end
+                else
+                    response.error = "GetMIDIOutputName requires 1 argument"
+                end
+            elseif fname == "GetTrackColor" then
+                if #args >= 1 then
+                    local track
+                    if args[1] == -1 then
+                        track = reaper.GetMasterTrack(0)
+                    else
+                        track = reaper.GetTrack(0, args[1])
+                    end
+                    if track then
+                        local color = reaper.GetTrackColor(track)
+                        response.ok = true
+                        response.result = color
+                    else
+                        response.error = "Track not found"
+                    end
+                else
+                    response.error = "GetTrackColor requires 1 argument"
+                end
+            elseif fname == "SetTrackColor" then
+                if #args >= 2 then
+                    local track
+                    if args[1] == -1 then
+                        track = reaper.GetMasterTrack(0)
+                    else
+                        track = reaper.GetTrack(0, args[1])
+                    end
+                    if track then
+                        reaper.SetTrackColor(track, args[2])
+                        response.ok = true
+                    else
+                        response.error = "Track not found"
+                    end
+                else
+                    response.error = "SetTrackColor requires 2 arguments"
+                end
+            elseif fname == "GetMediaItemColor" then
+                if #args >= 1 then
+                    local item = reaper.GetMediaItem(0, args[1])
+                    if item then
+                        local color = reaper.GetMediaItemInfo_Value(item, "I_CUSTOMCOLOR")
+                        response.ok = true
+                        response.result = color
+                    else
+                        response.error = "Media item not found"
+                    end
+                else
+                    response.error = "GetMediaItemColor requires 1 argument"
+                end
 
             else
                 response.error = "Unknown function: " .. fname
