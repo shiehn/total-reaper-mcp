@@ -38,7 +38,7 @@ async def test_media_item_workflow(reaper_mcp_client):
     # Set media item position
     result = await reaper_mcp_client.call_tool(
         "set_media_item_position",
-        {"item_index": 0, "position": 5.0, "move_edit_cursor": False}
+        {"item_index": 0, "position": 5.0}
     )
     print(f"Set item position result: {result}")
     assert "success" in result.content[0].text.lower() or "position" in result.content[0].text.lower()
@@ -54,7 +54,7 @@ async def test_media_item_workflow(reaper_mcp_client):
     # Set media item length
     result = await reaper_mcp_client.call_tool(
         "set_media_item_length",
-        {"item_index": 0, "length": 10.0, "adjust_takes": True}
+        {"item_index": 0, "length": 10.0}
     )
     print(f"Set item length result: {result}")
     assert "success" in result.content[0].text.lower() or "length" in result.content[0].text.lower()

@@ -2,6 +2,8 @@
 
 An MCP (Model Context Protocol) server that exposes REAPER DAW functionality through a clean API interface.
 
+![REAPER MCP Server](assets/repo-readme-image.png)
+
 ## Requirements
 
 - REAPER 6.83+ (includes embedded Lua 5.4 and full ReaScript API)

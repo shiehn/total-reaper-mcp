@@ -12,7 +12,7 @@ async def test_track_folder_operations(reaper_mcp_client):
         "insert_track_at_index",
         {"index": 0, "want_defaults": True}
     )
-    assert "Created track" in result.content[0].text
+    assert "Successfully inserted track" in result.content[0].text
     
     # Set track name for clarity
     result = await reaper_mcp_client.call_tool(
@@ -26,7 +26,7 @@ async def test_track_folder_operations(reaper_mcp_client):
             "insert_track_at_index",
             {"index": i, "want_defaults": True}
         )
-        assert "Created track" in result.content[0].text
+        assert "Successfully inserted track" in result.content[0].text
         
         result = await reaper_mcp_client.call_tool(
             "set_track_name",
@@ -70,7 +70,7 @@ async def test_track_folder_compact_state(reaper_mcp_client):
         "insert_track_at_index",
         {"index": 0, "want_defaults": True}
     )
-    assert "Created track" in result.content[0].text
+    assert "Successfully inserted track" in result.content[0].text
     
     # Set as folder
     result = await reaper_mcp_client.call_tool(
@@ -115,7 +115,7 @@ async def test_track_height_operations(reaper_mcp_client):
         "insert_track_at_index",
         {"index": 0, "want_defaults": True}
     )
-    assert "Created track" in result.content[0].text
+    assert "Successfully inserted track" in result.content[0].text
     
     # Set track height
     result = await reaper_mcp_client.call_tool(

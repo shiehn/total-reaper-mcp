@@ -541,6 +541,19 @@ local function process_request()
                             response.error = "GetSet_LoopTimeRange requires at least 2 arguments"
                         end
                     
+                    elseif fname == "MIDI_CountEvts" then
+                        if #args >= 1 then
+                            local take = args[1]
+                            local retval, notes, cc, text = reaper.MIDI_CountEvts(take)
+                            response.ok = true
+                            response.retval = retval
+                            response.notes = notes
+                            response.cc = cc
+                            response.text = text
+                        else
+                            response.error = "MIDI_CountEvts requires 1 argument (take)"
+                        end
+                    
                     else
                         -- Try generic function call
                         if reaper[fname] then

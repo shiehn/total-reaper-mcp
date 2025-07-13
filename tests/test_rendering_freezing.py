@@ -12,7 +12,7 @@ async def test_track_freeze_operations(reaper_mcp_client):
         "insert_track_at_index",
         {"index": 0, "want_defaults": True}
     )
-    assert "Created track" in result.content[0].text
+    assert "Successfully inserted track" in result.content[0].text
     
     # Add an FX to the track
     result = await reaper_mcp_client.call_tool(
@@ -23,11 +23,7 @@ async def test_track_freeze_operations(reaper_mcp_client):
     # Add a media item
     result = await reaper_mcp_client.call_tool(
         "add_media_item_to_track",
-        {
-            "track_index": 0,
-            "start_position": 0.0,
-            "length": 5.0
-        }
+        {"track_index": 0}
     )
     assert "Added media item" in result.content[0].text
     
@@ -68,16 +64,12 @@ async def test_render_time_selection(reaper_mcp_client):
         "insert_track_at_index",
         {"index": 0, "want_defaults": True}
     )
-    assert "Created track" in result.content[0].text
+    assert "Successfully inserted track" in result.content[0].text
     
     # Add a media item
     result = await reaper_mcp_client.call_tool(
         "add_media_item_to_track",
-        {
-            "track_index": 0,
-            "start_position": 0.0,
-            "length": 10.0
-        }
+        {"track_index": 0}
     )
     assert "Added media item" in result.content[0].text
     
@@ -109,7 +101,7 @@ async def test_apply_fx_to_items(reaper_mcp_client):
         "insert_track_at_index",
         {"index": 0, "want_defaults": True}
     )
-    assert "Created track" in result.content[0].text
+    assert "Successfully inserted track" in result.content[0].text
     
     # Add an FX
     result = await reaper_mcp_client.call_tool(
@@ -121,11 +113,7 @@ async def test_apply_fx_to_items(reaper_mcp_client):
     for i in range(3):
         result = await reaper_mcp_client.call_tool(
             "add_media_item_to_track",
-            {
-                "track_index": 0,
-                "start_position": i * 3.0,
-                "length": 2.0
-            }
+            {"track_index": 0}
         )
         assert "Added media item" in result.content[0].text
     
@@ -145,16 +133,12 @@ async def test_project_render(reaper_mcp_client):
         "insert_track_at_index",
         {"index": 0, "want_defaults": True}
     )
-    assert "Created track" in result.content[0].text
+    assert "Successfully inserted track" in result.content[0].text
     
     # Add a media item
     result = await reaper_mcp_client.call_tool(
         "add_media_item_to_track",
-        {
-            "track_index": 0,
-            "start_position": 0.0,
-            "length": 5.0
-        }
+        {"track_index": 0}
     )
     assert "Added media item" in result.content[0].text
     

@@ -12,16 +12,12 @@ async def test_media_source_operations(reaper_mcp_client):
         "insert_track_at_index",
         {"index": 0, "want_defaults": True}
     )
-    assert "Created track" in result.content[0].text
+    assert "Successfully inserted track" in result.content[0].text
     
     # Add a media item
     result = await reaper_mcp_client.call_tool(
         "add_media_item_to_track",
-        {
-            "track_index": 0,
-            "start_position": 0.0,
-            "length": 5.0
-        }
+        {"track_index": 0}
     )
     assert "Added media item" in result.content[0].text
     
@@ -75,16 +71,12 @@ async def test_media_take_peaks(reaper_mcp_client):
         "insert_track_at_index",
         {"index": 0, "want_defaults": True}
     )
-    assert "Created track" in result.content[0].text
+    assert "Successfully inserted track" in result.content[0].text
     
     # Add a media item
     result = await reaper_mcp_client.call_tool(
         "add_media_item_to_track",
-        {
-            "track_index": 0,
-            "start_position": 0.0,
-            "length": 5.0
-        }
+        {"track_index": 0}
     )
     assert "Added media item" in result.content[0].text
     
@@ -117,16 +109,12 @@ async def test_set_media_take_source(reaper_mcp_client):
         "insert_track_at_index",
         {"index": 0, "want_defaults": True}
     )
-    assert "Created track" in result.content[0].text
+    assert "Successfully inserted track" in result.content[0].text
     
     # Add a media item
     result = await reaper_mcp_client.call_tool(
         "add_media_item_to_track",
-        {
-            "track_index": 0,
-            "start_position": 0.0,
-            "length": 5.0
-        }
+        {"track_index": 0}
     )
     assert "Added media item" in result.content[0].text
     

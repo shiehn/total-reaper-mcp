@@ -26,7 +26,7 @@ async def test_cursor_operations(reaper_mcp_client):
     # Set edit cursor position
     result = await reaper_mcp_client.call_tool(
         "set_edit_cursor_position",
-        {"position": 10.0}
+        {"time": 10.0}
     )
     print(f"Set cursor position result: {result}")
     assert "success" in result.content[0].text.lower() or "10.0" in result.content[0].text

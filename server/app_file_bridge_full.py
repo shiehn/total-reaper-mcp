@@ -2345,6 +2345,311 @@ async def list_tools():
                 },
                 "required": ["track_index", "video_file"]
             }
+        ),
+        # Missing MIDI tools
+        Tool(
+            name="midi_get_note_name",
+            description="Get the note name for a MIDI note number",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "note_number": {
+                        "type": "integer",
+                        "description": "MIDI note number (0-127)",
+                        "minimum": 0,
+                        "maximum": 127
+                    }
+                },
+                "required": ["note_number"]
+            }
+        ),
+        Tool(
+            name="midi_count_events",
+            description="Count MIDI events in a take",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "item_index": {
+                        "type": "integer",
+                        "description": "Media item index",
+                        "default": 0
+                    },
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index",
+                        "default": 0
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="midi_get_scale",
+            description="Get the scale/key signature of a MIDI take",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "item_index": {
+                        "type": "integer",
+                        "description": "Media item index",
+                        "default": 0
+                    },
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index",
+                        "default": 0
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="midi_set_scale",
+            description="Set the scale/key signature of a MIDI take",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "item_index": {
+                        "type": "integer",
+                        "description": "Media item index",
+                        "default": 0
+                    },
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index",
+                        "default": 0
+                    },
+                    "root": {
+                        "type": "integer",
+                        "description": "Root note (0=C, 1=C#, etc.)",
+                        "minimum": 0,
+                        "maximum": 11
+                    },
+                    "scale": {
+                        "type": "integer",
+                        "description": "Scale type (0=major, 1=minor, etc.)"
+                    },
+                    "signature": {
+                        "type": "string",
+                        "description": "Key signature string"
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="midi_select_all",
+            description="Select all MIDI events in a take",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "item_index": {
+                        "type": "integer",
+                        "description": "Media item index",
+                        "default": 0
+                    },
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index",
+                        "default": 0
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="midi_get_all_events",
+            description="Get all MIDI events from a take",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "item_index": {
+                        "type": "integer",
+                        "description": "Media item index",
+                        "default": 0
+                    },
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index",
+                        "default": 0
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="midi_insert_note",
+            description="Insert a MIDI note (duplicate of insert_midi_note for compatibility)",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "take_index": {
+                        "type": "integer",
+                        "description": "Take index"
+                    },
+                    "pitch": {
+                        "type": "integer",
+                        "description": "MIDI pitch (0-127)",
+                        "minimum": 0,
+                        "maximum": 127
+                    },
+                    "velocity": {
+                        "type": "integer",
+                        "description": "Note velocity (1-127)",
+                        "minimum": 1,
+                        "maximum": 127,
+                        "default": 80
+                    },
+                    "position": {
+                        "type": "number",
+                        "description": "Position in seconds",
+                        "default": 0.0
+                    },
+                    "length": {
+                        "type": "number",
+                        "description": "Length in seconds",
+                        "default": 0.5
+                    },
+                    "channel": {
+                        "type": "integer",
+                        "description": "MIDI channel (0-15)",
+                        "minimum": 0,
+                        "maximum": 15,
+                        "default": 0
+                    },
+                    "selected": {
+                        "type": "boolean",
+                        "description": "Whether the note is selected",
+                        "default": False
+                    },
+                    "muted": {
+                        "type": "boolean",
+                        "description": "Whether the note is muted",
+                        "default": False
+                    }
+                },
+                "required": ["take_index", "pitch"]
+            }
+        ),
+        # Missing track tools
+        Tool(
+            name="insert_track_at_index",
+            description="Insert track at index (alias for insert_track)",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "index": {
+                        "type": "integer",
+                        "description": "Track index"
+                    },
+                    "want_defaults": {
+                        "type": "boolean",
+                        "description": "Use default track settings",
+                        "default": True
+                    }
+                },
+                "required": ["index"]
+            }
+        ),
+        Tool(
+            name="get_track_volume_db",
+            description="Get track volume in dB",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index"
+                    }
+                },
+                "required": ["track_index"]
+            }
+        ),
+        Tool(
+            name="set_track_volume_db",
+            description="Set track volume in dB",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index"
+                    },
+                    "volume_db": {
+                        "type": "number",
+                        "description": "Volume in dB"
+                    }
+                },
+                "required": ["track_index", "volume_db"]
+            }
+        ),
+        Tool(
+            name="freeze_track",
+            description="Freeze a track",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index"
+                    }
+                },
+                "required": ["track_index"]
+            }
+        ),
+        Tool(
+            name="unfreeze_track",
+            description="Unfreeze a track",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index"
+                    }
+                },
+                "required": ["track_index"]
+            }
+        ),
+        # Missing resource/path tools
+        Tool(
+            name="get_resource_path",
+            description="Get REAPER resource path",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        ),
+        Tool(
+            name="get_exe_path",
+            description="Get REAPER executable path",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        ),
+        # Other missing tools
+        Tool(
+            name="show_console_msg",
+            description="Show message in console",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "description": "Message to show"
+                    }
+                },
+                "required": ["message"]
+            }
+        ),
+        Tool(
+            name="clear_console",
+            description="Clear the console",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
         )
     ]
 
@@ -5615,6 +5920,310 @@ async def call_tool(name: str, arguments: dict):
                 type="text",
                 text=f"Failed to add video: {result.get('error', 'Unknown error')}"
             )]
+    
+    # Missing MIDI tool implementations
+    elif name == "midi_get_note_name":
+        note_number = arguments["note_number"]
+        
+        # Note names
+        note_names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+        octave = (note_number // 12) - 1
+        note_name = note_names[note_number % 12]
+        
+        return [TextContent(
+            type="text",
+            text=f"Note name: {note_name}{octave}"
+        )]
+    
+    elif name == "midi_count_events":
+        item_index = arguments.get("item_index", 0)
+        take_index = arguments.get("take_index", 0)
+        
+        # Get media item
+        item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
+        if not item_result.get("ok") or not item_result.get("ret"):
+            return [TextContent(type="text", text=f"Failed to find media item at index {item_index}")]
+        
+        item_handle = item_result.get("ret")
+        
+        # Get take
+        result = await bridge.call_lua("GetMediaItemTake", [item_handle, take_index])
+        if not result.get("ok") or not result.get("ret"):
+            return [TextContent(type="text", text=f"Failed to find take at index {take_index}")]
+        
+        take_handle = result.get("ret")
+        
+        # Count events
+        result = await bridge.call_lua("MIDI_CountEvts", [take_handle])
+        if result.get("ok"):
+            # MIDI_CountEvts returns multiple values
+            notes = result.get("notes", 0)
+            ccs = result.get("cc", 0)
+            text_events = result.get("text", 0)
+            
+            return [TextContent(
+                type="text",
+                text=f"MIDI event counts: notes={notes}, CCs={ccs}, sysex={text_events}"
+            )]
+        
+        return [TextContent(type="text", text="Failed to count MIDI events")]
+    
+    elif name == "midi_get_scale":
+        item_index = arguments.get("item_index", 0)
+        take_index = arguments.get("take_index", 0)
+        
+        # Get media item
+        item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
+        if not item_result.get("ok") or not item_result.get("ret"):
+            return [TextContent(type="text", text=f"Failed to find media item at index {item_index}")]
+        
+        item_handle = item_result.get("ret")
+        
+        # Get take
+        result = await bridge.call_lua("GetMediaItemTake", [item_handle, take_index])
+        if not result.get("ok") or not result.get("ret"):
+            return [TextContent(type="text", text=f"Failed to find take at index {take_index}")]
+        
+        take_handle = result.get("ret")
+        
+        # Get scale
+        result = await bridge.call_lua("MIDI_GetScale", [take_handle])
+        if result.get("ok"):
+            root = result.get("root", 0)
+            scale_type = result.get("scale", 0)
+            name = result.get("name", "")
+            
+            return [TextContent(
+                type="text",
+                text=f"Scale: root={root}, type={scale_type}, name={name}"
+            )]
+        
+        return [TextContent(type="text", text="Failed to get scale")]
+    
+    elif name == "midi_set_scale":
+        item_index = arguments.get("item_index", 0)
+        take_index = arguments.get("take_index", 0)
+        root = arguments.get("root", 0)
+        scale = arguments.get("scale", 0)
+        signature = arguments.get("signature", "")
+        
+        # Get media item
+        item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
+        if not item_result.get("ok") or not item_result.get("ret"):
+            return [TextContent(type="text", text=f"Failed to find media item at index {item_index}")]
+        
+        item_handle = item_result.get("ret")
+        
+        # Get take
+        result = await bridge.call_lua("GetMediaItemTake", [item_handle, take_index])
+        if not result.get("ok") or not result.get("ret"):
+            return [TextContent(type="text", text=f"Failed to find take at index {take_index}")]
+        
+        take_handle = result.get("ret")
+        
+        # Set scale
+        result = await bridge.call_lua("MIDI_SetScale", [take_handle, root, scale, signature])
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Set MIDI scale: root={root}, scale={scale}, signature={signature}"
+            )]
+        
+        return [TextContent(type="text", text="Failed to set scale")]
+    
+    elif name == "midi_select_all":
+        item_index = arguments.get("item_index", 0)
+        take_index = arguments.get("take_index", 0)
+        
+        # Get media item
+        item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
+        if not item_result.get("ok") or not item_result.get("ret"):
+            return [TextContent(type="text", text=f"Failed to find media item at index {item_index}")]
+        
+        item_handle = item_result.get("ret")
+        
+        # Get take
+        result = await bridge.call_lua("GetMediaItemTake", [item_handle, take_index])
+        if not result.get("ok") or not result.get("ret"):
+            return [TextContent(type="text", text=f"Failed to find take at index {take_index}")]
+        
+        take_handle = result.get("ret")
+        
+        # Select all MIDI events
+        result = await bridge.call_lua("MIDI_SelectAll", [take_handle, True])
+        if result.get("ok"):
+            return [TextContent(type="text", text="Selected all MIDI events")]
+        
+        return [TextContent(type="text", text="Failed to select MIDI events")]
+    
+    elif name == "midi_get_all_events":
+        item_index = arguments.get("item_index", 0)
+        take_index = arguments.get("take_index", 0)
+        
+        # Get media item
+        item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
+        if not item_result.get("ok") or not item_result.get("ret"):
+            return [TextContent(type="text", text=f"Failed to find media item at index {item_index}")]
+        
+        item_handle = item_result.get("ret")
+        
+        # Get take
+        result = await bridge.call_lua("GetMediaItemTake", [item_handle, take_index])
+        if not result.get("ok") or not result.get("ret"):
+            return [TextContent(type="text", text=f"Failed to find take at index {take_index}")]
+        
+        take_handle = result.get("ret")
+        
+        # Get all events
+        result = await bridge.call_lua("MIDI_GetAllEvts", [take_handle])
+        if result.get("ok") and result.get("ret"):
+            events_data = result.get("ret", "")
+            return [TextContent(
+                type="text",
+                text=f"MIDI events data: {len(events_data)} bytes"
+            )]
+        
+        return [TextContent(type="text", text="Failed to get MIDI events")]
+    
+    elif name == "midi_insert_note":
+        # This is an alias for insert_midi_note
+        return await call_tool("insert_midi_note", arguments)
+    
+    elif name == "insert_track_at_index":
+        # This is an alias for insert_track with different parameter names
+        return await call_tool("insert_track", {
+            "index": arguments["index"],
+            "use_defaults": arguments.get("want_defaults", True)
+        })
+    
+    elif name == "get_track_volume_db":
+        track_index = arguments["track_index"]
+        
+        # Get track
+        result = await bridge.call_lua("GetTrack", [0, track_index])
+        if not result.get("ok") or not result.get("ret"):
+            return [TextContent(type="text", text=f"Track {track_index} not found")]
+        
+        track_handle = result["retval"]
+        
+        # Get volume
+        result = await bridge.call_lua("GetMediaTrackInfo_Value", [track_handle, "D_VOL"])
+        if result.get("ok") and result.get("retval") is not None:
+            linear_vol = result["retval"]
+            # Convert to dB
+            import math
+            if linear_vol > 0:
+                db_vol = 20 * math.log10(linear_vol)
+            else:
+                db_vol = -150.0  # -inf
+            
+            return [TextContent(
+                type="text",
+                text=f"Track volume: {db_vol:.2f} dB"
+            )]
+        
+        return [TextContent(type="text", text="Failed to get track volume")]
+    
+    elif name == "set_track_volume_db":
+        track_index = arguments["track_index"]
+        volume_db = arguments["volume_db"]
+        
+        # Get track
+        result = await bridge.call_lua("GetTrack", [0, track_index])
+        if not result.get("ok") or not result.get("ret"):
+            return [TextContent(type="text", text=f"Track {track_index} not found")]
+        
+        track_handle = result["retval"]
+        
+        # Convert dB to linear
+        import math
+        if volume_db > -150:
+            linear_vol = 10 ** (volume_db / 20)
+        else:
+            linear_vol = 0
+        
+        # Set volume
+        result = await bridge.call_lua("SetMediaTrackInfo_Value", [track_handle, "D_VOL", linear_vol])
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Set track volume to {volume_db:.2f} dB"
+            )]
+        
+        return [TextContent(type="text", text="Failed to set track volume")]
+    
+    elif name == "freeze_track":
+        track_index = arguments["track_index"]
+        
+        # Get track
+        result = await bridge.call_lua("GetTrack", [0, track_index])
+        if not result.get("ok") or not result.get("ret"):
+            return [TextContent(type="text", text=f"Track {track_index} not found")]
+        
+        track_handle = result["retval"]
+        
+        # Freeze track
+        result = await bridge.call_lua("Main_OnCommandEx", [41223, 0, 0])  # Track: Freeze to stereo
+        if result.get("ok"):
+            return [TextContent(type="text", text=f"Froze track {track_index}")]
+        
+        return [TextContent(type="text", text="Failed to freeze track")]
+    
+    elif name == "unfreeze_track":
+        track_index = arguments["track_index"]
+        
+        # Get track
+        result = await bridge.call_lua("GetTrack", [0, track_index])
+        if not result.get("ok") or not result.get("ret"):
+            return [TextContent(type="text", text=f"Track {track_index} not found")]
+        
+        track_handle = result["retval"]
+        
+        # Unfreeze track
+        result = await bridge.call_lua("Main_OnCommandEx", [41644, 0, 0])  # Track: Unfreeze
+        if result.get("ok"):
+            return [TextContent(type="text", text=f"Unfroze track {track_index}")]
+        
+        return [TextContent(type="text", text="Failed to unfreeze track")]
+    
+    elif name == "get_resource_path":
+        result = await bridge.call_lua("GetResourcePath", [])
+        if result.get("ok") and result.get("retval"):
+            return [TextContent(
+                type="text",
+                text=f"Resource path: {result['retval']}"
+            )]
+        
+        return [TextContent(type="text", text="Failed to get resource path")]
+    
+    elif name == "get_exe_path":
+        result = await bridge.call_lua("GetExePath", [])
+        if result.get("ok") and result.get("retval"):
+            return [TextContent(
+                type="text",
+                text=f"Executable path: {result['retval']}"
+            )]
+        
+        return [TextContent(type="text", text="Failed to get executable path")]
+    
+    elif name == "show_console_msg":
+        message = arguments["message"]
+        
+        result = await bridge.call_lua("ShowConsoleMsg", [message])
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Showed message: {message}"
+            )]
+        
+        return [TextContent(type="text", text="Failed to show console message")]
+    
+    elif name == "clear_console":
+        result = await bridge.call_lua("ClearConsole", [])
+        if result.get("ok"):
+            return [TextContent(type="text", text="Cleared console")]
+        
+        return [TextContent(type="text", text="Failed to clear console")]
     
     else:
         return [TextContent(
