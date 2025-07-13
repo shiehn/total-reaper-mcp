@@ -87,26 +87,17 @@ pytest tests/test_integration.py -v
 
 ## Available Tools
 
-Currently implemented ReaScript methods (13 total):
+The REAPER MCP Server implements **169+ ReaScript API methods** across 21 categories including:
+- Track Management & Controls
+- Media Items & Takes
+- MIDI Operations
+- Effects/FX Management
+- Automation & Envelopes
+- Project Management
+- Transport & Playback
+- And much more
 
-### Track Management
-- `insert_track`: Insert a new track at specified index
-- `get_track_count`: Get the number of tracks in current project  
-- `get_track`: Get track by index
-- `get_master_track`: Get the master track
-- `delete_track`: Delete a track by index
-- `set_track_selected`: Select or deselect a track
-- `get_track_name`: Get track name
-- `set_track_name`: Set track name
-
-### Track Controls
-- `get_track_mute` / `set_track_mute`: Get/set track mute state
-- `get_track_solo` / `set_track_solo`: Get/set track solo state
-
-### System
-- `get_reaper_version`: Get REAPER version string
-
-For a complete list of implemented and planned methods, see [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
+For the complete list of all implemented methods, see [IMPLEMENTATION_MASTER.md](IMPLEMENTATION_MASTER.md).
 
 ## Communication Flow
 
@@ -135,12 +126,12 @@ This project implements a subset of the [REAPER ReaScript API](https://www.reape
 - Transport control
 - And much more
 
-See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) for details on which methods are currently implemented.
+See [IMPLEMENTATION_MASTER.md](IMPLEMENTATION_MASTER.md) for details on which methods are currently implemented.
 
 ## Contributing
 
 When adding new ReaScript methods:
-1. Check the implementation checklist in IMPLEMENTATION_STATUS.md
+1. Check the implementation checklist in IMPLEMENTATION_MASTER.md
 2. Follow the existing patterns in the codebase
 3. Include tests for all new methods
-4. Update the implementation status document
+4. Update the implementation master list
