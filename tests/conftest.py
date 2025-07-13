@@ -72,9 +72,14 @@ class MCPClientManager:
 async def reaper_mcp_client():
     """Create an MCP client connected to the REAPER server"""
     # Check which server to use
+    use_modern = os.environ.get('USE_MODERN_SERVER', '').lower() == 'true'
     bridge_type = os.environ.get('BRIDGE_TYPE', 'file').lower()
     
-    if bridge_type == 'registry':
+    if use_modern:
+        # Use the modern pattern server
+        server_module = "server.app_modern"
+        print("🚀 Using MODERN MCP server pattern")
+    elif bridge_type == 'registry':
         server_module = "server.app_file_bridge_registry"
     elif bridge_type == 'file':
         server_module = "server.app_file_bridge_full"
