@@ -1031,6 +1031,140 @@ function main()
                 else
                     response.error = "GetMediaItemColor requires 1 argument"
                 end
+            elseif fname == "Main_openProject" then
+                if #args >= 1 then
+                    -- args[2] is in_new_tab flag
+                    local filename = args[1]
+                    local in_new_tab = args[2] or false
+                    
+                    if in_new_tab then
+                        -- Open in new tab (action 41929)
+                        reaper.Main_OnCommand(41929, 0)
+                    end
+                    
+                    reaper.Main_openProject(filename)
+                    response.ok = true
+                else
+                    response.error = "Main_openProject requires 1 argument"
+                end
+            elseif fname == "EnumProjects" then
+                local projects = {}
+                local idx = 0
+                while true do
+                    local proj = reaper.EnumProjects(idx)
+                    if not proj then break end
+                    
+                    -- Get project name
+                    local retval, projname = reaper.GetProjectName(proj, "")
+                    
+                    -- Check if this is current project
+                    local is_current = proj == reaper.EnumProjects(-1)
+                    
+                    table.insert(projects, {
+                        name = projname,
+                        current = is_current
+                    })
+                    idx = idx + 1
+                end
+                
+                response.ok = true
+                response.result = projects
+            elseif fname == "SelectProjectInstance" then
+                if #args >= 1 then
+                    local proj = reaper.EnumProjects(args[1])
+                    if proj then
+                        reaper.SelectProjectInstance(proj)
+                        response.ok = true
+                    else
+                        response.error = "Invalid project index"
+                    end
+                else
+                    response.error = "SelectProjectInstance requires 1 argument"
+                end
+            elseif fname == "GetCurrentProjectIndex" then
+                -- Find index of current project
+                local current_proj = reaper.EnumProjects(-1)
+                local idx = 0
+                while true do
+                    local proj = reaper.EnumProjects(idx)
+                    if not proj then break end
+                    if proj == current_proj then
+                        response.ok = true
+                        response.result = idx
+                        break
+                    end
+                    idx = idx + 1
+                end
+                
+                if not response.ok then
+                    response.error = "Could not find current project index"
+                end
+            elseif fname == "GetProjectRenderSettings" then
+                -- Get basic render settings from project
+                local srate = reaper.GetSetProjectInfo(0, "PROJECT_SRATE", 0, false)
+                local render_format = reaper.GetSetProjectInfo_String(0, "RENDER_FORMAT", "", false)
+                
+                -- Parse render format for basic info
+                local channels = 2  -- Default stereo
+                local format = "WAV"  -- Default
+                
+                response.ok = true
+                response.result = {
+                    srate = srate,
+                    channels = channels,
+                    format = format
+                }
+            elseif fname == "CheckVideoSupport" then
+                -- Check if video is available
+                local video_hwnd = reaper.GetVideoHWND()
+                local has_video = video_hwnd ~= nil
+                
+                response.ok = true
+                response.result = has_video
+            elseif fname == "GetVideoSettings" then
+                -- Get video settings from project
+                local width = reaper.GetSetProjectInfo(0, "PROJECT_VIDEO_WIDTH", 0, false)
+                local height = reaper.GetSetProjectInfo(0, "PROJECT_VIDEO_HEIGHT", 0, false)
+                local fps = reaper.GetSetProjectInfo(0, "PROJECT_VIDEO_FPS", 0, false)
+                
+                response.ok = true
+                response.result = {
+                    width = width,
+                    height = height,
+                    fps = fps
+                }
+            elseif fname == "AddVideoToTrack" then
+                if #args >= 2 then
+                    local track = reaper.GetTrack(0, args[1])
+                    if track then
+                        -- Create media item
+                        local item = reaper.AddMediaItemToTrack(track)
+                        if item then
+                            -- Add take with video file
+                            local take = reaper.AddTakeToMediaItem(item)
+                            if take then
+                                local source = reaper.PCM_Source_CreateFromFile(args[2])
+                                if source then
+                                    reaper.SetMediaItemTake_Source(take, source)
+                                    -- Set item length to source length
+                                    local length = reaper.GetMediaSourceLength(source)
+                                    reaper.SetMediaItemLength(item, length, false)
+                                    response.ok = true
+                                else
+                                    response.error = "Could not load video file"
+                                end
+                            else
+                                response.error = "Could not create take"
+                            end
+                        else
+                            response.error = "Could not create media item"
+                        end
+                    else
+                        response.error = "Track not found"
+                    end
+                else
+                    response.error = "AddVideoToTrack requires 2 arguments"
+                end
 
             else
                 response.error = "Unknown function: " .. fname

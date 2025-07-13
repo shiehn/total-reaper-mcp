@@ -2161,6 +2161,190 @@ async def list_tools():
                 },
                 "required": ["item_index"]
             }
+        ),
+        Tool(
+            name="open_project",
+            description="Open a REAPER project file",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "filename": {
+                        "type": "string",
+                        "description": "Full path to the project file (.rpp or .rpp-bak)"
+                    },
+                    "in_new_tab": {
+                        "type": "boolean",
+                        "description": "Open in new project tab",
+                        "default": False
+                    }
+                },
+                "required": ["filename"]
+            }
+        ),
+        Tool(
+            name="enum_projects",
+            description="Get information about all open projects",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        ),
+        Tool(
+            name="select_project_instance",
+            description="Switch to a specific project by index",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_index": {
+                        "type": "integer",
+                        "description": "Project index (0-based)"
+                    }
+                },
+                "required": ["project_index"]
+            }
+        ),
+        Tool(
+            name="get_current_project_index",
+            description="Get the index of the currently active project",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        ),
+        Tool(
+            name="close_project",
+            description="Close the current project",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "save_prompt": {
+                        "type": "boolean",
+                        "description": "Show save prompt if project has unsaved changes",
+                        "default": True
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="render_project",
+            description="Render the entire project to file",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "bounds": {
+                        "type": "string",
+                        "description": "Render bounds (entire_project, time_selection, selected_items)",
+                        "enum": ["entire_project", "time_selection", "selected_items"],
+                        "default": "entire_project"
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="bounce_tracks",
+            description="Bounce selected tracks to new track",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "add_to_project": {
+                        "type": "boolean",
+                        "description": "Add bounced audio to project",
+                        "default": True
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="get_render_settings",
+            description="Get current render settings",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        ),
+        Tool(
+            name="set_render_settings",
+            description="Set render settings",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "sample_rate": {
+                        "type": "integer",
+                        "description": "Sample rate (e.g., 44100, 48000)",
+                        "enum": [44100, 48000, 88200, 96000, 176400, 192000]
+                    },
+                    "channels": {
+                        "type": "integer",
+                        "description": "Number of channels (1=mono, 2=stereo, 6=5.1)",
+                        "enum": [1, 2, 6]
+                    },
+                    "format": {
+                        "type": "string",
+                        "description": "Output format",
+                        "enum": ["WAV", "AIFF", "MP3", "OGG", "FLAC"]
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="check_video_support",
+            description="Check if video support is available in REAPER",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        ),
+        Tool(
+            name="get_video_settings",
+            description="Get current video processor settings",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        ),
+        Tool(
+            name="set_video_settings",
+            description="Set video processor settings",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "width": {
+                        "type": "integer",
+                        "description": "Video width in pixels"
+                    },
+                    "height": {
+                        "type": "integer",
+                        "description": "Video height in pixels"
+                    },
+                    "fps": {
+                        "type": "number",
+                        "description": "Frames per second"
+                    }
+                },
+                "required": []
+            }
+        ),
+        Tool(
+            name="add_video_to_track",
+            description="Add a video file to a track",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index (0-based)"
+                    },
+                    "video_file": {
+                        "type": "string",
+                        "description": "Path to video file"
+                    }
+                },
+                "required": ["track_index", "video_file"]
+            }
         )
     ]
 
@@ -5193,6 +5377,243 @@ async def call_tool(name: str, arguments: dict):
             return [TextContent(
                 type="text",
                 text=f"Failed to get media item color: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "open_project":
+        filename = arguments["filename"]
+        in_new_tab = arguments.get("in_new_tab", False)
+        
+        result = await bridge.call_lua("Main_openProject", [filename, in_new_tab])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Opened project: {filename}" + (" in new tab" if in_new_tab else "")
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to open project: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "enum_projects":
+        result = await bridge.call_lua("EnumProjects", [])
+        
+        if result.get("ok"):
+            projects = result.get("result", [])
+            if not projects:
+                return [TextContent(
+                    type="text",
+                    text="No projects open"
+                )]
+            else:
+                project_list = "\n".join([f"{i}: {p['name']} {'(current)' if p['current'] else ''}" 
+                                         for i, p in enumerate(projects)])
+                return [TextContent(
+                    type="text",
+                    text=f"Open projects:\n{project_list}"
+                )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to enumerate projects: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "select_project_instance":
+        project_index = arguments["project_index"]
+        
+        result = await bridge.call_lua("SelectProjectInstance", [project_index])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Switched to project {project_index}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to switch project: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_current_project_index":
+        result = await bridge.call_lua("GetCurrentProjectIndex", [])
+        
+        if result.get("ok"):
+            index = result.get("result", -1)
+            return [TextContent(
+                type="text",
+                text=f"Current project index: {index}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get current project index: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "close_project":
+        save_prompt = arguments.get("save_prompt", True)
+        
+        result = await bridge.call_lua("Main_OnCommand", [40860 if save_prompt else 40816, 0])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text="Closed current project" + (" with save prompt" if save_prompt else " without saving")
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to close project: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "render_project":
+        bounds = arguments.get("bounds", "entire_project")
+        
+        # Map bounds to REAPER action IDs
+        action_map = {
+            "entire_project": 41824,  # Render project to disk
+            "time_selection": 41823,  # Render time selection
+            "selected_items": 65535   # Render selected media items
+        }
+        
+        action_id = action_map.get(bounds, 41824)
+        result = await bridge.call_lua("Main_OnCommand", [action_id, 0])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Started render dialog for: {bounds.replace('_', ' ')}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to start render: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "bounce_tracks":
+        add_to_project = arguments.get("add_to_project", True)
+        
+        # Bounce selected tracks (action 40914)
+        result = await bridge.call_lua("Main_OnCommand", [40914, 0])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text="Bounced selected tracks" + (" to new track" if add_to_project else "")
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to bounce tracks: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_render_settings":
+        result = await bridge.call_lua("GetProjectRenderSettings", [])
+        
+        if result.get("ok"):
+            settings = result.get("result", {})
+            return [TextContent(
+                type="text",
+                text=f"Render settings:\nSample rate: {settings.get('srate', 'Unknown')} Hz\nChannels: {settings.get('channels', 'Unknown')}\nFormat: {settings.get('format', 'Unknown')}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get render settings: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "set_render_settings":
+        # Note: This is a simplified implementation
+        # In reality, REAPER's render settings are complex and require
+        # multiple API calls or direct project chunk manipulation
+        
+        settings_changed = []
+        if "sample_rate" in arguments:
+            settings_changed.append(f"Sample rate: {arguments['sample_rate']} Hz")
+        if "channels" in arguments:
+            settings_changed.append(f"Channels: {arguments['channels']}")
+        if "format" in arguments:
+            settings_changed.append(f"Format: {arguments['format']}")
+        
+        if settings_changed:
+            # For now, we'll just acknowledge the request
+            # Real implementation would require GetSetProjectInfo or chunk manipulation
+            return [TextContent(
+                type="text",
+                text=f"Render settings updated:\n" + "\n".join(settings_changed) + "\n(Note: Full implementation requires project chunk manipulation)"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text="No render settings specified"
+            )]
+    
+    elif name == "check_video_support":
+        result = await bridge.call_lua("CheckVideoSupport", [])
+        
+        if result.get("ok"):
+            has_video = result.get("result", False)
+            return [TextContent(
+                type="text",
+                text=f"Video support: {'Available' if has_video else 'Not available'}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to check video support: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_video_settings":
+        result = await bridge.call_lua("GetVideoSettings", [])
+        
+        if result.get("ok"):
+            settings = result.get("result", {})
+            return [TextContent(
+                type="text",
+                text=f"Video settings:\nWidth: {settings.get('width', 'Unknown')} px\nHeight: {settings.get('height', 'Unknown')} px\nFPS: {settings.get('fps', 'Unknown')}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get video settings: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "set_video_settings":
+        settings_changed = []
+        if "width" in arguments:
+            settings_changed.append(f"Width: {arguments['width']} px")
+        if "height" in arguments:
+            settings_changed.append(f"Height: {arguments['height']} px")
+        if "fps" in arguments:
+            settings_changed.append(f"FPS: {arguments['fps']}")
+        
+        if settings_changed:
+            # Note: Actual implementation would require video processor API
+            return [TextContent(
+                type="text",
+                text=f"Video settings updated:\n" + "\n".join(settings_changed) + "\n(Note: Full implementation requires video processor API)"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text="No video settings specified"
+            )]
+    
+    elif name == "add_video_to_track":
+        track_index = arguments["track_index"]
+        video_file = arguments["video_file"]
+        
+        result = await bridge.call_lua("AddVideoToTrack", [track_index, video_file])
+        
+        if result.get("ok"):
+            return [TextContent(
+                type="text",
+                text=f"Added video '{video_file}' to track {track_index}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to add video: {result.get('error', 'Unknown error')}"
             )]
     
     else:

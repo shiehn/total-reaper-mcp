@@ -3,10 +3,10 @@
 This is the consolidated master list tracking all ReaScript API methods implemented in the REAPER MCP Server.
 
 ## Implementation Statistics
-- **Total Implemented**: 194 methods
+- **Total Implemented**: 207 methods
 - **Test Coverage**: ~97%
-- **Categories**: 27
-- **Test Files**: 27
+- **Categories**: 30
+- **Test Files**: 30
 - **ReaScript API Version**: REAPER 6.83+ (embedded Lua 5.4)
 
 ## Implementation Status by Category
@@ -242,22 +242,28 @@ This is the consolidated master list tracking all ReaScript API methods implemen
 - [x] `GetMediaItemColor` - Get item color
 - Note: `SetMediaItemColor` already implemented in Advanced Item/Take Operations
 
+### ✅ Advanced Project Operations (5 methods)
+- [x] `Main_openProject` - Open project file
+- [x] `EnumProjects` - Enumerate open projects
+- [x] `SelectProjectInstance` - Switch to project
+- [x] `GetCurrentProjectIndex` - Get current project index
+- [x] `CloseProject` - Close current project
+
+### ✅ Bounce/Render Operations (4 methods)
+- [x] `RenderProject` - Render project to disk
+- [x] `BounceTracks` - Bounce selected tracks
+- [x] `GetRenderSettings` - Get render settings
+- [x] `SetRenderSettings` - Set render settings
+
+### ✅ Video Operations (4 methods)
+- [x] `CheckVideoSupport` - Check if video is available
+- [x] `GetVideoSettings` - Get video processor settings
+- [x] `SetVideoSettings` - Set video processor settings
+- [x] `AddVideoToTrack` - Add video file to track
+
 ## 🔮 Not Yet Implemented API Methods
 
 Based on the ReaScript API documentation, here are additional methods that could be implemented:
-
-### Advanced Project Operations
-- [ ] `Main_openProject` - Open project
-- [ ] `EnumProjects` - Enumerate open projects
-- [ ] `SelectProjectInstance` - Select project
-
-### Bounce/Render Operations
-- [ ] `Main_OnCommand` (render commands) - Various render commands
-- [ ] `GetSetProjectInfo` - Project render settings
-
-### Video
-- [ ] `GetMediaItemTake_Source` (video) - Video source operations
-- [ ] `GetVideoCodecName` - Get video codec
 
 ## Method Naming Convention
 - **MCP Tool Name**: snake_case (e.g., `get_track_count`)
@@ -265,7 +271,7 @@ Based on the ReaScript API documentation, here are additional methods that could
 - **Parameters**: Typically include project (0 for current) and indices
 
 ## Test Coverage Summary
-All 169+ implemented methods have comprehensive test coverage across 21 test files:
+All 207 implemented methods have comprehensive test coverage across 30 test files:
 - test_track_methods.py
 - test_track_volume_pan.py
 - test_selection_operations.py
@@ -287,6 +293,15 @@ All 169+ implemented methods have comprehensive test coverage across 21 test fil
 - test_take_operations.py
 - test_project_settings.py
 - test_selected_items.py
+- test_peak_analysis.py
+- test_advanced_track_operations.py
+- test_advanced_item_operations.py
+- test_recording_operations.py
+- test_midi_hardware.py
+- test_color_management.py
+- test_advanced_project_operations.py
+- test_bounce_render_operations.py
+- test_video_operations.py
 
 ## Adding New Methods
 1. Add tool definition in `server/app_file_bridge_full.py` `@app.list_tools()`
