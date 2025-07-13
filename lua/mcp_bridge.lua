@@ -719,6 +719,113 @@ function main()
                 else
                     response.error = "GetMediaItemTakePeakValue requires 1 argument"
                 end
+            elseif fname == "GetTrackNumSends" then
+                if #args >= 2 then
+                    local track
+                    if args[1] == -1 then
+                        track = reaper.GetMasterTrack(0)
+                    else
+                        track = reaper.GetTrack(0, args[1])
+                    end
+                    if track then
+                        local count = reaper.GetTrackNumSends(track, args[2])
+                        response.ok = true
+                        response.result = count
+                    else
+                        response.error = "Track not found"
+                    end
+                else
+                    response.error = "GetTrackNumSends requires 2 arguments"
+                end
+            elseif fname == "GetTrackReceiveInfo" then
+                if #args >= 2 then
+                    local track = reaper.GetTrack(0, args[1])
+                    if track then
+                        local src_track = reaper.GetTrackSendInfo_Value(track, -1, args[2], "P_SRCTRACK")
+                        local vol = reaper.GetTrackSendInfo_Value(track, -1, args[2], "D_VOL")
+                        local pan = reaper.GetTrackSendInfo_Value(track, -1, args[2], "D_PAN")
+                        
+                        -- Convert linear volume to dB
+                        local vol_db = 20 * math.log(vol, 10)
+                        
+                        -- Get source track name if possible
+                        local src_name = "Unknown"
+                        if src_track and src_track ~= 0 then
+                            local _, name = reaper.GetTrackName(src_track)
+                            src_name = name
+                        end
+                        
+                        response.ok = true
+                        response.result = {
+                            src_track = src_name,
+                            volume = vol_db,
+                            pan = pan
+                        }
+                    else
+                        response.error = "Track not found"
+                    end
+                else
+                    response.error = "GetTrackReceiveInfo requires 2 arguments"
+                end
+            elseif fname == "GetTrackGUID" then
+                if #args >= 1 then
+                    local track
+                    if args[1] == -1 then
+                        track = reaper.GetMasterTrack(0)
+                    else
+                        track = reaper.GetTrack(0, args[1])
+                    end
+                    if track then
+                        local guid = reaper.GetTrackGUID(track)
+                        response.ok = true
+                        response.result = guid
+                    else
+                        response.error = "Track not found"
+                    end
+                else
+                    response.error = "GetTrackGUID requires 1 argument"
+                end
+            elseif fname == "GetTrackByGUID" then
+                if #args >= 1 then
+                    -- Try to find track by GUID
+                    local track_count = reaper.CountTracks(0)
+                    for i = 0, track_count - 1 do
+                        local track = reaper.GetTrack(0, i)
+                        if track then
+                            local track_guid = reaper.GetTrackGUID(track)
+                            if track_guid == args[1] then
+                                local _, name = reaper.GetTrackName(track)
+                                response.ok = true
+                                response.result = {
+                                    name = name,
+                                    index = i
+                                }
+                                break
+                            end
+                        end
+                    end
+                    
+                    -- Check master track
+                    if not response.ok then
+                        local master = reaper.GetMasterTrack(0)
+                        if master then
+                            local master_guid = reaper.GetTrackGUID(master)
+                            if master_guid == args[1] then
+                                response.ok = true
+                                response.result = {
+                                    name = "Master Track",
+                                    index = -1
+                                }
+                            end
+                        end
+                    end
+                    
+                    if not response.ok then
+                        response.error = "Track with GUID not found"
+                    end
+                else
+                    response.error = "GetTrackByGUID requires 1 argument"
+                end
 
             else
                 response.error = "Unknown function: " .. fname

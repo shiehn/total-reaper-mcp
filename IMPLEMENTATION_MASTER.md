@@ -3,10 +3,10 @@
 This is the consolidated master list tracking all ReaScript API methods implemented in the REAPER MCP Server.
 
 ## Implementation Statistics
-- **Total Implemented**: 172 methods
+- **Total Implemented**: 176 methods
 - **Test Coverage**: ~97%
-- **Categories**: 22
-- **Test Files**: 22
+- **Categories**: 23
+- **Test Files**: 23
 - **ReaScript API Version**: REAPER 6.83+ (embedded Lua 5.4)
 
 ## Implementation Status by Category
@@ -209,15 +209,15 @@ This is the consolidated master list tracking all ReaScript API methods implemen
 - [x] `GetTrackPeakInfo` - Get detailed peak information
 - [x] `GetMediaItemPeak` - Get media item peak value
 
+### ✅ Advanced Track Operations (4 methods)
+- [x] `GetTrackReceiveCount` - Count track receives
+- [x] `GetTrackReceiveInfo` - Get track receive information
+- [x] `GetTrackGUID` - Get track GUID
+- [x] `GetTrackFromGUID` - Get track from GUID
+
 ## 🔮 Not Yet Implemented API Methods
 
 Based on the ReaScript API documentation, here are additional methods that could be implemented:
-
-### Advanced Track Operations
-- [ ] `GetTrackReceiveCount` - Count track receives
-- [ ] `GetSetTrackReceiveInfo` - Get/set receive info
-- [ ] `GetTrackGUID` - Get track GUID
-- [ ] `GetTrackFromGUID` - Get track from GUID
 
 ### Advanced Item/Take Operations  
 - [ ] `GetMediaItemTake_Source` - Get take source

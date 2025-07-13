@@ -1835,6 +1835,66 @@ async def list_tools():
                 },
                 "required": ["item_index"]
             }
+        ),
+        Tool(
+            name="get_track_receive_count",
+            description="Get the number of receives on a track",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index (0-based, -1 for master track)"
+                    }
+                },
+                "required": ["track_index"]
+            }
+        ),
+        Tool(
+            name="get_track_receive_info",
+            description="Get information about a track receive",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index (0-based)"
+                    },
+                    "receive_index": {
+                        "type": "integer",
+                        "description": "Receive index (0-based)"
+                    }
+                },
+                "required": ["track_index", "receive_index"]
+            }
+        ),
+        Tool(
+            name="get_track_guid",
+            description="Get the unique GUID of a track",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "track_index": {
+                        "type": "integer",
+                        "description": "Track index (0-based, -1 for master track)"
+                    }
+                },
+                "required": ["track_index"]
+            }
+        ),
+        Tool(
+            name="get_track_from_guid",
+            description="Get a track by its GUID",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "guid": {
+                        "type": "string",
+                        "description": "Track GUID string"
+                    }
+                },
+                "required": ["guid"]
+            }
         )
     ]
 
@@ -4429,6 +4489,75 @@ async def call_tool(name: str, arguments: dict):
             return [TextContent(
                 type="text",
                 text=f"Failed to get media item peak: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_track_receive_count":
+        track_index = arguments["track_index"]
+        
+        result = await bridge.call_lua("GetTrackNumSends", [track_index, -1])
+        
+        if result.get("ok"):
+            count = result.get("result", 0)
+            return [TextContent(
+                type="text",
+                text=f"Track {track_index} has {count} receives"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get track receive count: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_track_receive_info":
+        track_index = arguments["track_index"]
+        receive_index = arguments["receive_index"]
+        
+        result = await bridge.call_lua("GetTrackReceiveInfo", [track_index, receive_index])
+        
+        if result.get("ok"):
+            info = result.get("result", {})
+            return [TextContent(
+                type="text",
+                text=f"Receive {receive_index} from track {info.get('src_track', 'unknown')} - Volume: {info.get('volume', 0):.2f} dB, Pan: {info.get('pan', 0):.2f}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get track receive info: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_track_guid":
+        track_index = arguments["track_index"]
+        
+        result = await bridge.call_lua("GetTrackGUID", [track_index])
+        
+        if result.get("ok"):
+            guid = result.get("result", "")
+            return [TextContent(
+                type="text",
+                text=f"Track {track_index} GUID: {guid}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get track GUID: {result.get('error', 'Unknown error')}"
+            )]
+    
+    elif name == "get_track_from_guid":
+        guid = arguments["guid"]
+        
+        result = await bridge.call_lua("GetTrackByGUID", [guid])
+        
+        if result.get("ok"):
+            track_info = result.get("result", {})
+            return [TextContent(
+                type="text",
+                text=f"Found track: {track_info.get('name', 'Unnamed')} at index {track_info.get('index', -1)}"
+            )]
+        else:
+            return [TextContent(
+                type="text",
+                text=f"Failed to get track from GUID: {result.get('error', 'Unknown error')}"
             )]
     
     else:
