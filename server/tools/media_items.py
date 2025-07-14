@@ -304,6 +304,30 @@ async def get_media_item_take_track(item_index: int, take_index: int) -> str:
 # Take Management (11 tools)
 # ============================================================================
 
+async def add_take_to_item(item_index: int) -> str:
+    """Add a new take to a media item"""
+    # Get item first
+    item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
+    if not item_result.get("ok") or not item_result.get("ret"):
+        raise Exception(f"Failed to find media item at index {item_index}")
+    
+    item_handle = item_result.get("ret")
+    
+    # Add take
+    result = await bridge.call_lua("AddTakeToMediaItem", [item_handle])
+    
+    if result.get("ok"):
+        take_handle = result.get("ret")
+        if take_handle:
+            # Get take count for info
+            count_result = await bridge.call_lua("CountTakes", [item_handle])
+            take_count = count_result.get("ret", 0) if count_result.get("ok") else 0
+            return f"Added take to media item {item_index}. Item now has {take_count} takes"
+        else:
+            return f"Failed to add take to media item {item_index}"
+    else:
+        raise Exception(f"Failed to add take: {result.get('error', 'Unknown error')}")
+
 async def count_takes(item_index: int) -> str:
     """Count the number of takes in a media item"""
     # Get item first
@@ -563,6 +587,7 @@ def register_media_items_tools(mcp) -> int:
         (get_media_item_take_track, "Get the track that contains a media item"),
         
         # Take Management
+        (add_take_to_item, "Add a new take to a media item"),
         (count_takes, "Count the number of takes in a media item"),
         (get_active_take, "Get the active take of a media item"),
         (set_active_take, "Set the active take of a media item"),

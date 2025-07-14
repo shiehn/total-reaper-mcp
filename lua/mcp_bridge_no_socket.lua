@@ -182,6 +182,42 @@ local function process_request()
                                 response.error = "MIDI_GetEvt requires at least 2 arguments"
                             end
                             
+                        elseif fname == "TakeFX_GetFXName" then
+                            if args[1] and args[2] ~= nil then
+                                local retval, name = reaper.TakeFX_GetFXName(args[1], args[2])
+                                response.ok = true
+                                response.ret = {retval, name}
+                            else
+                                response.error = "TakeFX_GetFXName requires at least 2 arguments"
+                            end
+                            
+                        elseif fname == "TakeFX_GetPreset" then
+                            if args[1] and args[2] ~= nil then
+                                local retval, preset = reaper.TakeFX_GetPreset(args[1], args[2])
+                                response.ok = true
+                                response.ret = {retval, preset}
+                            else
+                                response.error = "TakeFX_GetPreset requires at least 2 arguments"
+                            end
+                            
+                        elseif fname == "TakeFX_GetParamName" then
+                            if args[1] and args[2] ~= nil and args[3] ~= nil then
+                                local retval, name = reaper.TakeFX_GetParamName(args[1], args[2], args[3])
+                                response.ok = true
+                                response.ret = {retval, name}
+                            else
+                                response.error = "TakeFX_GetParamName requires at least 3 arguments"
+                            end
+                            
+                        elseif fname == "TakeFX_GetParam" then
+                            if args[1] and args[2] ~= nil and args[3] ~= nil then
+                                local value, minval, maxval = reaper.TakeFX_GetParam(args[1], args[2], args[3])
+                                response.ok = true
+                                response.ret = {value, minval, maxval}
+                            else
+                                response.error = "TakeFX_GetParam requires at least 3 arguments"
+                            end
+                            
                         else
                             -- Generic function call
                             local ok, result = pcall(reaper[fname], table.unpack(args))
