@@ -392,25 +392,6 @@ async def get_project_render_bounds() -> str:
         raise Exception(f"Failed to get render bounds: {result.get('error', 'Unknown error')}")
 
 
-async def render_project(bounds: str = "entire_project", filename: Optional[str] = None, 
-                        add_to_project: bool = False, close_when_done: bool = True) -> str:
-    """Render the entire project to file"""
-    # Map bounds string to action IDs
-    bounds_actions = {
-        "entire_project": 41824,    # Render entire project
-        "time_selection": 41825,    # Render time selection
-        "selected_items": 41829,    # Render selected media items
-        "project_regions": 42230    # Render project regions
-    }
-    
-    action = bounds_actions.get(bounds, 41824)
-    
-    result = await bridge.call_lua("Main_OnCommand", [action, 0])
-    
-    if result.get("ok"):
-        return f"Started rendering {bounds.replace('_', ' ')}"
-    else:
-        raise Exception(f"Failed to start render: {result.get('error', 'Unknown error')}")
 
 
 # ============================================================================
@@ -453,7 +434,6 @@ def register_project_tools(mcp) -> int:
         
         # Rendering & Export
         (get_project_render_bounds, "Get the project render bounds mode"),
-        (render_project, "Render the entire project to file"),
     ]
     
     # Register each tool
