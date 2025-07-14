@@ -35,7 +35,7 @@ async def test_delete_track(reaper_mcp_client):
         {"track_index": 999}
     )
     print(f"Delete non-existent track result: {result}")
-    assert "Failed to find track at index 999" in result.content[0].text
+    assert "Track index 999 out of range" in result.content[0].text
 
 @pytest.mark.asyncio
 async def test_track_mute(reaper_mcp_client):
@@ -52,7 +52,7 @@ async def test_track_mute(reaper_mcp_client):
         {"track_index": 0}
     )
     print(f"Get track mute result: {result}")
-    assert "unmuted" in result.content[0].text
+    assert "not muted" in result.content[0].text
     
     # Mute the track
     result = await reaper_mcp_client.call_tool(
@@ -67,7 +67,7 @@ async def test_track_mute(reaper_mcp_client):
         "get_track_mute",
         {"track_index": 0}
     )
-    assert "muted" in result.content[0].text and "unmuted" not in result.content[0].text
+    assert "is muted" in result.content[0].text
     
     # Unmute the track
     result = await reaper_mcp_client.call_tool(
@@ -123,11 +123,11 @@ async def test_error_handling(reaper_mcp_client):
         "get_track_mute",
         {"track_index": 999}
     )
-    assert "Failed to find track at index 999" in result.content[0].text
+    assert "Track not found at index 999" in result.content[0].text or "Failed to get track mute state" in result.content[0].text
     
     # Test set_track_solo with invalid index
     result = await reaper_mcp_client.call_tool(
         "set_track_solo",
         {"track_index": 999, "solo": True}
     )
-    assert "Failed to find track at index 999" in result.content[0].text
+    assert "Track not found at index 999" in result.content[0].text or "Failed to set track solo state" in result.content[0].text

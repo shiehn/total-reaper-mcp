@@ -55,7 +55,7 @@ async def test_midi_event_counts(reaper_mcp_client):
         "create_midi_item",
         {
             "track_index": 0,
-            "start_time": 0.0,
+            "position": 0.0,
             "length": 4.0,
             "quantize": False
         }
@@ -108,7 +108,7 @@ async def test_midi_scale_operations(reaper_mcp_client):
         "create_midi_item",
         {
             "track_index": 0,
-            "start_time": 0.0,
+            "position": 0.0,
             "length": 4.0,
             "quantize": False
         }
@@ -155,7 +155,7 @@ async def test_midi_select_all_events(reaper_mcp_client):
         "create_midi_item",
         {
             "track_index": 0,
-            "start_time": 0.0,
+            "position": 0.0,
             "length": 4.0,
             "quantize": False
         }
@@ -226,7 +226,7 @@ async def test_midi_get_all_events(reaper_mcp_client):
         "create_midi_item",
         {
             "track_index": 0,
-            "start_time": 0.0,
+            "position": 0.0,
             "length": 4.0,
             "quantize": False
         }
@@ -241,7 +241,7 @@ async def test_midi_get_all_events(reaper_mcp_client):
             "take_index": 0,
             "pitch": 60,
             "velocity": 100,
-            "start_time": 0.0,
+            "position": 0.0,
             "duration": 1.0,
             "channel": 0
         }

@@ -327,34 +327,127 @@ local function process_request()
                     
                     elseif fname == "GetMediaTrackInfo_Value" then
                         if #args >= 2 then
-                            local value = reaper.GetMediaTrackInfo_Value(args[1], args[2])
-                            response.ok = true
-                            response.ret = value
+                            local track = args[1]
+                            -- Handle track index or pointer object
+                            if type(args[1]) == "number" then
+                                -- It's a track index
+                                if args[1] == -1 then
+                                    -- Special case for master track
+                                    track = reaper.GetMasterTrack(0)
+                                else
+                                    track = reaper.GetTrack(0, args[1])
+                                end
+                                if not track then
+                                    response.error = "Track not found at index " .. tostring(args[1])
+                                    response.ok = false
+                                end
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                -- It's a pointer object - we can't use it
+                                response.error = "Cannot use track pointer from previous call - use track index instead"
+                                response.ok = false
+                                track = nil
+                            end
+                            
+                            if track then
+                                local value = reaper.GetMediaTrackInfo_Value(track, args[2])
+                                response.ok = true
+                                response.ret = value
+                            end
                         else
                             response.error = "GetMediaTrackInfo_Value requires 2 arguments"
                         end
                     
                     elseif fname == "SetMediaTrackInfo_Value" then
                         if #args >= 3 then
-                            reaper.SetMediaTrackInfo_Value(args[1], args[2], args[3])
-                            response.ok = true
+                            local track = args[1]
+                            -- Handle track index or pointer object
+                            if type(args[1]) == "number" then
+                                -- It's a track index
+                                if args[1] == -1 then
+                                    -- Special case for master track
+                                    track = reaper.GetMasterTrack(0)
+                                else
+                                    track = reaper.GetTrack(0, args[1])
+                                end
+                                if not track then
+                                    response.error = "Track not found at index " .. tostring(args[1])
+                                    response.ok = false
+                                end
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                -- It's a pointer object - we can't use it
+                                response.error = "Cannot use track pointer from previous call - use track index instead"
+                                response.ok = false
+                                track = nil
+                            end
+                            
+                            if track then
+                                reaper.SetMediaTrackInfo_Value(track, args[2], args[3])
+                                response.ok = true
+                            end
                         else
                             response.error = "SetMediaTrackInfo_Value requires 3 arguments"
                         end
                     
                     elseif fname == "AddMediaItemToTrack" then
                         if args[1] then
-                            local item = reaper.AddMediaItemToTrack(args[1])
-                            response.ok = true
-                            response.ret = item
+                            local track = nil
+                            -- Check if it's a track index (number) or a track object
+                            if type(args[1]) == "number" then
+                                -- It's a track index, get the track
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "userdata" then
+                                -- It's already a track object
+                                track = args[1]
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                -- It's a pointer reference from a previous call - we can't use it
+                                response.error = "Cannot use track pointer from previous call - bridge limitation"
+                                response.ok = false
+                            end
+                            
+                            if track then
+                                local item = reaper.AddMediaItemToTrack(track)
+                                response.ok = true
+                                response.ret = item
+                            else
+                                response.error = "Invalid track parameter - provide track index or valid track object"
+                                response.ok = false
+                            end
                         else
-                            response.error = "AddMediaItemToTrack requires track pointer"
+                            response.error = "AddMediaItemToTrack requires track index or track object"
                         end
                     
                     elseif fname == "CountMediaItems" then
                         local count = reaper.CountMediaItems(args[1] or 0)
                         response.ok = true
                         response.ret = count
+                    
+                    elseif fname == "AddTakeToMediaItem" then
+                        if args[1] then
+                            local item = nil
+                            -- Handle item index or pointer
+                            if type(args[1]) == "number" then
+                                -- It's an item index
+                                item = reaper.GetMediaItem(0, args[1])
+                            elseif type(args[1]) == "userdata" then
+                                -- It's already an item object
+                                item = args[1]
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                -- It's a pointer reference from a previous call - we can't use it
+                                response.error = "Cannot use item pointer from previous call - use item index instead"
+                                response.ok = false
+                            end
+                            
+                            if item then
+                                local take = reaper.AddTakeToMediaItem(item)
+                                response.ok = true
+                                response.ret = take
+                            else
+                                response.error = "Invalid item parameter"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "AddTakeToMediaItem requires item index or item object"
+                        end
                     
                     elseif fname == "GetMediaItem" then
                         if #args >= 2 then
@@ -393,16 +486,50 @@ local function process_request()
                     
                     elseif fname == "SetMediaItemLength" then
                         if #args >= 3 then
-                            reaper.SetMediaItemLength(args[1], args[2], args[3])
-                            response.ok = true
+                            local item = args[1]
+                            -- Handle item index or pointer
+                            if type(args[1]) == "number" then
+                                -- It's an item index
+                                item = reaper.GetMediaItem(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                -- It's a pointer reference from a previous call - we can't use it
+                                response.error = "Cannot use item pointer from previous call - use item index instead"
+                                response.ok = false
+                                item = nil
+                            end
+                            
+                            if item then
+                                reaper.SetMediaItemLength(item, args[2], args[3])
+                                response.ok = true
+                            else
+                                response.error = "Invalid item parameter"
+                                response.ok = false
+                            end
                         else
                             response.error = "SetMediaItemLength requires 3 arguments"
                         end
                     
                     elseif fname == "SetMediaItemPosition" then
                         if #args >= 3 then
-                            reaper.SetMediaItemPosition(args[1], args[2], args[3])
-                            response.ok = true
+                            local item = args[1]
+                            -- Handle item index or pointer
+                            if type(args[1]) == "number" then
+                                -- It's an item index
+                                item = reaper.GetMediaItem(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                -- It's a pointer reference from a previous call - we can't use it
+                                response.error = "Cannot use item pointer from previous call - use item index instead"
+                                response.ok = false
+                                item = nil
+                            end
+                            
+                            if item then
+                                reaper.SetMediaItemPosition(item, args[2], args[3])
+                                response.ok = true
+                            else
+                                response.error = "Invalid item parameter"
+                                response.ok = false
+                            end
                         else
                             response.error = "SetMediaItemPosition requires 3 arguments"
                         end

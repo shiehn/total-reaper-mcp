@@ -59,13 +59,8 @@ async def delete_track(track_index: int) -> str:
     if track_index >= track_count:
         raise ValueError(f"Track index {track_index} out of range. Project has {track_count} tracks.")
     
-    # Get the track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    # Delete it
-    delete_result = await bridge.call_lua("DeleteTrack", [track_result.get("ret")])
+    # Use DeleteTrackByIndex directly to avoid pointer issues
+    delete_result = await bridge.call_lua("DeleteTrackByIndex", [track_index])
     if not delete_result.get("ok"):
         raise Exception(f"Failed to delete track: {delete_result.get('error', 'Unknown error')}")
     
@@ -77,7 +72,7 @@ async def get_master_track() -> str:
     result = await bridge.call_lua("GetMasterTrack", [0])
     
     if result.get("ok") and result.get("ret"):
-        return "Master track found"
+        return f"Master track: {result.get('ret')}"
     else:
         raise Exception("Failed to get master track")
 
@@ -235,18 +230,9 @@ async def set_track_name(track_index: int, name: str) -> str:
 
 async def get_track_mute(track_index: int) -> str:
     """Get track mute state"""
-    # Get the track
-    if track_index == -1:
-        track_result = await bridge.call_lua("GetMasterTrack", [0])
-    else:
-        track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    # Get mute state
+    # Pass track index directly - the bridge will handle getting the track
     mute_result = await bridge.call_lua("GetMediaTrackInfo_Value", 
-                                      [track_result.get("ret"), "B_MUTE"])
+                                      [track_index, "B_MUTE"])
     if mute_result.get("ok"):
         is_muted = bool(mute_result.get("ret", 0))
         return f"Track {track_index} is {'muted' if is_muted else 'not muted'}"
@@ -256,18 +242,9 @@ async def get_track_mute(track_index: int) -> str:
 
 async def set_track_mute(track_index: int, mute: bool) -> str:
     """Set track mute state"""
-    # Get the track
-    if track_index == -1:
-        track_result = await bridge.call_lua("GetMasterTrack", [0])
-    else:
-        track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    # Set mute state
+    # Pass track index directly - the bridge will handle getting the track
     mute_result = await bridge.call_lua("SetMediaTrackInfo_Value",
-                                      [track_result.get("ret"), "B_MUTE", 1 if mute else 0])
+                                      [track_index, "B_MUTE", 1 if mute else 0])
     if mute_result.get("ok"):
         return f"Track {track_index} {'muted' if mute else 'unmuted'}"
     else:
@@ -276,12 +253,8 @@ async def set_track_mute(track_index: int, mute: bool) -> str:
 
 async def get_track_solo(track_index: int) -> str:
     """Get track solo state"""
-    # Get track first
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    result = await bridge.call_lua("GetMediaTrackInfo_Value", [track_result.get("ret"), "I_SOLO"])
+    # Pass track index directly - the bridge will handle getting the track
+    result = await bridge.call_lua("GetMediaTrackInfo_Value", [track_index, "I_SOLO"])
     
     if result.get("ok"):
         solo_state = int(result.get("ret", 0))
@@ -293,12 +266,8 @@ async def get_track_solo(track_index: int) -> str:
 
 async def set_track_solo(track_index: int, solo: bool) -> str:
     """Set track solo state"""
-    # Get track first
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    result = await bridge.call_lua("SetMediaTrackInfo_Value", [track_result.get("ret"), "I_SOLO", 1 if solo else 0])
+    # Pass track index directly - the bridge will handle getting the track
+    result = await bridge.call_lua("SetMediaTrackInfo_Value", [track_index, "I_SOLO", 1 if solo else 0])
     
     if result.get("ok"):
         state = "soloed" if solo else "unsoloed"
