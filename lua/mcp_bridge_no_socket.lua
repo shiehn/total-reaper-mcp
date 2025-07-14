@@ -425,6 +425,56 @@ local function process_request()
                                 response.error = "GetPeakFileName requires at least 1 argument"
                             end
                             
+                        elseif fname == "MIDI_GetNote" then
+                            if args[1] and args[2] ~= nil then
+                                local retval, selected, muted, startppqpos, endppqpos, chan, pitch, vel = reaper.MIDI_GetNote(args[1], args[2])
+                                response.ok = true
+                                response.ret = {retval, selected, muted, startppqpos, endppqpos, chan, pitch, vel}
+                            else
+                                response.error = "MIDI_GetNote requires at least 2 arguments"
+                            end
+                            
+                        elseif fname == "MIDI_GetCC" then
+                            if args[1] and args[2] ~= nil then
+                                local retval, selected, muted, ppqpos, chanmsg, chan, msg2, msg3 = reaper.MIDI_GetCC(args[1], args[2])
+                                response.ok = true
+                                response.ret = {retval, selected, muted, ppqpos, chanmsg, chan, msg2, msg3}
+                            else
+                                response.error = "MIDI_GetCC requires at least 2 arguments"
+                            end
+                            
+                        elseif fname == "MIDI_GetTextSysexEvt" then
+                            if args[1] and args[2] ~= nil then
+                                local retval, selected, muted, ppqpos, type, msg = reaper.MIDI_GetTextSysexEvt(args[1], args[2], args[3] or false, args[4] or false, args[5] or 0, args[6] or 0, args[7] or "")
+                                response.ok = true
+                                response.ret = {retval, selected, muted, ppqpos, type, msg}
+                            else
+                                response.error = "MIDI_GetTextSysexEvt requires at least 2 arguments"
+                            end
+                            
+                        elseif fname == "MIDI_GetGrid" then
+                            if args[1] then
+                                local swing, notelen = reaper.MIDI_GetGrid(args[1])
+                                response.ok = true
+                                response.ret = {swing, notelen}
+                            else
+                                response.error = "MIDI_GetGrid requires at least 1 argument"
+                            end
+                            
+                        elseif fname == "MIDI_GetRecentInputEvent" then
+                            local ts, msg1, msg2, devIdx = reaper.MIDI_GetRecentInputEvent(args[1] or 0)
+                            response.ok = true
+                            response.ret = {ts, msg1, msg2, devIdx}
+                            
+                        elseif fname == "MIDI_GetCCShape" then
+                            if args[1] and args[2] ~= nil then
+                                local retval, shape, beztension = reaper.MIDI_GetCCShape(args[1], args[2])
+                                response.ok = true
+                                response.ret = {retval, shape, beztension}
+                            else
+                                response.error = "MIDI_GetCCShape requires at least 2 arguments"
+                            end
+                            
                         else
                             -- Generic function call
                             local ok, result = pcall(reaper[fname], table.unpack(args))
