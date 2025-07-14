@@ -13,13 +13,18 @@ Migrating from legacy MCP pattern (monolithic 7700+ line file with if/elif chain
 - **Media Items & Takes** (29 tools) - `server/tools/media_items.py`
 - **MIDI Operations** (15 tools) - `server/tools/midi.py`
 - **FX & Processing** (19 tools) - `server/tools/fx.py`
+- **Project Management** (23 tools) - `server/tools/project.py`
+- **Transport & Playback** (9 tools) - `server/tools/transport.py`
+- **Time Selection & Navigation** (2 tools) - `server/tools/time_selection.py`
+- **Markers & Regions** (4 tools) - `server/tools/markers.py`
+- **Automation & Envelopes** (6 tools) - `server/tools/automation.py`
 - **Infrastructure**:
   - Created `server/app_modern.py` as main server
   - Updated `tests/conftest.py` to support `USE_MODERN_SERVER=true`
   - Created stub modules for all remaining categories
   - Integration tests passing for migrated tools
 
-**Total Migrated**: 142 tools (+ 7 placeholder tools = 149 total)
+**Total Migrated**: 186 tools (+ 2 placeholder tools = 188 total)
 
 ### Pending Migration 🔄
 Total remaining: ~86 tools
