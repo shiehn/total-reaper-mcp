@@ -317,6 +317,33 @@ local function process_request()
                                 response.error = "GetEnvelopeStateChunk requires at least 1 argument"
                             end
                             
+                        elseif fname == "GetTakeStretchMarker" then
+                            if args[1] and args[2] ~= nil then
+                                local idx, pos, srcpos = reaper.GetTakeStretchMarker(args[1], args[2])
+                                response.ok = true
+                                response.ret = {idx, pos, srcpos}
+                            else
+                                response.error = "GetTakeStretchMarker requires at least 2 arguments"
+                            end
+                            
+                        elseif fname == "GetTakeMarker" then
+                            if args[1] and args[2] ~= nil then
+                                local position, name, color = reaper.GetTakeMarker(args[1], args[2])
+                                response.ok = true
+                                response.ret = {position, name, color}
+                            else
+                                response.error = "GetTakeMarker requires at least 2 arguments"
+                            end
+                            
+                        elseif fname == "GetMediaSourceFileName" then
+                            if args[1] then
+                                local filename = reaper.GetMediaSourceFileName(args[1], args[2] or "")
+                                response.ok = true
+                                response.ret = filename
+                            else
+                                response.error = "GetMediaSourceFileName requires at least 1 argument"
+                            end
+                            
                         else
                             -- Generic function call
                             local ok, result = pcall(reaper[fname], table.unpack(args))
