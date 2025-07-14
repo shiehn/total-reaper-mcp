@@ -44,6 +44,7 @@ from .tools.fx_take import register_fx_take_tools
 from .tools.fx_track_extended import register_fx_track_extended_tools
 from .tools.project_state import register_project_state_tools
 from .tools.media_items_extended import register_media_items_extended_tools
+from .tools.routing_sends import register_routing_sends_tools
 
 # Register all tools
 def register_all_tools():
@@ -71,6 +72,7 @@ def register_all_tools():
         ("Track FX Extended", register_fx_track_extended_tools),
         ("Project State Management", register_project_state_tools),
         ("Media Items Extended", register_media_items_extended_tools),
+        ("Routing & Sends", register_routing_sends_tools),
     ]
     
     for category_name, register_func in categories:

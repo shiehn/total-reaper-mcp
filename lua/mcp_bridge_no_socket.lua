@@ -344,6 +344,60 @@ local function process_request()
                                 response.error = "GetMediaSourceFileName requires at least 1 argument"
                             end
                             
+                        elseif fname == "GetTrackSendName" then
+                            if args[1] and args[2] ~= nil then
+                                local retval, name = reaper.GetTrackSendName(args[1], args[2], args[3] or "")
+                                response.ok = true
+                                response.ret = {retval, name}
+                            else
+                                response.error = "GetTrackSendName requires at least 2 arguments"
+                            end
+                            
+                        elseif fname == "GetTrackReceiveName" then
+                            if args[1] and args[2] ~= nil then
+                                local retval, name = reaper.GetTrackReceiveName(args[1], args[2], args[3] or "")
+                                response.ok = true
+                                response.ret = {retval, name}
+                            else
+                                response.error = "GetTrackReceiveName requires at least 2 arguments"
+                            end
+                            
+                        elseif fname == "GetTrackSendUIVolPan" then
+                            if args[1] and args[2] ~= nil then
+                                local volume, pan = reaper.GetTrackSendUIVolPan(args[1], args[2])
+                                response.ok = true
+                                response.ret = {volume, pan}
+                            else
+                                response.error = "GetTrackSendUIVolPan requires at least 2 arguments"
+                            end
+                            
+                        elseif fname == "GetTrackReceiveUIVolPan" then
+                            if args[1] and args[2] ~= nil then
+                                local volume, pan = reaper.GetTrackReceiveUIVolPan(args[1], args[2])
+                                response.ok = true
+                                response.ret = {volume, pan}
+                            else
+                                response.error = "GetTrackReceiveUIVolPan requires at least 2 arguments"
+                            end
+                            
+                        elseif fname == "GetTrackReceiveUIMute" then
+                            if args[1] and args[2] ~= nil then
+                                local retval, muted = reaper.GetTrackReceiveUIMute(args[1], args[2])
+                                response.ok = true
+                                response.ret = {retval, muted}
+                            else
+                                response.error = "GetTrackReceiveUIMute requires at least 2 arguments"
+                            end
+                            
+                        elseif fname == "GetTrackUIVolPan" then
+                            if args[1] then
+                                local volume, pan = reaper.GetTrackUIVolPan(args[1])
+                                response.ok = true
+                                response.ret = {volume, pan}
+                            else
+                                response.error = "GetTrackUIVolPan requires at least 1 argument"
+                            end
+                            
                         else
                             -- Generic function call
                             local ok, result = pcall(reaper[fname], table.unpack(args))
