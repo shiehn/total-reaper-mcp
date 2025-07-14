@@ -173,6 +173,15 @@ local function process_request()
                                 response.error = "GetProjectName requires a project argument"
                             end
                             
+                        elseif fname == "MIDI_GetEvt" then
+                            if args[1] and args[2] ~= nil then
+                                local retval, selected, muted, ppqpos, msg = reaper.MIDI_GetEvt(args[1], args[2], args[3] or false, args[4] or false, args[5] or 0, args[6] or "")
+                                response.ok = true
+                                response.ret = {retval, selected, muted, ppqpos, msg}
+                            else
+                                response.error = "MIDI_GetEvt requires at least 2 arguments"
+                            end
+                            
                         else
                             -- Generic function call
                             local ok, result = pcall(reaper[fname], table.unpack(args))

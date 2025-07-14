@@ -492,6 +492,267 @@ async def get_midi_output_name(output_index: int) -> str:
 
 
 # ============================================================================
+# MIDI Extended Operations (8 tools)
+# ============================================================================
+
+async def midi_get_evt(item_index: int, take_index: int, event_index: int) -> str:
+    """Get a MIDI event by index"""
+    # Get media item and take
+    item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
+    if not item_result.get("ok") or not item_result.get("ret"):
+        raise Exception(f"Failed to find media item at index {item_index}")
+    
+    item_handle = item_result.get("ret")
+    
+    take_result = await bridge.call_lua("GetMediaItemTake", [item_handle, take_index])
+    if not take_result.get("ok") or not take_result.get("ret"):
+        raise Exception(f"Failed to find take at index {take_index}")
+    
+    take_handle = take_result.get("ret")
+    
+    # Get the event
+    result = await bridge.call_lua("MIDI_GetEvt", [take_handle, event_index, False, False, 0, ""])
+    
+    if result.get("ok"):
+        ret = result.get("ret", [])
+        if isinstance(ret, list) and len(ret) >= 5:
+            retval, selected, muted, ppq_pos, msg = ret[:5]
+            if retval:
+                # Try to decode the message
+                msg_info = "Unknown event"
+                if msg and len(msg) > 0:
+                    status = ord(msg[0]) if isinstance(msg, str) else msg[0]
+                    event_type = (status & 0xF0) >> 4
+                    channel = status & 0x0F
+                    
+                    type_names = {
+                        0x8: "Note Off",
+                        0x9: "Note On",
+                        0xA: "Aftertouch",
+                        0xB: "CC",
+                        0xC: "Program Change",
+                        0xD: "Channel Pressure",
+                        0xE: "Pitch Bend"
+                    }
+                    msg_info = type_names.get(event_type, f"Type {event_type}")
+                    
+                return f"Event {event_index}: PPQ={ppq_pos:.1f}, Type={msg_info}, Channel={channel}, Selected={selected}, Muted={muted}"
+            else:
+                return f"Event {event_index} not found"
+        else:
+            return f"Invalid response format for event {event_index}"
+    else:
+        raise Exception(f"Failed to get MIDI event: {result.get('error', 'Unknown error')}")
+
+
+async def midi_get_grid(item_index: int, take_index: int) -> str:
+    """Get MIDI grid settings"""
+    # Get media item and take
+    item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
+    if not item_result.get("ok") or not item_result.get("ret"):
+        raise Exception(f"Failed to find media item at index {item_index}")
+    
+    item_handle = item_result.get("ret")
+    
+    take_result = await bridge.call_lua("GetMediaItemTake", [item_handle, take_index])
+    if not take_result.get("ok") or not take_result.get("ret"):
+        raise Exception(f"Failed to find take at index {take_index}")
+    
+    take_handle = take_result.get("ret")
+    
+    # Get grid settings
+    result = await bridge.call_lua("MIDI_GetGrid", [take_handle])
+    
+    if result.get("ok"):
+        ret = result.get("ret", [])
+        if isinstance(ret, list) and len(ret) >= 2:
+            qn_grid = ret[0] if len(ret) > 0 else 0
+            swing = ret[1] if len(ret) > 1 else 0
+            return f"MIDI grid: {qn_grid:.3f} quarter notes, swing={swing:.1f}%"
+        else:
+            return "MIDI grid: default settings"
+    else:
+        raise Exception(f"Failed to get MIDI grid: {result.get('error', 'Unknown error')}")
+
+
+async def midi_get_ppq_pos_from_proj_time(item_index: int, take_index: int, time: float) -> str:
+    """Convert project time to PPQ position"""
+    # Get media item and take
+    item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
+    if not item_result.get("ok") or not item_result.get("ret"):
+        raise Exception(f"Failed to find media item at index {item_index}")
+    
+    item_handle = item_result.get("ret")
+    
+    take_result = await bridge.call_lua("GetMediaItemTake", [item_handle, take_index])
+    if not take_result.get("ok") or not take_result.get("ret"):
+        raise Exception(f"Failed to find take at index {take_index}")
+    
+    take_handle = take_result.get("ret")
+    
+    # Convert time to PPQ
+    result = await bridge.call_lua("MIDI_GetPPQPosFromProjTime", [take_handle, time])
+    
+    if result.get("ok"):
+        ppq = result.get("ret", 0.0)
+        return f"Time {time:.3f}s = PPQ {ppq:.1f}"
+    else:
+        raise Exception(f"Failed to convert time to PPQ: {result.get('error', 'Unknown error')}")
+
+
+async def midi_get_proj_time_from_ppq_pos(item_index: int, take_index: int, ppq_pos: float) -> str:
+    """Convert PPQ position to project time"""
+    # Get media item and take
+    item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
+    if not item_result.get("ok") or not item_result.get("ret"):
+        raise Exception(f"Failed to find media item at index {item_index}")
+    
+    item_handle = item_result.get("ret")
+    
+    take_result = await bridge.call_lua("GetMediaItemTake", [item_handle, take_index])
+    if not take_result.get("ok") or not take_result.get("ret"):
+        raise Exception(f"Failed to find take at index {take_index}")
+    
+    take_handle = take_result.get("ret")
+    
+    # Convert PPQ to time
+    result = await bridge.call_lua("MIDI_GetProjTimeFromPPQPos", [take_handle, ppq_pos])
+    
+    if result.get("ok"):
+        time = result.get("ret", 0.0)
+        return f"PPQ {ppq_pos:.1f} = Time {time:.3f}s"
+    else:
+        raise Exception(f"Failed to convert PPQ to time: {result.get('error', 'Unknown error')}")
+
+
+async def midi_get_ppq_pos_start_of_measure(item_index: int, take_index: int, ppq_pos: float) -> str:
+    """Get PPQ position of the start of measure for a given PPQ position"""
+    # Get media item and take
+    item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
+    if not item_result.get("ok") or not item_result.get("ret"):
+        raise Exception(f"Failed to find media item at index {item_index}")
+    
+    item_handle = item_result.get("ret")
+    
+    take_result = await bridge.call_lua("GetMediaItemTake", [item_handle, take_index])
+    if not take_result.get("ok") or not take_result.get("ret"):
+        raise Exception(f"Failed to find take at index {take_index}")
+    
+    take_handle = take_result.get("ret")
+    
+    # Get start of measure
+    result = await bridge.call_lua("MIDI_GetPPQPos_StartOfMeasure", [take_handle, ppq_pos])
+    
+    if result.get("ok"):
+        measure_start_ppq = result.get("ret", 0.0)
+        return f"Start of measure for PPQ {ppq_pos:.1f} is PPQ {measure_start_ppq:.1f}"
+    else:
+        raise Exception(f"Failed to get start of measure: {result.get('error', 'Unknown error')}")
+
+
+async def midi_get_ppq_pos_end_of_measure(item_index: int, take_index: int, ppq_pos: float) -> str:
+    """Get PPQ position of the end of measure for a given PPQ position"""
+    # Get media item and take
+    item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
+    if not item_result.get("ok") or not item_result.get("ret"):
+        raise Exception(f"Failed to find media item at index {item_index}")
+    
+    item_handle = item_result.get("ret")
+    
+    take_result = await bridge.call_lua("GetMediaItemTake", [item_handle, take_index])
+    if not take_result.get("ok") or not take_result.get("ret"):
+        raise Exception(f"Failed to find take at index {take_index}")
+    
+    take_handle = take_result.get("ret")
+    
+    # Get end of measure
+    result = await bridge.call_lua("MIDI_GetPPQPos_EndOfMeasure", [take_handle, ppq_pos])
+    
+    if result.get("ok"):
+        measure_end_ppq = result.get("ret", 0.0)
+        return f"End of measure for PPQ {ppq_pos:.1f} is PPQ {measure_end_ppq:.1f}"
+    else:
+        raise Exception(f"Failed to get end of measure: {result.get('error', 'Unknown error')}")
+
+
+async def midi_enum_sel_notes(item_index: int, take_index: int) -> str:
+    """Enumerate selected MIDI notes"""
+    # Get media item and take
+    item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
+    if not item_result.get("ok") or not item_result.get("ret"):
+        raise Exception(f"Failed to find media item at index {item_index}")
+    
+    item_handle = item_result.get("ret")
+    
+    take_result = await bridge.call_lua("GetMediaItemTake", [item_handle, take_index])
+    if not take_result.get("ok") or not take_result.get("ret"):
+        raise Exception(f"Failed to find take at index {take_index}")
+    
+    take_handle = take_result.get("ret")
+    
+    # Enumerate selected notes
+    selected_notes = []
+    note_idx = -1
+    
+    while True:
+        result = await bridge.call_lua("MIDI_EnumSelNotes", [take_handle, note_idx])
+        if result.get("ok"):
+            next_idx = result.get("ret", -1)
+            if next_idx == -1:
+                break
+            
+            # Get note info
+            note_result = await bridge.call_lua("MIDI_GetNote", [take_handle, next_idx])
+            if note_result.get("ok"):
+                ret = note_result.get("ret", [])
+                if isinstance(ret, list) and len(ret) >= 7:
+                    retval, selected, muted, start_ppq, end_ppq, channel, pitch, velocity = ret[:8]
+                    if retval and selected:
+                        selected_notes.append({
+                            "index": next_idx,
+                            "pitch": pitch,
+                            "velocity": velocity,
+                            "start_ppq": start_ppq
+                        })
+            
+            note_idx = next_idx
+        else:
+            break
+    
+    if selected_notes:
+        notes_info = ", ".join([f"Note {n['index']}: pitch={n['pitch']}" for n in selected_notes[:5]])
+        if len(selected_notes) > 5:
+            notes_info += f", ... ({len(selected_notes) - 5} more)"
+        return f"Selected notes ({len(selected_notes)}): {notes_info}"
+    else:
+        return "No notes selected"
+
+
+async def midi_set_item_extents(item_index: int, take_index: int, start_qn: float, end_qn: float) -> str:
+    """Set MIDI item extents in quarter notes"""
+    # Get media item and take
+    item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
+    if not item_result.get("ok") or not item_result.get("ret"):
+        raise Exception(f"Failed to find media item at index {item_index}")
+    
+    item_handle = item_result.get("ret")
+    
+    take_result = await bridge.call_lua("GetMediaItemTake", [item_handle, take_index])
+    if not take_result.get("ok") or not take_result.get("ret"):
+        raise Exception(f"Failed to find take at index {take_index}")
+    
+    take_handle = take_result.get("ret")
+    
+    # Set item extents
+    result = await bridge.call_lua("MIDI_SetItemExtents", [item_handle, start_qn, end_qn])
+    
+    if result.get("ok"):
+        return f"Set MIDI item extents: start={start_qn:.1f} QN, end={end_qn:.1f} QN"
+    else:
+        raise Exception(f"Failed to set MIDI item extents: {result.get('error', 'Unknown error')}")
+
+
+# ============================================================================
 # Registration Function
 # ============================================================================
 
@@ -525,6 +786,16 @@ def register_midi_tools(mcp) -> int:
         (get_num_midi_outputs, "Get the number of MIDI output devices"),
         (get_midi_input_name, "Get the name of a MIDI input device"),
         (get_midi_output_name, "Get the name of a MIDI output device"),
+        
+        # MIDI Extended Operations
+        (midi_get_evt, "Get a MIDI event by index"),
+        (midi_get_grid, "Get MIDI grid settings"),
+        (midi_get_ppq_pos_from_proj_time, "Convert project time to PPQ position"),
+        (midi_get_proj_time_from_ppq_pos, "Convert PPQ position to project time"),
+        (midi_get_ppq_pos_start_of_measure, "Get PPQ position of the start of measure"),
+        (midi_get_ppq_pos_end_of_measure, "Get PPQ position of the end of measure"),
+        (midi_enum_sel_notes, "Enumerate selected MIDI notes"),
+        (midi_set_item_extents, "Set MIDI item extents in quarter notes"),
     ]
     
     # Register each tool
