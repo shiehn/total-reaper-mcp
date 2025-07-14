@@ -218,6 +218,60 @@ local function process_request()
                                 response.error = "TakeFX_GetParam requires at least 3 arguments"
                             end
                             
+                        elseif fname == "TrackFX_GetParamName" then
+                            if args[1] and args[2] ~= nil and args[3] ~= nil then
+                                local retval, name = reaper.TrackFX_GetParamName(args[1], args[2], args[3])
+                                response.ok = true
+                                response.ret = {retval, name}
+                            else
+                                response.error = "TrackFX_GetParamName requires at least 3 arguments"
+                            end
+                            
+                        elseif fname == "TrackFX_GetPreset" then
+                            if args[1] and args[2] ~= nil then
+                                local retval, preset = reaper.TrackFX_GetPreset(args[1], args[2])
+                                response.ok = true
+                                response.ret = {retval, preset}
+                            else
+                                response.error = "TrackFX_GetPreset requires at least 2 arguments"
+                            end
+                            
+                        elseif fname == "TrackFX_GetPresetIndex" then
+                            if args[1] and args[2] ~= nil then
+                                local preset_index, num_presets = reaper.TrackFX_GetPresetIndex(args[1], args[2])
+                                response.ok = true
+                                response.ret = {preset_index, num_presets}
+                            else
+                                response.error = "TrackFX_GetPresetIndex requires at least 2 arguments"
+                            end
+                            
+                        elseif fname == "TrackFX_GetIOSize" then
+                            if args[1] and args[2] ~= nil then
+                                local input_pins, output_pins = reaper.TrackFX_GetIOSize(args[1], args[2])
+                                response.ok = true
+                                response.ret = {input_pins, output_pins}
+                            else
+                                response.error = "TrackFX_GetIOSize requires at least 2 arguments"
+                            end
+                            
+                        elseif fname == "TrackFX_FormatParamValue" then
+                            if args[1] and args[2] ~= nil and args[3] ~= nil and args[4] ~= nil then
+                                local retval, formatted = reaper.TrackFX_FormatParamValue(args[1], args[2], args[3], args[4], args[5] or "")
+                                response.ok = true
+                                response.ret = {retval, formatted}
+                            else
+                                response.error = "TrackFX_FormatParamValue requires at least 4 arguments"
+                            end
+                            
+                        elseif fname == "TrackFX_FormatParamValueNormalized" then
+                            if args[1] and args[2] ~= nil and args[3] ~= nil and args[4] ~= nil then
+                                local retval, formatted = reaper.TrackFX_FormatParamValueNormalized(args[1], args[2], args[3], args[4], args[5] or "")
+                                response.ok = true
+                                response.ret = {retval, formatted}
+                            else
+                                response.error = "TrackFX_FormatParamValueNormalized requires at least 4 arguments"
+                            end
+                            
                         else
                             -- Generic function call
                             local ok, result = pcall(reaper[fname], table.unpack(args))
