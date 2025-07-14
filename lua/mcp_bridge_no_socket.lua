@@ -398,6 +398,33 @@ local function process_request()
                                 response.error = "GetTrackUIVolPan requires at least 1 argument"
                             end
                             
+                        elseif fname == "CalcMediaSrcLoudness" then
+                            if args[1] then
+                                local retval, lufs_integrated, lufs_range, truepeak = reaper.CalcMediaSrcLoudness(args[1])
+                                response.ok = true
+                                response.ret = {retval, lufs_integrated, lufs_range, truepeak}
+                            else
+                                response.error = "CalcMediaSrcLoudness requires at least 1 argument"
+                            end
+                            
+                        elseif fname == "CalculateNormalization" then
+                            if args[1] and args[2] ~= nil and args[3] ~= nil then
+                                local retval, gain_mul, offset = reaper.CalculateNormalization(args[1], args[2], args[3], args[4] or 0.0, args[5] or 0.0, args[6] or true)
+                                response.ok = true
+                                response.ret = {retval, gain_mul, offset}
+                            else
+                                response.error = "CalculateNormalization requires at least 3 arguments"
+                            end
+                            
+                        elseif fname == "GetPeakFileName" then
+                            if args[1] then
+                                local peakfilename = reaper.GetPeakFileName(args[1], args[2] or "", args[3] or 4096)
+                                response.ok = true
+                                response.ret = peakfilename
+                            else
+                                response.error = "GetPeakFileName requires at least 1 argument"
+                            end
+                            
                         else
                             -- Generic function call
                             local ok, result = pcall(reaper[fname], table.unpack(args))
