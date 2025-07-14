@@ -12,26 +12,26 @@ Migrating from legacy MCP pattern (monolithic 7700+ line file with if/elif chain
 - **Core API & Utilities** (14 tools) - `server/tools/core_api.py`
 - **Media Items & Takes** (29 tools) - `server/tools/media_items.py`
 - **MIDI Operations** (15 tools) - `server/tools/midi.py`
+- **FX & Processing** (19 tools) - `server/tools/fx.py`
 - **Infrastructure**:
   - Created `server/app_modern.py` as main server
   - Updated `tests/conftest.py` to support `USE_MODERN_SERVER=true`
   - Created stub modules for all remaining categories
   - Integration tests passing for migrated tools
 
-**Total Migrated**: 123 tools (+ 8 placeholder tools)
+**Total Migrated**: 142 tools (+ 7 placeholder tools = 149 total)
 
 ### Pending Migration 🔄
-Total remaining: ~105 tools
+Total remaining: ~86 tools
 
-1. **FX & Processing** (~18 tools) - `server/tools/fx.py`
-2. **Project Management** (~12 tools) - `server/tools/project.py`
-3. **Transport & Playback** (~10 tools) - `server/tools/transport.py`
-4. **Time Selection & Navigation** (~8 tools) - `server/tools/time_selection.py`
-5. **Markers & Regions** (~10 tools) - `server/tools/markers.py`
-6. **Automation & Envelopes** (~15 tools) - `server/tools/automation.py`
-7. **Rendering & Freezing** (~8 tools) - `server/tools/rendering.py`
-8. **GUI & Interface** (~10 tools) - `server/tools/gui.py`
-9. **Additional categories** (~14 tools) - May need new modules for:
+1. **Project Management** (~12 tools) - `server/tools/project.py`
+2. **Transport & Playback** (~10 tools) - `server/tools/transport.py`
+3. **Time Selection & Navigation** (~8 tools) - `server/tools/time_selection.py`
+4. **Markers & Regions** (~10 tools) - `server/tools/markers.py`
+5. **Automation & Envelopes** (~15 tools) - `server/tools/automation.py`
+6. **Rendering & Freezing** (~8 tools) - `server/tools/rendering.py`
+7. **GUI & Interface** (~10 tools) - `server/tools/gui.py`
+8. **Additional categories** (~13 tools) - May need new modules for:
     - Recording operations
     - Video operations
     - Hardware/MIDI hardware
