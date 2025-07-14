@@ -47,6 +47,7 @@ from .tools.media_items_extended import register_media_items_extended_tools
 from .tools.routing_sends import register_routing_sends_tools
 from .tools.audio_accessor import register_audio_accessor_tools
 from .tools.midi_editor import register_midi_editor_tools
+from .tools.color_management import register_color_management_tools
 
 # Register all tools
 def register_all_tools():
@@ -77,6 +78,7 @@ def register_all_tools():
         ("Routing & Sends", register_routing_sends_tools),
         ("Audio Accessor & Analysis", register_audio_accessor_tools),
         ("MIDI Editor & Piano Roll", register_midi_editor_tools),
+        ("Color Management", register_color_management_tools),
     ]
     
     for category_name, register_func in categories:

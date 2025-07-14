@@ -475,6 +475,24 @@ local function process_request()
                                 response.error = "MIDI_GetCCShape requires at least 2 arguments"
                             end
                             
+                        elseif fname == "ColorFromNative" then
+                            if args[1] ~= nil then
+                                local r, g, b = reaper.ColorFromNative(args[1])
+                                response.ok = true
+                                response.ret = {r, g, b}
+                            else
+                                response.error = "ColorFromNative requires at least 1 argument"
+                            end
+                            
+                        elseif fname == "EnumProjectMarkers3" then
+                            if args[1] ~= nil and args[2] ~= nil then
+                                local retval, isrgn, pos, rgnend, name, markrgnidx, color = reaper.EnumProjectMarkers3(args[1], args[2])
+                                response.ok = true
+                                response.ret = {retval, isrgn, pos, rgnend, name, markrgnidx, color}
+                            else
+                                response.error = "EnumProjectMarkers3 requires at least 2 arguments"
+                            end
+                            
                         else
                             -- Generic function call
                             local ok, result = pcall(reaper[fname], table.unpack(args))
