@@ -226,7 +226,7 @@ async def main():
     """Run the MCP server"""
     logger.info("Starting REAPER MCP Server (Modern Modular Pattern)")
     logger.info(f"Bridge directory: {BRIDGE_DIR}")
-    logger.info("Make sure to run mcp_bridge_no_socket.lua in REAPER!")
+    logger.info("Make sure to run mcp_bridge_file_full.lua in REAPER!")
     
     async with stdio_server() as (read_stream, write_stream):
         # Initialize options for the server

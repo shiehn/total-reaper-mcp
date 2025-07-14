@@ -50,6 +50,9 @@ from .tools.midi_editor import register_midi_editor_tools
 from .tools.color_management import register_color_management_tools
 from .tools.tempo_time_signature import register_tempo_time_signature_tools
 from .tools.recording import register_recording_tools
+from .tools.envelope_extended import register_envelope_extended_tools
+from .tools.time_tempo_extended import register_time_tempo_extended_tools
+from .tools.track_management_extended import register_track_management_extended_tools
 
 # Register all tools
 def register_all_tools():
@@ -83,6 +86,9 @@ def register_all_tools():
         ("Color Management", register_color_management_tools),
         ("Tempo & Time Signature", register_tempo_time_signature_tools),
         ("Recording Operations", register_recording_tools),
+        ("Envelope Extended", register_envelope_extended_tools),
+        ("Time/Tempo Extended", register_time_tempo_extended_tools),
+        ("Track Management Extended", register_track_management_extended_tools),
     ]
     
     for category_name, register_func in categories:
@@ -102,7 +108,7 @@ def main():
     logger.info("REAPER MCP Server - Modern Pattern")
     logger.info("=" * 60)
     logger.info(f"Bridge directory: {BRIDGE_DIR}")
-    logger.info("Make sure mcp_bridge_no_socket.lua is running in REAPER!")
+    logger.info("Make sure mcp_bridge_file_full.lua is running in REAPER!")
     logger.info("")
     
     # Register all tools

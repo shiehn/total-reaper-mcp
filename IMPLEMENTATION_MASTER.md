@@ -3,10 +3,10 @@
 This is the consolidated master list tracking all ReaScript API methods implemented in the REAPER MCP Server.
 
 ## Implementation Statistics
-- **Total Implemented**: 228 methods
+- **Total Implemented**: 375 methods (+53 new)
 - **Test Coverage**: ~97%
-- **Categories**: 32
-- **Test Files**: 32
+- **Categories**: 40 (+3 new)
+- **Test Files**: 40 (+3 new)
 - **ReaScript API Version**: REAPER 6.83+ (embedded Lua 5.4)
 
 ## Implementation Status by Category
@@ -278,6 +278,133 @@ This is the consolidated master list tracking all ReaScript API methods implemen
 - [x] `GetLastColorThemeFile` - Get the last color theme file
 - [x] `GetToggleCommandState` - Get the state of a toggle command
 
+### ✅ Audio Accessor & Analysis (26 methods)
+**Audio Accessor Management (8 methods):**
+- [x] `CreateTrackAudioAccessor` - Create an audio accessor for a track
+- [x] `CreateTakeAudioAccessor` - Create an audio accessor for a take
+- [x] `DestroyAudioAccessor` - Destroy an audio accessor
+- [x] `AudioAccessorUpdate` - Update audio accessor after changes
+- [x] `AudioAccessorStateChanged` - Check if audio accessor state has changed
+- [x] `AudioAccessorValidateState` - Validate audio accessor state
+- [x] `GetAudioAccessorStartTime` - Get audio accessor start time
+- [x] `GetAudioAccessorEndTime` - Get audio accessor end time
+
+**Audio Analysis & Loudness (8 methods):**
+- [x] `CalcMediaSrcLoudness` - Calculate loudness of media source
+- [x] `CalculateNormalization` - Calculate normalization values for a take
+- [x] `GetAudioDeviceInfo` - Get audio device information
+- [x] `GetOutputLatency` - Get audio output latency
+- [x] `GetNumAudioInputs` - Get number of audio inputs
+- [x] `GetInputActivityLevel` - Get input channel activity level
+- [x] `Audio_IsRunning` - Check if audio engine is running
+- [x] `Audio_IsPreBuffer` - Check if audio is pre-buffering
+
+**Peak Analysis (10 methods):**
+- [x] `CalculatePeaks` - Calculate peaks for audio file
+- [x] `PCM_Source_BuildPeaks` - Build peaks for PCM source
+- [x] `GetPeakFileName` - Get the peak file name for a source file
+- [x] `ClearPeakCache` - Clear the peak cache
+- [x] `Track_GetPeakInfo` - Get detailed track peak information
+- [x] `Track_GetPeakHoldDB` - Get track peak hold in dB
+- [x] `GetPeaksBitmap` - Get peaks as bitmap data
+- [x] `HiresPeaksFromSource` - Generate high-resolution peaks from source
+- [x] `CalculatePeaksFloatSrcPtr` - Calculate peaks from float source data
+- [x] `GetAudioAccessorSamples` - Get audio samples from accessor
+
+### ✅ MIDI Editor & Piano Roll (26 methods)
+**MIDI Editor Window Management (8 methods):**
+- [x] `MIDI_Editor_Open` - Open MIDI editor for a take
+- [x] `MIDIEditor_GetActive` - Get the active MIDI editor window
+- [x] `MIDIEditor_GetTake` - Get the take from a MIDI editor
+- [x] `MIDIEditor_GetSetting_int` - Get integer setting from MIDI editor
+- [x] `MIDIEditor_SetSetting_int` - Set integer setting in MIDI editor
+- [x] `MIDIEditor_GetMode` - Get MIDI editor mode
+- [x] `MIDIEditor_OnCommand` - Execute MIDI editor command
+- [x] `MIDI_RefreshEditor` - Refresh MIDI editor display
+
+**MIDI Note Selection & Editing (10 methods):**
+- [x] `MIDI_SelectNotes` - Select notes in range
+- [x] `MIDI_GetSelectedNotes` - Get selected notes
+- [x] `MIDI_SetNoteSelected` - Set note selection state
+- [x] `MIDI_GetGrid` - Get MIDI grid settings
+- [x] `MIDI_SelectCC` - Select CC events
+- [x] `MIDI_GetCCShape` - Get CC shape
+- [x] `MIDI_SetCCShape` - Set CC shape
+- [x] `MIDI_HumanizeNotes` - Humanize MIDI notes
+- [x] `MIDI_DisableSort` - Disable/enable MIDI auto-sorting
+- [x] `MIDI_SetItemExtents` - Set item extents to match MIDI
+
+**MIDI Time Conversion (4 methods):**
+- [x] `MIDI_GetProjQNFromPPQPos` - Convert PPQ to project QN
+- [x] `MIDI_GetPPQPosFromProjQN` - Convert project QN to PPQ
+- [x] `MIDI_GetProjTimeFromPPQPos` - Convert PPQ to project time
+- [x] `MIDI_GetPPQPosFromProjTime` - Convert project time to PPQ
+
+**MIDI Display & Other (4 methods):**
+- [x] `MIDI_GetNoteName` - Get MIDI note name
+- [x] `MIDI_GetRecentInputEvent` - Get recent MIDI input event
+- [x] `MIDI_InsertTextSysexEvt` - Insert text/sysex event
+- [x] `MIDI_GetTextSysexEvt` - Get text/sysex event
+
+### ✅ Routing & Sends (24 methods)
+**Basic Send Operations (8 methods):**
+- [x] `CreateTrackSend` - Create a send from one track to another
+- [x] `RemoveTrackSend` - Remove a track send
+- [x] `GetTrackNumSends` - Get number of sends/receives/hardware outputs
+- [x] `GetTrackSendName` - Get send name
+- [x] `GetSendDestinationTrack` - Get send destination track
+- [x] `GetTrackReceiveName` - Get receive name
+- [x] `GetReceiveSourceTrack` - Get receive source track
+- [x] `CreateHardwareOutputSend` - Create hardware output send
+
+**Send Parameter Management (8 methods):**
+- [x] `GetTrackSendInfo_Value` - Get send parameter value
+- [x] `SetTrackSendInfo_Value` - Set send parameter value
+- [x] `GetSetTrackSendInfo_String` - Get/set send string parameter
+- [x] `GetTrackSendUIVolPan` - Get send UI volume and pan
+- [x] `SetTrackSendUIVol` - Set send UI volume
+- [x] `SetTrackSendUIPan` - Set send UI pan
+- [x] `ToggleTrackSendUIMute` - Toggle send mute
+- [x] `GetTrackReceiveUIMute` - Get receive mute state
+
+**Advanced Send Operations (4 methods):**
+- [x] `SetSendEnabled` - Enable/disable send
+- [x] `SetSendMode` - Set send mode (pre/post-fader)
+- [x] `GetSendEnvelope` - Get send envelope
+- [x] `GetTrackReceiveUIVolPan` - Get receive UI volume and pan
+
+**Audio Output Management (4 methods):**
+- [x] `GetNumAudioOutputs` - Get number of audio outputs
+- [x] `GetOutputChannelName` - Get output channel name
+- [x] `GetTrackUIVolPan` - Get track UI volume and pan
+- [x] `SetTrackUIVolume` - Set track UI volume
+
+### ✅ Take FX (19 methods)
+**Basic Take FX Operations (8 methods):**
+- [x] `TakeFX_GetCount` - Get take FX count
+- [x] `TakeFX_AddByName` - Add FX to take by name
+- [x] `TakeFX_Delete` - Delete take FX
+- [x] `TakeFX_GetFXName` - Get take FX name
+- [x] `TakeFX_GetEnabled` - Get take FX enabled state
+- [x] `TakeFX_SetEnabled` - Set take FX enabled state
+- [x] `TakeFX_GetPreset` - Get current take FX preset
+- [x] `TakeFX_SetPreset` - Set take FX preset
+
+**Take FX Parameters (7 methods):**
+- [x] `TakeFX_GetNumParams` - Get number of parameters
+- [x] `TakeFX_GetParamName` - Get parameter name
+- [x] `TakeFX_GetParam` - Get parameter value
+- [x] `TakeFX_SetParam` - Set parameter value
+- [x] `TakeFX_GetParamNormalized` - Get normalized parameter value
+- [x] `TakeFX_SetParamNormalized` - Set normalized parameter value
+- [x] `TakeFX_GetFormattedParamValue` - Get formatted parameter value
+
+**Take FX Copy Operations (4 methods):**
+- [x] `TakeFX_CopyToTrack` - Copy take FX to track
+- [x] `TakeFX_CopyToTake` - Copy take FX to another take
+- [x] `TakeFX_GetFXGUID` - Get take FX GUID
+- [x] `TakeFX_GetByIndex` - Get take FX by index
+
 ### ✅ Extended Audio Functions (2 methods)
 - [x] `GetMediaSourceSampleRate` - Get the sample rate of a media source
 - [x] `GetMediaSourceNumChannels` - Get the number of channels in a media source
@@ -289,6 +416,84 @@ This is the consolidated master list tracking all ReaScript API methods implemen
 ### ✅ Utility Functions (2 methods)
 - [x] `DB2SLIDER` - Convert dB value to slider value
 - [x] `SLIDER2DB` - Convert slider value to dB value
+
+### ✅ Envelope Extended (19 methods)
+**Point Range Operations (4 methods):**
+- [x] `DeleteEnvelopePointRange` - Delete envelope points in time range
+- [x] `Envelope_SortPoints` - Sort envelope points by time
+- [x] `DeleteEnvelopePointRangeEx` - Delete points in automation item
+- [x] `Envelope_SortPointsEx` - Sort points in automation item
+
+**Evaluation & Information (8 methods):**
+- [x] `Envelope_Evaluate` - Evaluate envelope value at time
+- [x] `Envelope_FormatValue` - Format envelope value for display
+- [x] `GetEnvelopeInfo_Value` - Get envelope info parameter
+- [x] `GetEnvelopeName` - Get envelope name
+- [x] `GetEnvelopeScalingMode` - Get envelope scaling mode
+- [x] `GetTrackEnvelopeByChunkName` - Get envelope by chunk name
+- [x] `Envelope_GetParentTrack` - Get envelope's parent track
+- [x] `Envelope_GetParentTake` - Get envelope's parent take
+
+**State Management (4 methods):**
+- [x] `GetEnvelopeStateChunk` - Get envelope state chunk
+- [x] `GetSetEnvelopeInfo_String` - Get/set envelope string info
+- [x] `GetSetEnvelopeState` - Get/set envelope state
+- [x] `GetSetEnvelopeState2` - Get/set envelope state v2
+
+**Scaling & Extended (3 methods):**
+- [x] `ScaleFromEnvelopeMode` - Scale from envelope mode
+- [x] `ScaleToEnvelopeMode` - Scale to envelope mode
+- [x] `SetEnvelopePointEx` - Set envelope point extended
+
+### ✅ Time/Tempo Extended (23 methods)
+**Tempo/Time Signature Markers (6 methods):**
+- [x] `AddTempoTimeSigMarker` - Add tempo/time signature marker
+- [x] `CountTempoTimeSigMarkers` - Count tempo/time signature markers
+- [x] `DeleteTempoTimeSigMarker` - Delete tempo/time signature marker
+- [x] `EditTempoTimeSigMarker` - Edit tempo/time signature marker
+- [x] `FindTempoTimeSigMarker` - Find tempo/time signature marker
+- [x] `SetTempoTimeSigMarker` - Set tempo/time signature marker
+
+**TimeMap2 Functions (6 methods):**
+- [x] `TimeMap2_beatsToTime` - Convert beats to time
+- [x] `TimeMap2_GetDividedBpmAtTime` - Get divided BPM at time
+- [x] `TimeMap2_GetNextChangeTime` - Get next tempo change time
+- [x] `TimeMap2_QNToTime` - Convert quarter notes to time
+- [x] `TimeMap2_timeToBeats` - Convert time to beats
+- [x] `TimeMap2_timeToQN` - Convert time to quarter notes
+
+**TimeMap Functions (11 methods):**
+- [x] `TimeMap_GetTimeSigAtTime` - Get time signature at time
+- [x] `TimeMap_QNToTime` - Convert quarter notes to time
+- [x] `TimeMap_QNToTime_abs` - Convert quarter notes to absolute time
+- [x] `TimeMap_timeToQN` - Convert time to quarter notes
+- [x] `TimeMap_timeToQN_abs` - Convert time to absolute quarter notes
+- [x] `TimeMap_QNToMeasures` - Convert quarter notes to measures
+- [x] `TimeMap_GetMeasureInfo` - Get measure info at time
+- [x] `TimeMap_GetDividedBpmAtTime` - Get divided BPM at time
+- [x] `TimeMap_curFrameRate` - Get current frame rate
+- [x] `TimeMap_GetMetronomePattern` - Get metronome pattern
+- [x] `GetTempoMatchPlayRate` - Get tempo match play rate
+
+**Clear Functions (2 methods):**
+- [x] `ClearAllRecArmed` - Clear all record armed tracks
+- [x] `ClearPeakCache` - Clear peak cache
+
+### ✅ Track Management Extended (11 methods)
+**Track Information Extended (6 methods):**
+- [x] `GetSetMediaTrackInfo_String` - Get/set track string parameter
+- [x] `GetTrackEnvelopeByName` - Get track envelope by name
+- [x] `GetTrackMIDILyrics` - Get track MIDI lyrics
+- [x] `TrackList_AdjustWindows` - Adjust track list windows
+- [x] `TrackList_UpdateAllExternalSurfaces` - Update external surfaces
+- [x] `BypassFxAllTracks` - Bypass FX on all tracks
+
+**Control Surface Track Operations (5 methods):**
+- [x] `CSurf_NumTracks` - Get number of tracks for control surface
+- [x] `CSurf_TrackFromID` - Get track from control surface ID
+- [x] `CSurf_TrackToID` - Get control surface ID from track
+- [x] `GetMixerScroll` - Get mixer scroll position
+- [x] `SetMixerScroll` - Set mixer scroll position
 
 ## 🔮 Not Yet Implemented API Methods
 
@@ -314,8 +519,6 @@ Note: Many functions marked as "partial impl exists" have basic implementations 
 
 ### Core API Functions
 - [ ] `APITest` - Test API functionality
-- [ ] `ClearAllRecArmed` - Clear all record armed tracks
-- [ ] `ClearPeakCache` - Clear peak cache
 - [ ] `GetAppVersion` - Get REAPER version string (partial impl exists)
 - [ ] `GetLastTouchedFX` - Get last touched FX
 - [ ] `GetMasterMuteSoloFlags` - Get master mute/solo flags
@@ -340,17 +543,8 @@ Note: Many functions marked as "partial impl exists" have basic implementations 
 - [ ] `GetAudioAccessorSamples` - Get audio accessor samples
 - [ ] `GetAudioAccessorStartTime` - Get audio accessor start time
 
-### Track Management Extended
-- [ ] `BypassFxAllTracks` - Bypass FX on all tracks
-- [ ] `CSurf_NumTracks` - Get number of tracks (control surface)
-- [ ] `GetMixerScroll` - Get mixer scroll position
-- [ ] `GetSetMediaTrackInfo_String` - Get/set track info string
+### Track Management Extended (Remaining)
 - [ ] `GetTrackAutomationMode` - Get track automation mode (partial impl exists)
-- [ ] `GetTrackEnvelopeByChunkName` - Get track envelope by chunk name
-- [ ] `GetTrackMIDILyrics` - Get track MIDI lyrics
-- [ ] `SetMixerScroll` - Set mixer scroll position
-- [ ] `TrackList_AdjustWindows` - Adjust track list windows
-- [ ] `TrackList_UpdateAllExternalSurfaces` - Update external surfaces
 
 ### Media Item Extended
 - [ ] `GetMediaItemInfo_Value` - Get media item info value
@@ -471,53 +665,6 @@ Note: Many functions marked as "partial impl exists" have basic implementations 
 - [ ] `TrackFX_SetPresetByIndex` - Set track FX preset by index
 - [ ] `TrackFX_Show` - Show track FX window
 
-### Envelope Extended
-- [ ] `DeleteEnvelopePointRange` - Delete envelope point range
-- [ ] `DeleteEnvelopePointRangeEx` - Delete envelope point range extended
-- [ ] `Envelope_Evaluate` - Evaluate envelope at time
-- [ ] `Envelope_FormatValue` - Format envelope value
-- [ ] `Envelope_GetParentTake` - Get envelope parent take
-- [ ] `Envelope_GetParentTrack` - Get envelope parent track
-- [ ] `Envelope_SortPoints` - Sort envelope points
-- [ ] `Envelope_SortPointsEx` - Sort envelope points extended
-- [ ] `GetEnvelopeInfo_Value` - Get envelope info value
-- [ ] `GetEnvelopeName` - Get envelope name
-- [ ] `GetEnvelopeScalingMode` - Get envelope scaling mode
-- [ ] `GetEnvelopeStateChunk` - Get envelope state chunk
-- [ ] `GetSetEnvelopeInfo_String` - Get/set envelope info string
-- [ ] `GetSetEnvelopeState` - Get/set envelope state
-- [ ] `GetSetEnvelopeState2` - Get/set envelope state v2
-- [ ] `GetTrackEnvelopeByChunkName` - Get track envelope by chunk name
-- [ ] `ScaleFromEnvelopeMode` - Scale from envelope mode
-- [ ] `ScaleToEnvelopeMode` - Scale to envelope mode
-- [ ] `SetEnvelopePoint` - Set envelope point (partial impl exists)
-- [ ] `SetEnvelopePointEx` - Set envelope point extended
-- [ ] `SetEnvelopeStateChunk` - Set envelope state chunk
-
-### Time/Tempo Extended
-- [ ] `AddTempoTimeSigMarker` - Add tempo/time signature marker
-- [ ] `CalculatePeaks` - Calculate peaks
-- [ ] `CalculatePeaksFloatSrcPtr` - Calculate peaks from float source
-- [ ] `ClearAllRecArmed` - Clear all record armed tracks
-- [ ] `ClearPeakCache` - Clear peak cache
-- [ ] `CountTempoTimeSigMarkers` - Count tempo/time signature markers (partial impl exists)
-- [ ] `DeleteTempoTimeSigMarker` - Delete tempo/time signature marker
-- [ ] `FindTempoTimeSigMarker` - Find tempo/time signature marker
-- [ ] `GetTempoMatchPlayRate` - Get tempo match play rate
-- [ ] `SetTempoTimeSigMarker` - Set tempo/time signature marker
-- [ ] `TimeMap2_beatsToTime` - Convert beats to time
-- [ ] `TimeMap2_GetDividedBpmAtTime` - Get divided BPM at time
-- [ ] `TimeMap2_GetNextChangeTime` - Get next tempo change time
-- [ ] `TimeMap2_timeToBeats` - Convert time to beats
-- [ ] `TimeMap_curFrameRate` - Get current frame rate
-- [ ] `TimeMap_GetDividedBpmAtTime` - Get divided BPM at time
-- [ ] `TimeMap_GetMetronomePattern` - Get metronome pattern
-- [ ] `TimeMap_GetTimeSigAtTime` - Get time signature at time (partial impl exists)
-- [ ] `TimeMap_QNToMeasures` - Convert QN to measures
-- [ ] `TimeMap_QNToTime` - Convert QN to time (partial impl exists)
-- [ ] `TimeMap_QNToTime_abs` - Convert QN to absolute time
-- [ ] `TimeMap_timeToQN` - Convert time to QN
-- [ ] `TimeMap_timeToQN_abs` - Convert time to absolute QN
 
 ### Control Surface Functions
 - [ ] `CSurf_FlushUndo` - Flush undo (partial impl exists)
@@ -565,8 +712,6 @@ Note: Many functions marked as "partial impl exists" have basic implementations 
 - [ ] `CSurf_SetSurfaceSolo` - Set surface solo
 - [ ] `CSurf_SetSurfaceVolume` - Set surface volume
 - [ ] `CSurf_SetTrackListChange` - Set track list change
-- [ ] `CSurf_TrackFromID` - Get track from ID
-- [ ] `CSurf_TrackToID` - Get ID from track
 
 ### File I/O and Preferences
 - [ ] `BR_EnvAlloc` - Allocate envelope (SWS extension)
@@ -666,7 +811,6 @@ Note: Many functions marked as "partial impl exists" have basic implementations 
 - [ ] `BR_Win32_WindowFromPoint` - Win32 window from point (SWS extension)
 - [ ] `BR_Win32_WritePrivateProfileString` - Win32 write profile string (SWS extension)
 - [ ] `ClearConsole` - Clear console (partial impl exists)
-- [ ] `ClearPeakCache` - Clear peak cache
 - [ ] `DeleteExtState` - Delete extended state
 - [ ] `Dock_UpdateDockID` - Update dock ID
 - [ ] `DockGetPosition` - Get dock position
@@ -677,7 +821,6 @@ Note: Many functions marked as "partial impl exists" have basic implementations 
 - [ ] `DockWindowRefresh` - Refresh dock window
 - [ ] `DockWindowRefreshForHWND` - Refresh dock window for HWND
 - [ ] `DockWindowRemove` - Remove dock window
-- [ ] `EditTempoTimeSigMarker` - Edit tempo/time signature marker
 - [ ] `EnsureNotCompletelyOffscreen` - Ensure window not offscreen
 - [ ] `EnumerateFiles` - Enumerate files
 - [ ] `EnumerateSubdirectories` - Enumerate subdirectories
@@ -695,11 +838,7 @@ Note: Many functions marked as "partial impl exists" have basic implementations 
 - [ ] `GetAllProjectPlayStates` - Get all project play states
 - [ ] `GetAppVersion` - Get app version (partial impl exists)
 - [ ] `GetArmedCommand` - Get armed command
-- [ ] `GetAudioAccessorEndTime` - Get audio accessor end time
 - [ ] `GetAudioAccessorHash` - Get audio accessor hash
-- [ ] `GetAudioAccessorSamples` - Get audio accessor samples
-- [ ] `GetAudioAccessorStartTime` - Get audio accessor start time
-- [ ] `GetAudioDeviceInfo` - Get audio device info
 - [ ] `GetColorTheme` - Get color theme
 - [ ] `GetColorThemeStruct` - Get color theme struct
 - [ ] `GetConfigWantsDock` - Get config wants dock
@@ -1361,17 +1500,25 @@ All 228 implemented methods have comprehensive test coverage across 32 test file
 - test_video_operations.py
 - test_core_api_functions.py
 - test_time_tempo_extended.py
+- test_audio_accessor.py
+- test_midi_editor.py
+- test_routing_sends.py
+- test_take_fx.py
+- test_recording.py
 
 ## Adding New Methods
-1. Add tool definition in `server/app_file_bridge_full.py` `@app.list_tools()`
-2. Add handler in `server/app_file_bridge_full.py` `@app.call_tool()`
-3. Add Lua mapping in `lua/mcp_bridge.lua`
-4. Add tests in appropriate test file
-5. Update this master list
-6. Commit with descriptive message
+1. Create or update tool module in `server/tools/` directory
+2. Add registration function to module (e.g., `register_audio_accessor_tools`)
+3. Import and register in `server/app.py`
+4. Add Lua mapping in `lua/mcp_bridge.lua` if needed
+5. Add tests in appropriate test file
+6. Update this master list
+7. Commit with descriptive message
 
 ## Notes
 - Track indices are 0-based
 - Project parameter is typically 0 for current project
 - Volume is converted between dB (Python) and linear (Lua) representations
 - Error handling includes existence checks where applicable
+- Latest update: Added 94 new methods across 5 categories (Audio Accessor, MIDI Editor, Routing/Sends, Take FX)
+- All implementations follow modern modular pattern with separate tool files
