@@ -272,6 +272,51 @@ local function process_request()
                                 response.error = "TrackFX_FormatParamValueNormalized requires at least 4 arguments"
                             end
                             
+                        elseif fname == "GetProjExtState" then
+                            if args[1] ~= nil and args[2] and args[3] then
+                                local retval, value = reaper.GetProjExtState(args[1], args[2], args[3])
+                                response.ok = true
+                                response.ret = {retval, value}
+                            else
+                                response.error = "GetProjExtState requires at least 3 arguments"
+                            end
+                            
+                        elseif fname == "EnumProjExtState" then
+                            if args[1] ~= nil and args[2] and args[3] ~= nil then
+                                local retval, key, value = reaper.EnumProjExtState(args[1], args[2], args[3])
+                                response.ok = true
+                                response.ret = {retval, key, value}
+                            else
+                                response.error = "EnumProjExtState requires at least 3 arguments"
+                            end
+                            
+                        elseif fname == "GetTrackStateChunk" then
+                            if args[1] then
+                                local retval, chunk = reaper.GetTrackStateChunk(args[1], args[2] or "", args[3] or 65536, args[4] or false)
+                                response.ok = true
+                                response.ret = {retval, chunk}
+                            else
+                                response.error = "GetTrackStateChunk requires at least 1 argument"
+                            end
+                            
+                        elseif fname == "GetItemStateChunk" then
+                            if args[1] then
+                                local retval, chunk = reaper.GetItemStateChunk(args[1], args[2] or "", args[3] or 65536, args[4] or false)
+                                response.ok = true
+                                response.ret = {retval, chunk}
+                            else
+                                response.error = "GetItemStateChunk requires at least 1 argument"
+                            end
+                            
+                        elseif fname == "GetEnvelopeStateChunk" then
+                            if args[1] then
+                                local retval, chunk = reaper.GetEnvelopeStateChunk(args[1], args[2] or "", args[3] or 65536, args[4] or false)
+                                response.ok = true
+                                response.ret = {retval, chunk}
+                            else
+                                response.error = "GetEnvelopeStateChunk requires at least 1 argument"
+                            end
+                            
                         else
                             -- Generic function call
                             local ok, result = pcall(reaper[fname], table.unpack(args))

@@ -42,6 +42,7 @@ from .tools.rendering import register_rendering_tools
 from .tools.gui import register_gui_tools
 from .tools.fx_take import register_fx_take_tools
 from .tools.fx_track_extended import register_fx_track_extended_tools
+from .tools.project_state import register_project_state_tools
 
 # Register all tools
 def register_all_tools():
@@ -67,6 +68,7 @@ def register_all_tools():
         ("GUI & Interface", register_gui_tools),
         ("Take FX", register_fx_take_tools),
         ("Track FX Extended", register_fx_track_extended_tools),
+        ("Project State Management", register_project_state_tools),
     ]
     
     for category_name, register_func in categories:
