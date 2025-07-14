@@ -114,6 +114,135 @@ async def midi_sort(item_index: int, take_index: int) -> str:
 
 
 # ============================================================================
+# MIDI Event Operations (3 tools)
+# ============================================================================
+
+async def midi_insert_evt(item_index: int, take_index: int, ppq_pos: float, event_type: str, 
+                         data1: int, data2: int = 0, channel: int = 0, selected: bool = False, 
+                         muted: bool = False) -> str:
+    """Insert a MIDI event at a specific PPQ position"""
+    # Get media item and take
+    item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
+    if not item_result.get("ok") or not item_result.get("ret"):
+        raise Exception(f"Failed to find media item at index {item_index}")
+    
+    item_handle = item_result.get("ret")
+    
+    take_result = await bridge.call_lua("GetMediaItemTake", [item_handle, take_index])
+    if not take_result.get("ok") or not take_result.get("ret"):
+        raise Exception(f"Failed to find take at index {take_index}")
+    
+    take_handle = take_result.get("ret")
+    
+    # For note events, use MIDI_InsertNote which is more reliable
+    if event_type in ["note_on", "note_off"]:
+        # For note_on, we need to find a reasonable end time
+        # For note_off, we just insert a very short note
+        if event_type == "note_on":
+            # Default to 1 quarter note duration
+            ppq_end = ppq_pos + 960
+        else:
+            # Very short note for note_off
+            ppq_end = ppq_pos + 1
+            
+        result = await bridge.call_lua("MIDI_InsertNote", [
+            take_handle, selected, muted, ppq_pos, ppq_end, channel, data1, data2, True
+        ])
+        
+        if result.get("ok"):
+            return f"Inserted MIDI {event_type} event at PPQ {ppq_pos}: data1={data1}, data2={data2}"
+        else:
+            raise Exception(f"Failed to insert MIDI event: {result.get('error', 'Unknown error')}")
+    
+    # For CC events, use MIDI_InsertCC
+    elif event_type == "cc":
+        # MIDI_InsertCC needs an extra parameter for the "noSort" flag
+        result = await bridge.call_lua("MIDI_InsertCC", [
+            take_handle, selected, muted, ppq_pos, 0xB0 + channel, channel, data1, data2
+        ])
+        
+        if result.get("ok"):
+            return f"Inserted MIDI {event_type} event at PPQ {ppq_pos}: data1={data1}, data2={data2}"
+        else:
+            raise Exception(f"Failed to insert MIDI event: {result.get('error', 'Unknown error')}")
+    
+    # For other events, we'll need to implement them differently
+    # For now, just return a message that they're not yet supported
+    else:
+        return f"MIDI {event_type} events not yet fully supported - PPQ {ppq_pos}: data1={data1}, data2={data2}"
+
+
+async def midi_insert_text_sysex_evt(item_index: int, take_index: int, ppq_pos: float, 
+                                    event_type: str, text: str, selected: bool = False, 
+                                    muted: bool = False) -> str:
+    """Insert a text or sysex event"""
+    # Get media item and take
+    item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
+    if not item_result.get("ok") or not item_result.get("ret"):
+        raise Exception(f"Failed to find media item at index {item_index}")
+    
+    item_handle = item_result.get("ret")
+    
+    take_result = await bridge.call_lua("GetMediaItemTake", [item_handle, take_index])
+    if not take_result.get("ok") or not take_result.get("ret"):
+        raise Exception(f"Failed to find take at index {take_index}")
+    
+    take_handle = take_result.get("ret")
+    
+    # Text event type mapping
+    text_types = {
+        "text": 1,
+        "copyright": 2,
+        "track_name": 3,
+        "instrument": 4,
+        "lyric": 5,
+        "marker": 6,
+        "cue": 7,
+        "program_name": 8,
+        "device_name": 9,
+        "sysex": -1
+    }
+    
+    if event_type not in text_types:
+        raise Exception(f"Invalid text event type: {event_type}. Valid types: {list(text_types.keys())}")
+    
+    type_num = text_types[event_type]
+    
+    result = await bridge.call_lua("MIDI_InsertTextSysexEvt", [
+        take_handle, selected, muted, ppq_pos, type_num, text
+    ])
+    
+    if result.get("ok"):
+        return f"Inserted {event_type} event at PPQ {ppq_pos}: '{text}'"
+    else:
+        raise Exception(f"Failed to insert text/sysex event: {result.get('error', 'Unknown error')}")
+
+
+async def midi_delete_event(item_index: int, take_index: int, event_index: int) -> str:
+    """Delete a MIDI event"""
+    # Get media item and take
+    item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
+    if not item_result.get("ok") or not item_result.get("ret"):
+        raise Exception(f"Failed to find media item at index {item_index}")
+    
+    item_handle = item_result.get("ret")
+    
+    take_result = await bridge.call_lua("GetMediaItemTake", [item_handle, take_index])
+    if not take_result.get("ok") or not take_result.get("ret"):
+        raise Exception(f"Failed to find take at index {take_index}")
+    
+    take_handle = take_result.get("ret")
+    
+    # Delete the event
+    result = await bridge.call_lua("MIDI_DeleteEvt", [take_handle, event_index])
+    
+    if result.get("ok"):
+        return f"Deleted MIDI event at index {event_index}"
+    else:
+        raise Exception(f"Failed to delete MIDI event: {result.get('error', 'Unknown error')}")
+
+
+# ============================================================================
 # MIDI CC Operations (1 tool)
 # ============================================================================
 
@@ -175,9 +304,21 @@ async def midi_count_events(item_index: int = 0, take_index: int = 0) -> str:
     result = await bridge.call_lua("MIDI_CountEvts", [take_handle])
     if result.get("ok"):
         # MIDI_CountEvts returns multiple values
-        notes = result.get("notes", 0)
-        ccs = result.get("cc", 0)
-        text_events = result.get("text", 0)
+        # Check if returned as separate fields (file_full bridge) or as array (no_socket bridge)
+        if "notes" in result:
+            # File full bridge format
+            notes = result.get("notes", 0)
+            ccs = result.get("cc", 0)
+            text_events = result.get("text", 0)
+        else:
+            # No socket bridge format - returns as array
+            ret = result.get("ret", [])
+            if isinstance(ret, list) and len(ret) >= 4:
+                notes = ret[1]  # Skip retval at index 0
+                ccs = ret[2]
+                text_events = ret[3]
+            else:
+                notes = ccs = text_events = 0
         
         return f"MIDI event counts: notes={notes}, CCs={ccs}, sysex={text_events}"
     else:
@@ -363,6 +504,11 @@ def register_midi_tools(mcp) -> int:
         (midi_get_note_name, "Get the name of a MIDI note from its number"),
         (get_track_midi_note_name, "Get the custom name for a MIDI note on a track"),
         (midi_sort, "Sort MIDI events in a take"),
+        
+        # MIDI Event Operations
+        (midi_insert_evt, "Insert a MIDI event at a specific PPQ position"),
+        (midi_insert_text_sysex_evt, "Insert a text or sysex event"),
+        (midi_delete_event, "Delete a MIDI event"),
         
         # MIDI CC Operations
         (insert_midi_cc, "Insert a MIDI CC event"),

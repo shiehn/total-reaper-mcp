@@ -14,7 +14,7 @@ async def test_create_midi_item(reaper_mcp_client):
     # Create MIDI item
     result = await reaper_mcp_client.call_tool(
         "create_midi_item",
-        {"track_index": 0, "start_time": 0.0, "length": 4.0}
+        {"track_index": 0, "position": 0.0, "length": 4.0}
     )
     print(f"Create MIDI item result: {result}")
     assert "created midi item" in result.content[0].text.lower()
@@ -37,7 +37,7 @@ async def test_midi_note_operations(reaper_mcp_client):
     
     await reaper_mcp_client.call_tool(
         "create_midi_item",
-        {"track_index": 0, "start_time": 0.0, "length": 8.0}
+        {"track_index": 0, "position": 0.0, "length": 8.0}
     )
     
     # Insert a C4 note
@@ -91,7 +91,7 @@ async def test_midi_cc_operations(reaper_mcp_client):
     
     await reaper_mcp_client.call_tool(
         "create_midi_item",
-        {"track_index": 0, "start_time": 0.0, "length": 4.0}
+        {"track_index": 0, "position": 0.0, "length": 4.0}
     )
     
     # Insert volume CC (CC7)
@@ -135,7 +135,7 @@ async def test_take_operations(reaper_mcp_client):
     
     await reaper_mcp_client.call_tool(
         "create_midi_item",
-        {"track_index": 0, "start_time": 0.0, "length": 4.0}
+        {"track_index": 0, "position": 0.0, "length": 4.0}
     )
     
     # Count takes (should be 1)
@@ -175,7 +175,7 @@ async def test_midi_workflow(reaper_mcp_client):
     # Create MIDI item
     await reaper_mcp_client.call_tool(
         "create_midi_item",
-        {"track_index": 0, "start_time": 0.0, "length": 4.0}
+        {"track_index": 0, "position": 0.0, "length": 4.0}
     )
     
     # Insert a C major chord (C-E-G)
@@ -255,7 +255,7 @@ async def test_midi_error_handling(reaper_mcp_client):
     )
     await reaper_mcp_client.call_tool(
         "create_midi_item",
-        {"track_index": 0, "start_time": 0.0, "length": 4.0}
+        {"track_index": 0, "position": 0.0, "length": 4.0}
     )
     
     # This should fail at the schema validation level

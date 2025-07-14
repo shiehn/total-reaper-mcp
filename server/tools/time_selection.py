@@ -41,6 +41,57 @@ async def set_loop_time_range(is_loop: bool, start: float, end: float, allow_aut
 
 
 # ============================================================================
+# Time/Tempo Conversion (4 tools)
+# ============================================================================
+
+async def time_map_qn_to_time(qn: float) -> str:
+    """Convert quarter note position to time in seconds"""
+    result = await bridge.call_lua("TimeMap_QNToTime", [qn])
+    
+    if result.get("ok"):
+        time_seconds = result.get("ret", 0.0)
+        return f"Quarter note {qn:.1f} = {time_seconds:.3f} seconds"
+    else:
+        raise Exception(f"Failed to convert QN to time: {result.get('error', 'Unknown error')}")
+
+
+async def time_map_time_to_qn(time: float) -> str:
+    """Convert time in seconds to quarter note position"""
+    result = await bridge.call_lua("TimeMap_timeToQN", [time])
+    
+    if result.get("ok"):
+        qn = result.get("ret", 0.0)
+        return f"{time:.3f} seconds = quarter note {qn:.3f}"
+    else:
+        raise Exception(f"Failed to convert time to QN: {result.get('error', 'Unknown error')}")
+
+
+async def add_tempo_time_sig_marker(position: float, tempo: float, numerator: int = 4, 
+                                   denominator: int = 4, linear_tempo: bool = False) -> str:
+    """Add a tempo/time signature marker at a specific position"""
+    # Use -1 for measure position to let REAPER calculate it
+    result = await bridge.call_lua("AddTempoTimeSigMarker", [
+        0, position, tempo, numerator, denominator, linear_tempo
+    ])
+    
+    if result.get("ok"):
+        return f"Added tempo marker at {position:.3f}s: {tempo:.2f} BPM, {numerator}/{denominator}"
+    else:
+        raise Exception(f"Failed to add tempo marker: {result.get('error', 'Unknown error')}")
+
+
+async def get_tempo_at_time(time_seconds: float) -> str:
+    """Get the tempo at a specific time position"""
+    result = await bridge.call_lua("TimeMap_GetDividedBpmAtTime", [time_seconds])
+    
+    if result.get("ok"):
+        tempo = result.get("ret", 120.0)
+        return f"Tempo at {time_seconds:.3f}s: {tempo:.2f} BPM"
+    else:
+        raise Exception(f"Failed to get tempo at time: {result.get('error', 'Unknown error')}")
+
+
+# ============================================================================
 # View & Navigation (planned for future expansion)
 # ============================================================================
 
@@ -67,6 +118,12 @@ def register_time_selection_tools(mcp) -> int:
         # Time Selection & Loop Management
         (get_loop_time_range, "Get the current time selection or loop range"),
         (set_loop_time_range, "Set the time selection or loop range"),
+        
+        # Time/Tempo Conversion
+        (time_map_qn_to_time, "Convert quarter note position to time in seconds"),
+        (time_map_time_to_qn, "Convert time in seconds to quarter note position"),
+        (add_tempo_time_sig_marker, "Add a tempo/time signature marker at a specific position"),
+        (get_tempo_at_time, "Get the tempo at a specific time position"),
     ]
     
     # Register each tool
