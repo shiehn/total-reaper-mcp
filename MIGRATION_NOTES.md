@@ -25,10 +25,11 @@ All tools have been successfully migrated from the legacy pattern to the modern 
 - **GUI & Interface** (4 tools) - `server/tools/gui.py`
 
 ### Infrastructure
-- Created `server/app_modern.py` as main server
-- Updated `tests/conftest.py` to support `USE_MODERN_SERVER=true`
+- Modern server is now the main `server/app.py`
+- Legacy servers archived to `legacy_archive/` folder
+- Updated `tests/conftest.py` to use modern server exclusively
 - All tool modules properly organized by category
-- Integration tests passing for migrated tools
+- Integration tests passing with new implementation
 
 **Total Migrated**: 193 tools (0 placeholder tools remaining)
 
@@ -62,11 +63,11 @@ def register_category_tools(mcp) -> int:
 
 ### Testing
 ```bash
-# Run tests with modern server
-USE_MODERN_SERVER=true pytest tests/test_integration.py -v
+# Run tests (always uses modern server now)
+pytest tests/test_integration.py -v
 
 # Run specific test
-source venv/bin/activate && USE_MODERN_SERVER=true pytest tests/test_integration.py::test_insert_track -v
+source venv/bin/activate && pytest tests/test_integration.py::test_insert_track -v
 ```
 
 ### Important Notes
@@ -86,11 +87,11 @@ source venv/bin/activate && USE_MODERN_SERVER=true pytest tests/test_integration
 6. Test with `USE_MODERN_SERVER=true`
 
 ### File Locations
-- Legacy implementation: `server/app_file_bridge_full.py`
-- Modern server: `server/app_modern.py`
+- Main server: `server/app.py` (formerly app_modern.py)
 - Tool modules: `server/tools/*.py`
 - Bridge: `server/bridge.py`
 - Tests: `tests/test_*.py`
+- Legacy implementations: `legacy_archive/` (for historical reference)
 
 ### Common Patterns to Convert
 
