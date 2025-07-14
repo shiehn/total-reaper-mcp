@@ -540,15 +540,25 @@ async def set_media_item_take_info_value(item_index: int, take_index: int, param
 
 async def create_midi_item(track_index: int, position: float, length: float, quantize: Optional[bool] = False) -> str:
     """Create a new MIDI item on a track"""
+    # Count items before creating
+    count_before = await bridge.call_lua("CountMediaItems", [0])
+    if not count_before.get("ok"):
+        raise Exception("Failed to count media items")
+    
     # Use add_media_item_to_track to create the item  
     result = await add_media_item_to_track(track_index)
     
     # Get the last created item index
-    count_result = await bridge.call_lua("CountMediaItems", [0])
-    if not count_result.get("ok"):
-        raise Exception("Failed to count media items")
+    count_after = await bridge.call_lua("CountMediaItems", [0])
+    if not count_after.get("ok"):
+        raise Exception("Failed to count media items after creation")
     
-    item_index = count_result.get("ret", 1) - 1
+    # The new item should be the last one
+    item_index = count_after.get("ret", 1) - 1
+    
+    # Verify we actually created a new item
+    if count_after.get("ret", 0) <= count_before.get("ret", 0):
+        raise Exception("Failed to create new media item")
     
     # Set position and length - pass item index directly
     await bridge.call_lua("SetMediaItemPosition", [item_index, position, True])
@@ -559,7 +569,7 @@ async def create_midi_item(track_index: int, position: float, length: float, qua
     if not take_result.get("ok"):
         raise Exception("Failed to add take to media item")
     
-    return f"Created MIDI item on track {track_index} at position {position:.3f} with length {length:.3f}"
+    return f"Created MIDI item (index {item_index}) on track {track_index} at position {position:.3f} with length {length:.3f}"
 
 
 # ============================================================================

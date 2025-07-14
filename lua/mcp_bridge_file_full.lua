@@ -458,6 +458,62 @@ local function process_request()
                             response.error = "GetMediaItem requires 2 arguments"
                         end
                     
+                    elseif fname == "GetMediaItemTake" then
+                        if #args >= 2 then
+                            local item = nil
+                            -- Handle item index or pointer
+                            if type(args[1]) == "number" then
+                                -- It's an item index
+                                item = reaper.GetMediaItem(0, args[1])
+                            elseif type(args[1]) == "userdata" then
+                                -- It's already an item object
+                                item = args[1]
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                -- It's a pointer reference
+                                response.error = "Cannot use item pointer from previous call"
+                                response.ok = false
+                            end
+                            
+                            if item then
+                                local take = reaper.GetMediaItemTake(item, args[2])
+                                response.ok = true
+                                response.ret = take
+                            else
+                                response.error = "Invalid item parameter"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "GetMediaItemTake requires 2 arguments"
+                        end
+                    
+                    elseif fname == "CountTakes" then
+                        if #args >= 1 then
+                            local item = nil
+                            -- Handle item index or pointer
+                            if type(args[1]) == "number" then
+                                -- It's an item index
+                                item = reaper.GetMediaItem(0, args[1])
+                            elseif type(args[1]) == "userdata" then
+                                -- It's already an item object
+                                item = args[1]
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                -- It's a pointer reference
+                                response.error = "Cannot use item pointer from previous call"
+                                response.ok = false
+                            end
+                            
+                            if item then
+                                local count = reaper.CountTakes(item)
+                                response.ok = true
+                                response.ret = count
+                            else
+                                response.error = "Invalid item parameter"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "CountTakes requires 1 argument"
+                        end
+                    
                     elseif fname == "GetTrackMediaItem" then
                         if #args >= 2 then
                             local item = reaper.GetTrackMediaItem(args[1], args[2])
@@ -671,14 +727,216 @@ local function process_request()
                     elseif fname == "MIDI_CountEvts" then
                         if #args >= 1 then
                             local take = args[1]
-                            local retval, notes, cc, text = reaper.MIDI_CountEvts(take)
-                            response.ok = true
-                            response.retval = retval
-                            response.notes = notes
-                            response.cc = cc
-                            response.text = text
+                            -- Handle take object or pointer
+                            if type(args[1]) == "table" and args[1].__ptr then
+                                -- It's a pointer reference - we can't use it
+                                response.error = "Cannot use take pointer from previous call"
+                                response.ok = false
+                            else
+                                local retval, notes, cc, text = reaper.MIDI_CountEvts(take)
+                                response.ok = true
+                                response.retval = retval
+                                response.notes = notes
+                                response.cc = cc
+                                response.text = text
+                            end
                         else
                             response.error = "MIDI_CountEvts requires 1 argument (take)"
+                        end
+                    
+                    elseif fname == "GetItemTakeAndCountMIDI" then
+                        -- Combined function to get item, take and count MIDI events
+                        if #args >= 2 then
+                            local item_index = args[1]
+                            local take_index = args[2]
+                            
+                            -- Get item
+                            local item = reaper.GetMediaItem(0, item_index)
+                            if not item then
+                                response.error = "Failed to find media item at index " .. tostring(item_index)
+                                response.ok = false
+                            else
+                                -- Get take
+                                local take = reaper.GetMediaItemTake(item, take_index)
+                                if not take then
+                                    response.error = "Failed to find take at index " .. tostring(take_index)
+                                    response.ok = false
+                                else
+                                    -- Count MIDI events
+                                    local retval, notes, cc, text = reaper.MIDI_CountEvts(take)
+                                    response.ok = true
+                                    response.retval = retval
+                                    response.notes = notes
+                                    response.cc = cc
+                                    response.text = text
+                                end
+                            end
+                        else
+                            response.error = "GetItemTakeAndCountMIDI requires 2 arguments (item_index, take_index)"
+                        end
+                    
+                    elseif fname == "InsertMIDINoteToItemTake" then
+                        -- Combined function to insert MIDI note
+                        if #args >= 11 then
+                            local item_index = args[1]
+                            local take_index = args[2]
+                            local pitch = args[3]
+                            local velocity = args[4]
+                            local start_time = args[5]
+                            local duration = args[6]
+                            local channel = args[7]
+                            local selected = args[8]
+                            local muted = args[9]
+                            -- args[10] reserved for future use
+                            -- args[11] reserved for future use
+                            
+                            -- Get item
+                            local item = reaper.GetMediaItem(0, item_index)
+                            if not item then
+                                response.error = "Failed to find media item at index " .. tostring(item_index)
+                                response.ok = false
+                            else
+                                -- Get take
+                                local take = reaper.GetMediaItemTake(item, take_index)
+                                if not take then
+                                    response.error = "Failed to find take at index " .. tostring(take_index)
+                                    response.ok = false
+                                else
+                                    -- Convert time to PPQ
+                                    local ppq_start = reaper.MIDI_GetPPQPosFromProjTime(take, start_time)
+                                    local ppq_end = reaper.MIDI_GetPPQPosFromProjTime(take, start_time + duration)
+                                    
+                                    -- Insert note
+                                    local result = reaper.MIDI_InsertNote(take, selected, muted, ppq_start, ppq_end, channel, pitch, velocity, true)
+                                    response.ok = result
+                                    if not result then
+                                        response.error = "Failed to insert MIDI note"
+                                    end
+                                end
+                            end
+                        else
+                            response.error = "InsertMIDINoteToItemTake requires 11 arguments"
+                        end
+                    
+                    elseif fname == "GetMIDIScaleFromItemTake" then
+                        -- Combined function to get MIDI scale
+                        if #args >= 2 then
+                            local item_index = args[1]
+                            local take_index = args[2]
+                            
+                            -- Get item
+                            local item = reaper.GetMediaItem(0, item_index)
+                            if not item then
+                                response.error = "Failed to find media item at index " .. tostring(item_index)
+                                response.ok = false
+                            else
+                                -- Get take
+                                local take = reaper.GetMediaItemTake(item, take_index)
+                                if not take then
+                                    response.error = "Failed to find take at index " .. tostring(take_index)
+                                    response.ok = false
+                                else
+                                    -- Get scale
+                                    local root, scale, name = reaper.MIDI_GetScale(take)
+                                    response.ok = true
+                                    response.root = root
+                                    response.scale = scale
+                                    response.name = name or ""
+                                end
+                            end
+                        else
+                            response.error = "GetMIDIScaleFromItemTake requires 2 arguments (item_index, take_index)"
+                        end
+                    
+                    elseif fname == "SetMIDIScaleToItemTake" then
+                        -- Combined function to set MIDI scale
+                        if #args >= 5 then
+                            local item_index = args[1]
+                            local take_index = args[2]
+                            local root = args[3]
+                            local scale = args[4]
+                            local name = args[5] or ""
+                            
+                            -- Get item
+                            local item = reaper.GetMediaItem(0, item_index)
+                            if not item then
+                                response.error = "Failed to find media item at index " .. tostring(item_index)
+                                response.ok = false
+                            else
+                                -- Get take
+                                local take = reaper.GetMediaItemTake(item, take_index)
+                                if not take then
+                                    response.error = "Failed to find take at index " .. tostring(take_index)
+                                    response.ok = false
+                                else
+                                    -- Set scale
+                                    local result = reaper.MIDI_SetScale(take, root, scale, name)
+                                    response.ok = result
+                                    if not result then
+                                        response.error = "Failed to set MIDI scale"
+                                    end
+                                end
+                            end
+                        else
+                            response.error = "SetMIDIScaleToItemTake requires 5 arguments"
+                        end
+                    
+                    elseif fname == "SelectAllMIDIInItemTake" then
+                        -- Combined function to select all MIDI events
+                        if #args >= 2 then
+                            local item_index = args[1]
+                            local take_index = args[2]
+                            
+                            -- Get item
+                            local item = reaper.GetMediaItem(0, item_index)
+                            if not item then
+                                response.error = "Failed to find media item at index " .. tostring(item_index)
+                                response.ok = false
+                            else
+                                -- Get take
+                                local take = reaper.GetMediaItemTake(item, take_index)
+                                if not take then
+                                    response.error = "Failed to find take at index " .. tostring(take_index)
+                                    response.ok = false
+                                else
+                                    -- Select all MIDI events
+                                    reaper.MIDI_SelectAll(take, true)
+                                    response.ok = true
+                                end
+                            end
+                        else
+                            response.error = "SelectAllMIDIInItemTake requires 2 arguments"
+                        end
+                    
+                    elseif fname == "GetAllMIDIEventsFromItemTake" then
+                        -- Combined function to get all MIDI events
+                        if #args >= 2 then
+                            local item_index = args[1]
+                            local take_index = args[2]
+                            
+                            -- Get item
+                            local item = reaper.GetMediaItem(0, item_index)
+                            if not item then
+                                response.error = "Failed to find media item at index " .. tostring(item_index)
+                                response.ok = false
+                            else
+                                -- Get take
+                                local take = reaper.GetMediaItemTake(item, take_index)
+                                if not take then
+                                    response.error = "Failed to find take at index " .. tostring(take_index)
+                                    response.ok = false
+                                else
+                                    -- Get all events
+                                    local retval, events = reaper.MIDI_GetAllEvts(take, "")
+                                    response.ok = retval
+                                    response.ret = events
+                                    if not retval then
+                                        response.error = "Failed to get MIDI events"
+                                    end
+                                end
+                            end
+                        else
+                            response.error = "GetAllMIDIEventsFromItemTake requires 2 arguments"
                         end
                     
                     else

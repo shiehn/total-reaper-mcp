@@ -62,12 +62,18 @@ async def test_midi_event_counts(reaper_mcp_client):
     )
     assert "Created MIDI item" in result.content[0].text
     
+    # Get the actual item index from the result
+    # Extract item index from the response text
+    import re
+    match = re.search(r'index (\d+)', result.content[0].text)
+    item_index = int(match.group(1)) if match else 0
+    
     # Add some MIDI notes
     for i in range(5):
         result = await reaper_mcp_client.call_tool(
             "insert_midi_note",
             {
-                "item_index": 0,
+                "item_index": item_index,
                 "take_index": 0,
                 "pitch": 60 + i,
                 "velocity": 100,
@@ -82,7 +88,7 @@ async def test_midi_event_counts(reaper_mcp_client):
     # Count events
     result = await reaper_mcp_client.call_tool(
         "midi_count_events",
-        {"item_index": 0, "take_index": 0}
+        {"item_index": item_index, "take_index": 0}
     )
     assert "MIDI event counts:" in result.content[0].text
     assert "notes=" in result.content[0].text
@@ -115,10 +121,15 @@ async def test_midi_scale_operations(reaper_mcp_client):
     )
     assert "Created MIDI item" in result.content[0].text
     
+    # Get the actual item index from the result
+    import re
+    match = re.search(r'index (\d+)', result.content[0].text)
+    item_index = int(match.group(1)) if match else 0
+    
     # Get initial scale
     result = await reaper_mcp_client.call_tool(
         "midi_get_scale",
-        {"item_index": 0, "take_index": 0}
+        {"item_index": item_index, "take_index": 0}
     )
     assert "Scale:" in result.content[0].text
     
@@ -126,7 +137,7 @@ async def test_midi_scale_operations(reaper_mcp_client):
     result = await reaper_mcp_client.call_tool(
         "midi_set_scale",
         {
-            "item_index": 0,
+            "item_index": item_index,
             "take_index": 0,
             "root": 2,  # D
             "scale": 1,  # Minor
@@ -162,12 +173,17 @@ async def test_midi_select_all_events(reaper_mcp_client):
     )
     assert "Created MIDI item" in result.content[0].text
     
+    # Get the actual item index from the result
+    import re
+    match = re.search(r'index (\d+)', result.content[0].text)
+    item_index = int(match.group(1)) if match else 0
+    
     # Add some notes
     for i in range(3):
         await reaper_mcp_client.call_tool(
             "insert_midi_note",
             {
-                "item_index": 0,
+                "item_index": item_index,
                 "take_index": 0,
                 "pitch": 60 + i,
                 "velocity": 100,
@@ -184,7 +200,7 @@ async def test_midi_select_all_events(reaper_mcp_client):
         await reaper_mcp_client.call_tool(
             "insert_midi_cc",
             {
-                "item_index": 0,
+                "item_index": item_index,
                 "take_index": 0,
                 "time": i * 0.5,
                 "channel": 0,
@@ -197,7 +213,7 @@ async def test_midi_select_all_events(reaper_mcp_client):
     result = await reaper_mcp_client.call_tool(
         "midi_select_all",
         {
-            "item_index": 0,
+            "item_index": item_index,
             "take_index": 0,
             "select_notes": True,
             "select_cc": True,
@@ -233,11 +249,16 @@ async def test_midi_get_all_events(reaper_mcp_client):
     )
     assert "Created MIDI item" in result.content[0].text
     
+    # Get the actual item index from the result
+    import re
+    match = re.search(r'index (\d+)', result.content[0].text)
+    item_index = int(match.group(1)) if match else 0
+    
     # Add a note
     result = await reaper_mcp_client.call_tool(
         "insert_midi_note",
         {
-            "item_index": 0,
+            "item_index": item_index,
             "take_index": 0,
             "pitch": 60,
             "velocity": 100,
@@ -250,6 +271,6 @@ async def test_midi_get_all_events(reaper_mcp_client):
     # Get all events
     result = await reaper_mcp_client.call_tool(
         "midi_get_all_events",
-        {"item_index": 0, "take_index": 0}
+        {"item_index": item_index, "take_index": 0}
     )
     assert "MIDI events data:" in result.content[0].text
