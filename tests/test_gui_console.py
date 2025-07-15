@@ -24,7 +24,7 @@ async def test_console_operations(reaper_mcp_client):
         "show_console_msg",
         {"message": "Test message from MCP\n"}
     )
-    assert "Displayed message in console" in result.content[0].text
+    assert "Showed message" in result.content[0].text
     
     # Show multiple messages
     for i in range(3):
@@ -32,7 +32,7 @@ async def test_console_operations(reaper_mcp_client):
             "show_console_msg",
             {"message": f"Line {i+1}\n"}
         )
-        assert "Displayed message in console" in result.content[0].text
+        assert "Showed message" in result.content[0].text
 
 
 @pytest.mark.asyncio
