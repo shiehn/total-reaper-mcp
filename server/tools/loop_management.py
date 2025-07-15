@@ -1,7 +1,7 @@
 """Loop and time selection management tools for generative music creation."""
 
 from typing import Dict, Any, List, Optional, Tuple
-from ..reaper_bridge import ReaperBridge
+from .bridge_sync import ReaperBridge
 
 
 def get_time_selection() -> Dict[str, Any]:
@@ -492,8 +492,7 @@ def register_loop_management_tools(mcp):
         if tool_def:
             mcp.tool(
                 name=tool_name,
-                description=tool_def["description"], 
-                params=tool_def["input_schema"]
+                description=tool_def["description"]
             )(async_wrapper(tool_func))
     
     return len(tool_functions)

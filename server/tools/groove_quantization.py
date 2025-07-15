@@ -1,7 +1,7 @@
 """Groove and quantization tools for generative music creation."""
 
 from typing import Dict, Any, List, Optional, Tuple
-from ..reaper_bridge import ReaperBridge
+from .bridge_sync import ReaperBridge
 import random
 import math
 
@@ -686,8 +686,7 @@ def register_groove_quantization_tools(mcp):
         if tool_def:
             mcp.tool(
                 name=tool_name,
-                description=tool_def["description"], 
-                params=tool_def["input_schema"]
+                description=tool_def["description"]
             )(async_wrapper(tool_func))
     
     return len(tool_functions)
