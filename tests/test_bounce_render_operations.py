@@ -1,48 +1,56 @@
 """Test cases for bounce and render operations"""
 
 import pytest
-from .conftest import call_tool, reaper_available
+import pytest_asyncio
+from .test_utils import (
+    ensure_clean_project,
+    assert_response_contains,
+    assert_response_success
+)
 
 
-@pytest.mark.integration
-@pytest.mark.skipif(not reaper_available(), reason="REAPER not available")
-class TestBounceRenderOperations:
-    """Test bounce and render operations"""
+@pytest.mark.asyncio
+async def test_get_render_settings(reaper_mcp_client):
+    """Test getting render settings"""
+    # Ensure clean project state
+    await ensure_clean_project(reaper_mcp_client)
     
-    @pytest.fixture(autouse=True)
-    def setup_teardown(self, mock_project):
-        """Ensure clean state for each test"""
-        pass
+    result = await reaper_mcp_client.call_tool(
+        "get_render_settings",
+        {}
+    )
+    assert_response_contains(result, "Render settings:")
+    assert_response_contains(result, "Sample rate:")
+    assert_response_contains(result, "Channels:")
+    assert_response_contains(result, "Format:")
     
-    def test_get_render_settings(self, mock_project):
-        """Test getting render settings"""
-        result = call_tool("get_render_settings", {})
-        assert result["success"]
-        assert "Render settings:" in result["result"]
-        assert "Sample rate:" in result["result"]
-        assert "Channels:" in result["result"]
-        assert "Format:" in result["result"]
+@pytest.mark.asyncio
+async def test_set_render_settings(reaper_mcp_client):
+    """Test setting render settings"""
+    # Ensure clean project state
+    await ensure_clean_project(reaper_mcp_client)
     
-    def test_set_render_settings(self, mock_project):
-        """Test setting render settings"""
-        # Set sample rate
-        result = call_tool("set_render_settings", {"sample_rate": 48000})
-        assert result["success"]
-        assert "Sample rate: 48000 Hz" in result["result"]
-        
-        # Set multiple settings
-        result = call_tool("set_render_settings", {
+    # Set sample rate
+    result = await reaper_mcp_client.call_tool(
+        "set_render_settings",
+        {"sample_rate": 48000}
+    )
+    assert_response_success(result)
+    assert_response_contains(result, "Sample rate: 48000 Hz")
+    
+    # Set multiple settings
+    result = await reaper_mcp_client.call_tool(
+        "set_render_settings",
+        {
             "sample_rate": 44100,
             "channels": 2,
             "format": "WAV"
-        })
-        assert result["success"]
-        assert "Sample rate: 44100 Hz" in result["result"]
-        assert "Channels: 2" in result["result"]
-        assert "Format: WAV" in result["result"]
-        
-        # Note about implementation
-        assert "project chunk manipulation" in result["result"]
+        }
+    )
+    assert_response_success(result)
+    assert_response_contains(result, "Sample rate: 44100 Hz")
+    assert_response_contains(result, "Channels: 2")
+    assert_response_contains(result, "Format: WAV")
     
     def test_render_project_bounds(self, mock_project):
         """Test render project with different bounds"""

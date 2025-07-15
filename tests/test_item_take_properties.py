@@ -2,6 +2,13 @@
 import pytest
 import pytest_asyncio
 import asyncio
+from .test_utils import (
+    ensure_clean_project,
+    create_track_with_verification,
+    create_media_item_with_verification,
+    assert_response_contains,
+    assert_response_success
+)
 
 def assert_tools_available(available_tools, required_tools):
     """Assert that all required tools are available, failing with clear message if not"""
@@ -18,29 +25,24 @@ async def test_media_item_properties(reaper_mcp_client):
     
     assert_tools_available(available_tools, required_tools)
     
-    # Create a track with item
-    result = await reaper_mcp_client.call_tool(
-        "insert_track_at_index",
-        {"index": 0, "want_defaults": True}
-    )
-    assert "Successfully inserted track" in result.content[0].text
+    # Ensure clean project state
+    await ensure_clean_project(reaper_mcp_client)
     
-    # Add media item
-    result = await reaper_mcp_client.call_tool(
-        "add_media_item_to_track",
-        {"track_index": 0}
-    )
-    assert "Added media item" in result.content[0].text
+    # Create a track and get its actual index
+    track_index = await create_track_with_verification(reaper_mcp_client)
+    
+    # Add media item and get its index
+    item_index = await create_media_item_with_verification(reaper_mcp_client, track_index)
     
     # Get item position
     result = await reaper_mcp_client.call_tool(
         "get_media_item_info_value",
         {
-            "item_index": 0,
+            "item_index": item_index,
             "param_name": "D_POSITION"
         }
     )
-    assert "Item D_POSITION:" in result.content[0].text
+    assert_response_contains(result, "Item D_POSITION:")
     
     # Set item position
     result = await reaper_mcp_client.call_tool(

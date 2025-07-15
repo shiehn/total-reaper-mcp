@@ -1,20 +1,29 @@
 import pytest
 import pytest_asyncio
 import asyncio
+from .test_utils import (
+    ensure_clean_project,
+    create_track_with_verification,
+    assert_response_contains,
+    assert_response_success
+)
 
 @pytest.mark.asyncio
 async def test_undo_system_basic(reaper_mcp_client):
     """Test basic undo/redo operations"""
+    # Ensure clean project state
+    await ensure_clean_project(reaper_mcp_client)
+    
     # Begin undo block
     result = await reaper_mcp_client.call_tool(
         "undo_begin_block2",
         {"project_index": 0}
     )
     print(f"Begin undo block: {result}")
-    assert "Started new undo block" in result.content[0].text
+    assert_response_contains(result, "Started new undo block")
     
     # Create a track (this will be undoable)
-    await reaper_mcp_client.call_tool("insert_track", {"index": 0, "use_defaults": True})
+    track_index = await create_track_with_verification(reaper_mcp_client)
     
     # End undo block
     result = await reaper_mcp_client.call_tool(
@@ -22,7 +31,7 @@ async def test_undo_system_basic(reaper_mcp_client):
         {"desc": "Test: Create Track", "extra_flags": 1, "project_index": 0}
     )
     print(f"End undo block: {result}")
-    assert "Ended undo block: Test: Create Track" in result.content[0].text
+    assert_response_contains(result, "Ended undo block: Test: Create Track")
     
     # Check if we can undo
     result = await reaper_mcp_client.call_tool(

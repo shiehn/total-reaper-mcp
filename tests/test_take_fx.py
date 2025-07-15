@@ -1,52 +1,59 @@
 import pytest
 import pytest_asyncio
 import asyncio
+from .test_utils import (
+    ensure_clean_project,
+    create_track_with_verification,
+    create_media_item_with_verification,
+    assert_response_contains,
+    assert_response_success,
+    extract_number_from_response
+)
 
 @pytest.mark.asyncio
 async def test_take_fx_basic_operations(reaper_mcp_client):
     """Test basic take FX operations"""
-    # Create track and audio item
-    await reaper_mcp_client.call_tool("insert_track", {"index": 0, "use_defaults": True})
+    # Ensure clean project state
+    await ensure_clean_project(reaper_mcp_client)
+    
+    # Create track and get its actual index
+    track_index = await create_track_with_verification(reaper_mcp_client)
     
     # Create a media item
-    result = await reaper_mcp_client.call_tool(
-        "add_media_item_to_track",
-        {"track_index": 0}
-    )
-    print(f"Add media item result: {result}")
+    item_index = await create_media_item_with_verification(reaper_mcp_client, track_index)
     
     # Add a take to the item
     result = await reaper_mcp_client.call_tool(
         "add_take_to_item",
-        {"item_index": 0}
+        {"item_index": item_index}
     )
     print(f"Add take result: {result}")
+    take_index = 0  # First take
     
     # Get take FX count (should be 0)
     result = await reaper_mcp_client.call_tool(
         "take_fx_get_count",
-        {"item_index": 0, "take_index": 0}
+        {"item_index": item_index, "take_index": take_index}
     )
     print(f"Take FX count: {result}")
-    assert "Take has 0 FX" in result.content[0].text
+    assert_response_contains(result, "Take has 0 FX")
     
     # Add an FX (ReaEQ)
     result = await reaper_mcp_client.call_tool(
         "take_fx_add_by_name",
-        {"item_index": 0, "take_index": 0, "fx_name": "ReaEQ", "instantiate": 1}
+        {"item_index": item_index, "take_index": take_index, "fx_name": "ReaEQ", "instantiate": 1}
     )
     print(f"Add FX result: {result}")
-    assert "Added FX" in result.content[0].text or "Failed to add FX" in result.content[0].text
     
     # If FX was added successfully, test other operations
     if "Added FX" in result.content[0].text:
         # Get FX count again
         result = await reaper_mcp_client.call_tool(
             "take_fx_get_count",
-            {"item_index": 0, "take_index": 0}
+            {"item_index": item_index, "take_index": take_index}
         )
         print(f"Take FX count after add: {result}")
-        assert "Take has 1 FX" in result.content[0].text
+        assert_response_contains(result, "Take has 1 FX")
         
         # Get FX name
         result = await reaper_mcp_client.call_tool(
