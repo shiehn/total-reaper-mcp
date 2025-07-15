@@ -19,7 +19,7 @@ async def insert_midi_note(item_index: int, take_index: int, pitch: int, velocit
     # Use the combined bridge function that handles all operations in one call
     result = await bridge.call_lua("InsertMIDINoteToItemTake", [
         item_index, take_index, pitch, velocity, start_time, duration, 
-        channel, selected, muted, None, None
+        channel, selected, muted, 0, 0  # Changed None to 0 for reserved parameters
     ])
     
     if result.get("ok"):

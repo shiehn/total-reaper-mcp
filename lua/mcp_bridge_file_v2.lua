@@ -1109,7 +1109,12 @@ local function process_request()
                         if #args >= 2 then
                             local track = nil
                             if type(args[1]) == "number" then
-                                track = reaper.GetTrack(0, args[1])
+                                if args[1] == -1 then
+                                    -- Master track
+                                    track = reaper.GetMasterTrack(0)
+                                else
+                                    track = reaper.GetTrack(0, args[1])
+                                end
                             elseif type(args[1]) == "table" and args[1].__ptr then
                                 response.error = "Cannot use track pointer from previous call"
                                 response.ok = false

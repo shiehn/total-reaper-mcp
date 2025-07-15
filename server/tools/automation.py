@@ -22,7 +22,24 @@ async def get_track_envelope_by_name(track_index: int, envelope_name: str) -> st
         if envelope_handle:
             return f"Found envelope '{envelope_name}' on track {track_index}"
         else:
-            return f"Envelope '{envelope_name}' not found on track {track_index}"
+            # Envelope might not be visible, try to show it first
+            # Select the track
+            await bridge.call_lua("SetTrackSelected", [track_index, True])
+            
+            # Show the appropriate envelope based on name
+            if envelope_name.lower() == "volume":
+                await bridge.call_lua("Main_OnCommand", [40406, 0])  # Toggle track volume envelope visible
+            elif envelope_name.lower() == "pan":
+                await bridge.call_lua("Main_OnCommand", [40407, 0])  # Toggle track pan envelope visible
+            elif envelope_name.lower() == "mute":
+                await bridge.call_lua("Main_OnCommand", [40867, 0])  # Toggle track mute envelope visible
+            
+            # Try again
+            result = await bridge.call_lua("GetTrackEnvelopeByName", [track_index, envelope_name])
+            if result.get("ok") and result.get("ret"):
+                return f"Found envelope '{envelope_name}' on track {track_index}"
+            else:
+                return f"Envelope '{envelope_name}' not found on track {track_index}"
     else:
         raise Exception(f"Failed to get envelope: {result.get('error', 'Unknown error')}")
 

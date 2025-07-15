@@ -503,13 +503,25 @@ async def set_media_item_take_info_value(item_index: int, take_index: int, param
 
 async def create_midi_item(track_index: int, position: float, length: float, quantize: Optional[bool] = False) -> str:
     """Create a new MIDI item on a track"""
+    # First deselect all tracks
+    deselect_result = await bridge.call_lua("Main_OnCommand", [40297, 0])  # Track: Unselect all tracks
+    if not deselect_result.get("ok"):
+        raise Exception("Failed to deselect all tracks")
+    
+    # Then select only the target track
+    select_result = await bridge.call_lua("SetTrackSelected", [track_index, True])
+    if not select_result.get("ok"):
+        raise Exception(f"Failed to select track {track_index}")
+    
     # Count items before creating
     count_before = await bridge.call_lua("CountMediaItems", [0])
     if not count_before.get("ok"):
         raise Exception("Failed to count media items")
     
-    # Use add_media_item_to_track to create the item  
-    result = await add_media_item_to_track(track_index)
+    # Use Main_OnCommand to insert empty MIDI item - this creates a proper MIDI take
+    result = await bridge.call_lua("Main_OnCommand", [40214, 0])  # Insert empty MIDI item
+    if not result.get("ok"):
+        raise Exception("Failed to create MIDI item")
     
     # Get the last created item index
     count_after = await bridge.call_lua("CountMediaItems", [0])
@@ -526,11 +538,6 @@ async def create_midi_item(track_index: int, position: float, length: float, qua
     # Set position and length - pass item index directly
     await bridge.call_lua("SetMediaItemPosition", [item_index, position, True])
     await bridge.call_lua("SetMediaItemLength", [item_index, length, True])
-    
-    # Add a take to make it a MIDI item - pass item index directly
-    take_result = await bridge.call_lua("AddTakeToMediaItem", [item_index])
-    if not take_result.get("ok"):
-        raise Exception("Failed to add take to media item")
     
     return f"Created MIDI item (index {item_index}) on track {track_index} at position {position:.3f} with length {length:.3f}"
 
