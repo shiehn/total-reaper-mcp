@@ -939,6 +939,591 @@ local function process_request()
                             response.error = "GetAllMIDIEventsFromItemTake requires 2 arguments"
                         end
                     
+                    elseif fname == "TrackFX_AddByName" then
+                        -- Add FX to track by name
+                        if #args >= 3 then
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call"
+                                response.ok = false
+                            else
+                                track = args[1]
+                            end
+                            
+                            if track then
+                                local fx_index = reaper.TrackFX_AddByName(track, args[2], args[3] or false, args[4] or -1)
+                                response.ok = true
+                                response.ret = fx_index
+                            else
+                                response.error = "Track not found"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "TrackFX_AddByName requires at least 3 arguments"
+                        end
+                    
+                    elseif fname == "TrackFX_GetCount" then
+                        -- Get FX count for track
+                        if #args >= 1 then
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call"
+                                response.ok = false
+                            else
+                                track = args[1]
+                            end
+                            
+                            if track then
+                                local count = reaper.TrackFX_GetCount(track)
+                                response.ok = true
+                                response.ret = count
+                            else
+                                response.error = "Track not found"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "TrackFX_GetCount requires 1 argument"
+                        end
+                    
+                    elseif fname == "GetTrackEnvelopeByName" then
+                        -- Get envelope by name
+                        if #args >= 2 then
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call"
+                                response.ok = false
+                            else
+                                track = args[1]
+                            end
+                            
+                            if track then
+                                local envelope = reaper.GetTrackEnvelopeByName(track, args[2])
+                                response.ok = true
+                                response.ret = envelope
+                            else
+                                response.error = "Track not found"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "GetTrackEnvelopeByName requires 2 arguments"
+                        end
+                    
+                    elseif fname == "GetTrackAutomationMode" then
+                        -- Get track automation mode
+                        if #args >= 1 then
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call"
+                                response.ok = false
+                            else
+                                track = args[1]
+                            end
+                            
+                            if track then
+                                local mode = reaper.GetTrackAutomationMode(track)
+                                response.ok = true
+                                response.ret = mode
+                            else
+                                response.error = "Track not found"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "GetTrackAutomationMode requires 1 argument"
+                        end
+                    
+                    elseif fname == "SetTrackAutomationMode" then
+                        -- Set track automation mode
+                        if #args >= 2 then
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call"
+                                response.ok = false
+                            else
+                                track = args[1]
+                            end
+                            
+                            if track then
+                                reaper.SetTrackAutomationMode(track, args[2])
+                                response.ok = true
+                            else
+                                response.error = "Track not found"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "SetTrackAutomationMode requires 2 arguments"
+                        end
+                    
+                    elseif fname == "TrackFX_Delete" then
+                        -- Delete FX from track
+                        if #args >= 2 then
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call"
+                                response.ok = false
+                            else
+                                track = args[1]
+                            end
+                            
+                            if track then
+                                reaper.TrackFX_Delete(track, args[2])
+                                response.ok = true
+                            else
+                                response.error = "Track not found"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "TrackFX_Delete requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "TrackFX_GetEnabled" then
+                        -- Get FX enabled state
+                        if #args >= 2 then
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call"
+                                response.ok = false
+                            else
+                                track = args[1]
+                            end
+                            
+                            if track then
+                                response.ret = reaper.TrackFX_GetEnabled(track, args[2])
+                                response.ok = true
+                            else
+                                response.error = "Track not found"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "TrackFX_GetEnabled requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "TrackFX_SetEnabled" then
+                        -- Set FX enabled state
+                        if #args >= 3 then
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call"
+                                response.ok = false
+                            else
+                                track = args[1]
+                            end
+                            
+                            if track then
+                                reaper.TrackFX_SetEnabled(track, args[2], args[3])
+                                response.ok = true
+                            else
+                                response.error = "Track not found"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "TrackFX_SetEnabled requires 3 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "TrackFX_GetFXName" then
+                        -- Get FX name
+                        if #args >= 4 then
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call"
+                                response.ok = false
+                            else
+                                track = args[1]
+                            end
+                            
+                            if track then
+                                local retval, name = reaper.TrackFX_GetFXName(track, args[2], "", args[4] or 256)
+                                if retval then
+                                    response.ret = name
+                                    response.ok = true
+                                else
+                                    response.error = "Failed to get FX name"
+                                    response.ok = false
+                                end
+                            else
+                                response.error = "Track not found"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "TrackFX_GetFXName requires at least 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "TrackFX_GetNumParams" then
+                        -- Get FX parameter count
+                        if #args >= 2 then
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call"
+                                response.ok = false
+                            else
+                                track = args[1]
+                            end
+                            
+                            if track then
+                                response.ret = reaper.TrackFX_GetNumParams(track, args[2])
+                                response.ok = true
+                            else
+                                response.error = "Track not found"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "TrackFX_GetNumParams requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "TrackFX_GetParam" then
+                        -- Get FX parameter value
+                        if #args >= 3 then
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call"
+                                response.ok = false
+                            else
+                                track = args[1]
+                            end
+                            
+                            if track then
+                                local retval, minval, maxval = reaper.TrackFX_GetParam(track, args[2], args[3])
+                                response.value = retval
+                                response.min = minval
+                                response.max = maxval
+                                response.ok = true
+                            else
+                                response.error = "Track not found"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "TrackFX_GetParam requires 3 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "TrackFX_SetParam" then
+                        -- Set FX parameter value
+                        if #args >= 4 then
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call"
+                                response.ok = false
+                            else
+                                track = args[1]
+                            end
+                            
+                            if track then
+                                response.ret = reaper.TrackFX_SetParam(track, args[2], args[3], args[4])
+                                response.ok = true
+                            else
+                                response.error = "Track not found"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "TrackFX_SetParam requires 4 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "TrackFX_GetParamName" then
+                        -- Get FX parameter name
+                        if #args >= 4 then
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call"
+                                response.ok = false
+                            else
+                                track = args[1]
+                            end
+                            
+                            if track then
+                                local retval, name = reaper.TrackFX_GetParamName(track, args[2], args[3], "", args[4] or 256)
+                                if retval then
+                                    response.ret = name
+                                    response.ok = true
+                                else
+                                    response.error = "Failed to get parameter name"
+                                    response.ok = false
+                                end
+                            else
+                                response.error = "Track not found"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "TrackFX_GetParamName requires at least 3 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "TrackFX_GetPreset" then
+                        -- Get FX preset name
+                        if #args >= 3 then
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call"
+                                response.ok = false
+                            else
+                                track = args[1]
+                            end
+                            
+                            if track then
+                                local retval, name = reaper.TrackFX_GetPreset(track, args[2], "", args[3] or 256)
+                                if retval then
+                                    response.ret = name
+                                    response.ok = true
+                                else
+                                    response.error = "Failed to get preset name"
+                                    response.ok = false
+                                end
+                            else
+                                response.error = "Track not found"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "TrackFX_GetPreset requires at least 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "TrackFX_SetPreset" then
+                        -- Set FX preset
+                        if #args >= 3 then
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call"
+                                response.ok = false
+                            else
+                                track = args[1]
+                            end
+                            
+                            if track then
+                                response.ret = reaper.TrackFX_SetPreset(track, args[2], args[3])
+                                response.ok = true
+                            else
+                                response.error = "Track not found"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "TrackFX_SetPreset requires 3 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "TrackFX_Show" then
+                        -- Show/hide FX window
+                        if #args >= 3 then
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call"
+                                response.ok = false
+                            else
+                                track = args[1]
+                            end
+                            
+                            if track then
+                                reaper.TrackFX_Show(track, args[2], args[3])
+                                response.ok = true
+                            else
+                                response.error = "Track not found"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "TrackFX_Show requires 3 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "TrackFX_GetOpen" then
+                        -- Get FX window open state
+                        if #args >= 2 then
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call"
+                                response.ok = false
+                            else
+                                track = args[1]
+                            end
+                            
+                            if track then
+                                response.ret = reaper.TrackFX_GetOpen(track, args[2])
+                                response.ok = true
+                            else
+                                response.error = "Track not found"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "TrackFX_GetOpen requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "TrackFX_SetOpen" then
+                        -- Set FX window open state
+                        if #args >= 3 then
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call"
+                                response.ok = false
+                            else
+                                track = args[1]
+                            end
+                            
+                            if track then
+                                reaper.TrackFX_SetOpen(track, args[2], args[3])
+                                response.ok = true
+                            else
+                                response.error = "Track not found"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "TrackFX_SetOpen requires 3 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "TrackFX_GetChainVisible" then
+                        -- Get FX chain visibility
+                        if #args >= 1 then
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call"
+                                response.ok = false
+                            else
+                                track = args[1]
+                            end
+                            
+                            if track then
+                                response.ret = reaper.TrackFX_GetChainVisible(track)
+                                response.ok = true
+                            else
+                                response.error = "Track not found"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "TrackFX_GetChainVisible requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "TrackFX_CopyToTrack" then
+                        -- Copy/move FX between tracks
+                        if #args >= 5 then
+                            local src_track = nil
+                            local dest_track = nil
+                            
+                            if type(args[1]) == "number" then
+                                src_track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use source track pointer from previous call"
+                                response.ok = false
+                            else
+                                src_track = args[1]
+                            end
+                            
+                            if type(args[3]) == "number" then
+                                dest_track = reaper.GetTrack(0, args[3])
+                            elseif type(args[3]) == "table" and args[3].__ptr then
+                                response.error = "Cannot use destination track pointer from previous call"
+                                response.ok = false
+                            else
+                                dest_track = args[3]
+                            end
+                            
+                            if src_track and dest_track then
+                                reaper.TrackFX_CopyToTrack(src_track, args[2], dest_track, args[4], args[5])
+                                response.ok = true
+                            else
+                                if not src_track then
+                                    response.error = "Source track not found"
+                                else
+                                    response.error = "Destination track not found"
+                                end
+                                response.ok = false
+                            end
+                        else
+                            response.error = "TrackFX_CopyToTrack requires 5 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "TrackFX_GetOffline" then
+                        -- Get FX offline state
+                        if #args >= 2 then
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call"
+                                response.ok = false
+                            else
+                                track = args[1]
+                            end
+                            
+                            if track then
+                                response.ret = reaper.TrackFX_GetOffline(track, args[2])
+                                response.ok = true
+                            else
+                                response.error = "Track not found"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "TrackFX_GetOffline requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "TrackFX_SetOffline" then
+                        -- Set FX offline state
+                        if #args >= 3 then
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call"
+                                response.ok = false
+                            else
+                                track = args[1]
+                            end
+                            
+                            if track then
+                                reaper.TrackFX_SetOffline(track, args[2], args[3])
+                                response.ok = true
+                            else
+                                response.error = "Track not found"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "TrackFX_SetOffline requires 3 arguments"
+                            response.ok = false
+                        end
+                    
                     else
                         -- Try generic function call
                         if reaper[fname] then

@@ -14,15 +14,8 @@ from ..bridge import bridge
 
 async def track_fx_get_count(track_index: int) -> str:
     """Get the number of FX on a track"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Get FX count
-    result = await bridge.call_lua("TrackFX_GetCount", [track_handle])
+    # Pass track index directly - the bridge will handle getting the track
+    result = await bridge.call_lua("TrackFX_GetCount", [track_index])
     
     if result.get("ok"):
         count = result.get("ret", 0)
@@ -33,15 +26,8 @@ async def track_fx_get_count(track_index: int) -> str:
 
 async def track_fx_add_by_name(track_index: int, fx_name: str, instantiate: bool = True) -> str:
     """Add an FX to a track by name"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Add FX
-    result = await bridge.call_lua("TrackFX_AddByName", [track_handle, fx_name, False, -1 if instantiate else -1000])
+    # Pass track index directly - the bridge will handle getting the track
+    result = await bridge.call_lua("TrackFX_AddByName", [track_index, fx_name, False, -1 if instantiate else -1000])
     
     if result.get("ok"):
         fx_index = result.get("ret", -1)
@@ -55,15 +41,8 @@ async def track_fx_add_by_name(track_index: int, fx_name: str, instantiate: bool
 
 async def track_fx_delete(track_index: int, fx_index: int) -> str:
     """Delete an FX from a track"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Delete FX
-    result = await bridge.call_lua("TrackFX_Delete", [track_handle, fx_index])
+    # Pass track index directly - the bridge will handle getting the track
+    result = await bridge.call_lua("TrackFX_Delete", [track_index, fx_index])
     
     if result.get("ok"):
         return f"Deleted FX at index {fx_index} from track {track_index}"
@@ -73,15 +52,8 @@ async def track_fx_delete(track_index: int, fx_index: int) -> str:
 
 async def track_fx_get_enabled(track_index: int, fx_index: int) -> str:
     """Get whether an FX is enabled"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Get enabled state
-    result = await bridge.call_lua("TrackFX_GetEnabled", [track_handle, fx_index])
+    # Pass track index directly - the bridge will handle getting the track
+    result = await bridge.call_lua("TrackFX_GetEnabled", [track_index, fx_index])
     
     if result.get("ok"):
         enabled = bool(result.get("ret", False))
@@ -92,15 +64,8 @@ async def track_fx_get_enabled(track_index: int, fx_index: int) -> str:
 
 async def track_fx_set_enabled(track_index: int, fx_index: int, enabled: bool) -> str:
     """Enable or disable an FX"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Set enabled state
-    result = await bridge.call_lua("TrackFX_SetEnabled", [track_handle, fx_index, enabled])
+    # Pass track index directly - the bridge will handle getting the track
+    result = await bridge.call_lua("TrackFX_SetEnabled", [track_index, fx_index, enabled])
     
     if result.get("ok"):
         return f"FX {fx_index} on track {track_index} {'enabled' if enabled else 'disabled'}"
@@ -110,15 +75,8 @@ async def track_fx_set_enabled(track_index: int, fx_index: int, enabled: bool) -
 
 async def track_fx_get_name(track_index: int, fx_index: int) -> str:
     """Get the name of an FX"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Get FX name
-    result = await bridge.call_lua("TrackFX_GetFXName", [track_handle, fx_index, "", 256])
+    # Pass track index directly - the bridge will handle getting the track
+    result = await bridge.call_lua("TrackFX_GetFXName", [track_index, fx_index, "", 256])
     
     if result.get("ok"):
         # The API returns the name
@@ -151,15 +109,8 @@ async def track_fx_get_name(track_index: int, fx_index: int) -> str:
 
 async def track_fx_get_param_count(track_index: int, fx_index: int) -> str:
     """Get the number of parameters for an FX"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Get parameter count
-    result = await bridge.call_lua("TrackFX_GetNumParams", [track_handle, fx_index])
+    # Pass track index directly - the bridge will handle getting the track
+    result = await bridge.call_lua("TrackFX_GetNumParams", [track_index, fx_index])
     
     if result.get("ok"):
         count = result.get("ret", 0)
@@ -170,15 +121,8 @@ async def track_fx_get_param_count(track_index: int, fx_index: int) -> str:
 
 async def track_fx_get_param(track_index: int, fx_index: int, param_index: int) -> str:
     """Get an FX parameter value"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Get parameter value
-    result = await bridge.call_lua("TrackFX_GetParam", [track_handle, fx_index, param_index])
+    # Pass track index directly - the bridge will handle getting the track
+    result = await bridge.call_lua("TrackFX_GetParam", [track_index, fx_index, param_index])
     
     if result.get("ok"):
         # Result contains: value, min, max
@@ -192,15 +136,8 @@ async def track_fx_get_param(track_index: int, fx_index: int, param_index: int) 
 
 async def track_fx_set_param(track_index: int, fx_index: int, param_index: int, value: float) -> str:
     """Set an FX parameter value"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Set parameter value
-    result = await bridge.call_lua("TrackFX_SetParam", [track_handle, fx_index, param_index, value])
+    # Pass track index directly - the bridge will handle getting the track
+    result = await bridge.call_lua("TrackFX_SetParam", [track_index, fx_index, param_index, value])
     
     if result.get("ok"):
         return f"Set parameter {param_index} to {value:.3f}"
@@ -210,15 +147,8 @@ async def track_fx_set_param(track_index: int, fx_index: int, param_index: int, 
 
 async def track_fx_get_param_name(track_index: int, fx_index: int, param_index: int) -> str:
     """Get the name of an FX parameter"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Get parameter name
-    result = await bridge.call_lua("TrackFX_GetParamName", [track_handle, fx_index, param_index, "", 256])
+    # Pass track index directly - the bridge will handle getting the track
+    result = await bridge.call_lua("TrackFX_GetParamName", [track_index, fx_index, param_index, "", 256])
     
     if result.get("ok"):
         param_name = result.get("ret", "Unknown")
@@ -229,15 +159,8 @@ async def track_fx_get_param_name(track_index: int, fx_index: int, param_index: 
 
 async def track_fx_get_preset(track_index: int, fx_index: int) -> str:
     """Get the current preset name of an FX"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Get preset
-    result = await bridge.call_lua("TrackFX_GetPreset", [track_handle, fx_index, "", 256])
+    # Pass track index directly - the bridge will handle getting the track
+    result = await bridge.call_lua("TrackFX_GetPreset", [track_index, fx_index, "", 256])
     
     if result.get("ok"):
         preset_name = result.get("ret", "")
@@ -251,15 +174,8 @@ async def track_fx_get_preset(track_index: int, fx_index: int) -> str:
 
 async def track_fx_set_preset(track_index: int, fx_index: int, preset_name: str) -> str:
     """Set the preset of an FX by name"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Set preset
-    result = await bridge.call_lua("TrackFX_SetPreset", [track_handle, fx_index, preset_name])
+    # Pass track index directly - the bridge will handle getting the track
+    result = await bridge.call_lua("TrackFX_SetPreset", [track_index, fx_index, preset_name])
     
     if result.get("ok"):
         return f"Set preset to: {preset_name}"
@@ -269,15 +185,8 @@ async def track_fx_set_preset(track_index: int, fx_index: int, preset_name: str)
 
 async def track_fx_show(track_index: int, fx_index: int, show: int) -> str:
     """Show/hide/toggle FX window (show: 0=hide, 1=show, 2=toggle, 3=focus)"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Show/hide FX
-    result = await bridge.call_lua("TrackFX_Show", [track_handle, fx_index, show])
+    # Pass track index directly - the bridge will handle getting the track
+    result = await bridge.call_lua("TrackFX_Show", [track_index, fx_index, show])
     
     if result.get("ok"):
         show_states = {0: "hidden", 1: "shown", 2: "toggled", 3: "focused"}
@@ -288,15 +197,8 @@ async def track_fx_show(track_index: int, fx_index: int, show: int) -> str:
 
 async def track_fx_get_open(track_index: int, fx_index: int) -> str:
     """Check if FX window is open"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Check if open
-    result = await bridge.call_lua("TrackFX_GetOpen", [track_handle, fx_index])
+    # Pass track index directly - the bridge will handle getting the track
+    result = await bridge.call_lua("TrackFX_GetOpen", [track_index, fx_index])
     
     if result.get("ok"):
         is_open = bool(result.get("ret", False))
@@ -307,15 +209,8 @@ async def track_fx_get_open(track_index: int, fx_index: int) -> str:
 
 async def track_fx_set_open(track_index: int, fx_index: int, open: bool) -> str:
     """Open or close FX window"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Set open state
-    result = await bridge.call_lua("TrackFX_SetOpen", [track_handle, fx_index, open])
+    # Pass track index directly - the bridge will handle getting the track
+    result = await bridge.call_lua("TrackFX_SetOpen", [track_index, fx_index, open])
     
     if result.get("ok"):
         return f"FX window {'opened' if open else 'closed'}"
@@ -325,15 +220,8 @@ async def track_fx_set_open(track_index: int, fx_index: int, open: bool) -> str:
 
 async def track_fx_get_chain_visible(track_index: int) -> str:
     """Check if FX chain window is visible"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Check chain visibility
-    result = await bridge.call_lua("TrackFX_GetChainVisible", [track_handle])
+    # Pass track index directly - the bridge will handle getting the track
+    result = await bridge.call_lua("TrackFX_GetChainVisible", [track_index])
     
     if result.get("ok"):
         visible = result.get("ret", -1)
@@ -353,21 +241,8 @@ async def track_fx_get_chain_visible(track_index: int) -> str:
 
 async def track_fx_copy_to_track(source_track: int, fx_index: int, dest_track: int, dest_fx_index: int = -1, move: bool = False) -> str:
     """Copy or move FX between tracks"""
-    # Get source track
-    source_result = await bridge.call_lua("GetTrack", [0, source_track])
-    if not source_result.get("ok") or not source_result.get("ret"):
-        raise Exception(f"Failed to find source track at index {source_track}")
-    
-    # Get destination track
-    dest_result = await bridge.call_lua("GetTrack", [0, dest_track])
-    if not dest_result.get("ok") or not dest_result.get("ret"):
-        raise Exception(f"Failed to find destination track at index {dest_track}")
-    
-    source_handle = source_result.get("ret")
-    dest_handle = dest_result.get("ret")
-    
-    # Copy/move FX
-    result = await bridge.call_lua("TrackFX_CopyToTrack", [source_handle, fx_index, dest_handle, dest_fx_index, move])
+    # Pass track indices directly - the bridge will handle getting the tracks
+    result = await bridge.call_lua("TrackFX_CopyToTrack", [source_track, fx_index, dest_track, dest_fx_index, move])
     
     if result.get("ok"):
         action = "moved" if move else "copied"
@@ -378,15 +253,8 @@ async def track_fx_copy_to_track(source_track: int, fx_index: int, dest_track: i
 
 async def track_fx_get_offline(track_index: int, fx_index: int) -> str:
     """Check if FX is offline"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Check offline state
-    result = await bridge.call_lua("TrackFX_GetOffline", [track_handle, fx_index])
+    # Pass track index directly - the bridge will handle getting the track
+    result = await bridge.call_lua("TrackFX_GetOffline", [track_index, fx_index])
     
     if result.get("ok"):
         offline = bool(result.get("ret", False))
@@ -397,15 +265,8 @@ async def track_fx_get_offline(track_index: int, fx_index: int) -> str:
 
 async def track_fx_set_offline(track_index: int, fx_index: int, offline: bool) -> str:
     """Set FX offline state"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Set offline state
-    result = await bridge.call_lua("TrackFX_SetOffline", [track_handle, fx_index, offline])
+    # Pass track index directly - the bridge will handle getting the track
+    result = await bridge.call_lua("TrackFX_SetOffline", [track_index, fx_index, offline])
     
     if result.get("ok"):
         return f"FX set to {'offline' if offline else 'online'}"
