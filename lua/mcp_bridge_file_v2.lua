@@ -695,6 +695,31 @@ local function process_request()
                             response.error = "SetMediaItemPosition requires 3 arguments"
                         end
                     
+                    elseif fname == "SetMediaItemSelected" then
+                        if #args >= 2 then
+                            local item = args[1]
+                            -- Handle item index or pointer
+                            if type(args[1]) == "number" then
+                                -- It's an item index
+                                item = reaper.GetMediaItem(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                -- It's a pointer reference from a previous call - we can't use it
+                                response.error = "Cannot use item pointer from previous call - use item index instead"
+                                response.ok = false
+                                item = nil
+                            end
+                            
+                            if item then
+                                reaper.SetMediaItemSelected(item, args[2])
+                                response.ok = true
+                            else
+                                response.error = "Invalid item parameter"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "SetMediaItemSelected requires 2 arguments"
+                        end
+                    
                     elseif fname == "GetProjectName" then
                         local retval, name = reaper.GetProjectName(args[1] or 0, "", 512)
                         response.ok = true
@@ -963,6 +988,73 @@ local function process_request()
                             response.error = "GetMIDIScaleFromItemTake requires 2 arguments (item_index, take_index)"
                         end
                     
+                    elseif fname == "SortMIDIInItemTake" then
+                        -- Combined function to sort MIDI
+                        if #args >= 2 then
+                            local item_index = args[1]
+                            local take_index = args[2]
+                            
+                            -- Get item
+                            local item = reaper.GetMediaItem(0, item_index)
+                            if not item then
+                                response.error = "Failed to find media item at index " .. tostring(item_index)
+                                response.ok = false
+                            else
+                                -- Get take
+                                local take = reaper.GetMediaItemTake(item, take_index)
+                                if not take then
+                                    response.error = "Failed to find take at index " .. tostring(take_index)
+                                    response.ok = false
+                                else
+                                    -- Sort MIDI
+                                    reaper.MIDI_Sort(take)
+                                    response.ok = true
+                                end
+                            end
+                        else
+                            response.error = "SortMIDIInItemTake requires 2 arguments (item_index, take_index)"
+                        end
+                    
+                    elseif fname == "InsertMIDICCToItemTake" then
+                        -- Combined function to insert MIDI CC
+                        if #args >= 7 then
+                            local item_index = args[1]
+                            local take_index = args[2]
+                            local time = args[3]
+                            local channel = args[4]
+                            local cc_number = args[5]
+                            local value = args[6]
+                            local selected = args[7]
+                            
+                            -- Get item
+                            local item = reaper.GetMediaItem(0, item_index)
+                            if not item then
+                                response.error = "Failed to find media item at index " .. tostring(item_index)
+                                response.ok = false
+                            else
+                                -- Get take
+                                local take = reaper.GetMediaItemTake(item, take_index)
+                                if not take then
+                                    response.error = "Failed to find take at index " .. tostring(take_index)
+                                    response.ok = false
+                                else
+                                    -- Convert time to PPQ
+                                    local ppq_pos = reaper.MIDI_GetPPQPosFromProjTime(take, time)
+                                    
+                                    -- Insert CC event
+                                    local inserted = reaper.MIDI_InsertCC(take, selected, false, ppq_pos, 0xB0, channel, cc_number, value)
+                                    if inserted then
+                                        response.ok = true
+                                    else
+                                        response.ok = false
+                                        response.error = "Failed to insert MIDI CC"
+                                    end
+                                end
+                            end
+                        else
+                            response.error = "InsertMIDICCToItemTake requires 7 arguments"
+                        end
+                    
                     elseif fname == "SetMIDIScaleToItemTake" then
                         -- Combined function to set MIDI scale
                         if #args >= 5 then
@@ -1108,26 +1200,54 @@ local function process_request()
                         -- Get envelope by name
                         if #args >= 2 then
                             local track = nil
-                            if type(args[1]) == "number" then
-                                if args[1] == -1 then
+                            local track_index = args[1]
+                            
+                            -- Handle case where args[1] might be a table with a numeric value
+                            if type(track_index) == "table" then
+                                -- Try multiple ways to extract numeric value from table
+                                -- Check for direct numeric index
+                                if track_index[1] and type(track_index[1]) == "number" then
+                                    track_index = track_index[1]
+                                -- Check for 'value' key
+                                elseif track_index.value and type(track_index.value) == "number" then
+                                    track_index = track_index.value
+                                -- Check for 'track_index' key
+                                elseif track_index.track_index and type(track_index.track_index) == "number" then
+                                    track_index = track_index.track_index
+                                else
+                                    -- Try to find any numeric value in table
+                                    for k, v in pairs(track_index) do
+                                        if type(v) == "number" then
+                                            track_index = v
+                                            break
+                                        end
+                                    end
+                                end
+                            end
+                            
+                            if type(track_index) == "number" then
+                                if track_index == -1 then
                                     -- Master track
                                     track = reaper.GetMasterTrack(0)
                                 else
-                                    track = reaper.GetTrack(0, args[1])
+                                    track = reaper.GetTrack(0, track_index)
                                 end
                             elseif type(args[1]) == "table" and args[1].__ptr then
                                 response.error = "Cannot use track pointer from previous call"
                                 response.ok = false
                             else
-                                track = args[1]
+                                response.error = "Invalid track index type: " .. type(args[1]) .. " (could not extract number from table)"
+                                response.ok = false
                             end
                             
                             if track then
                                 local envelope = reaper.GetTrackEnvelopeByName(track, args[2])
                                 response.ok = true
                                 response.ret = envelope
-                            else
-                                response.error = "Track not found"
+                            elseif response.ok ~= false then
+                                -- Only set error if not already set
+                                local track_count = reaper.CountTracks(0)
+                                response.error = "Track not found at index " .. tostring(track_index) .. " (project has " .. track_count .. " tracks)"
                                 response.ok = false
                             end
                         else
@@ -1138,8 +1258,30 @@ local function process_request()
                         -- Get track automation mode
                         if #args >= 1 then
                             local track = nil
-                            if type(args[1]) == "number" then
-                                track = reaper.GetTrack(0, args[1])
+                            local track_index = args[1]
+                            
+                            -- Handle case where args[1] might be a table with a numeric value
+                            if type(track_index) == "table" then
+                                -- Try multiple ways to extract numeric value from table
+                                if track_index[1] and type(track_index[1]) == "number" then
+                                    track_index = track_index[1]
+                                elseif track_index.value and type(track_index.value) == "number" then
+                                    track_index = track_index.value
+                                elseif track_index.track_index and type(track_index.track_index) == "number" then
+                                    track_index = track_index.track_index
+                                else
+                                    -- Try to find any numeric value in table
+                                    for k, v in pairs(track_index) do
+                                        if type(v) == "number" then
+                                            track_index = v
+                                            break
+                                        end
+                                    end
+                                end
+                            end
+                            
+                            if type(track_index) == "number" then
+                                track = reaper.GetTrack(0, track_index)
                             elseif type(args[1]) == "table" and args[1].__ptr then
                                 response.error = "Cannot use track pointer from previous call"
                                 response.ok = false
@@ -1163,8 +1305,30 @@ local function process_request()
                         -- Set track automation mode
                         if #args >= 2 then
                             local track = nil
-                            if type(args[1]) == "number" then
-                                track = reaper.GetTrack(0, args[1])
+                            local track_index = args[1]
+                            
+                            -- Handle case where args[1] might be a table with a numeric value
+                            if type(track_index) == "table" then
+                                -- Try multiple ways to extract numeric value from table
+                                if track_index[1] and type(track_index[1]) == "number" then
+                                    track_index = track_index[1]
+                                elseif track_index.value and type(track_index.value) == "number" then
+                                    track_index = track_index.value
+                                elseif track_index.track_index and type(track_index.track_index) == "number" then
+                                    track_index = track_index.track_index
+                                else
+                                    -- Try to find any numeric value in table
+                                    for k, v in pairs(track_index) do
+                                        if type(v) == "number" then
+                                            track_index = v
+                                            break
+                                        end
+                                    end
+                                end
+                            end
+                            
+                            if type(track_index) == "number" then
+                                track = reaper.GetTrack(0, track_index)
                             elseif type(args[1]) == "table" and args[1].__ptr then
                                 response.error = "Cannot use track pointer from previous call"
                                 response.ok = false
@@ -1657,6 +1821,1473 @@ local function process_request()
                             response.ok = true
                         else
                             response.error = "SetGlobalAutomationOverride requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "GetMainHwnd" then
+                        -- Get main window handle
+                        local hwnd = reaper.GetMainHwnd()
+                        response.ok = true
+                        response.ret = hwnd
+                    
+                    elseif fname == "GetMousePosition" then
+                        -- Get current mouse position
+                        local x, y = reaper.GetMousePosition()
+                        response.ok = true
+                        response.ret = {x, y}
+                    
+                    elseif fname == "GetCursorContext" then
+                        -- Get cursor context
+                        local context = reaper.GetCursorContext()
+                        response.ok = true
+                        response.ret = context
+                    
+                    elseif fname == "ShowMessageBox" then
+                        -- Show message box
+                        if #args >= 3 then
+                            local result = reaper.ShowMessageBox(args[1], args[2], args[3])
+                            response.ok = true
+                            response.ret = result
+                        else
+                            response.error = "ShowMessageBox requires 3 arguments (message, title, type)"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "ShowConsoleMsg" then
+                        -- Show console message
+                        if #args >= 1 then
+                            reaper.ShowConsoleMsg(args[1])
+                            response.ok = true
+                        else
+                            response.error = "ShowConsoleMsg requires 1 argument (message)"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "ClearConsole" then
+                        -- Clear console
+                        reaper.ClearConsole()
+                        response.ok = true
+                    
+                    elseif fname == "PCM_Source_CreateFromFile" then
+                        -- Create PCM source from file
+                        if #args >= 1 then
+                            local source = reaper.PCM_Source_CreateFromFile(args[1])
+                            response.ok = true
+                            response.ret = source
+                        else
+                            response.error = "PCM_Source_CreateFromFile requires 1 argument (filename)"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "SetMediaItemTake_Source" then
+                        -- Set media source on take
+                        if #args >= 2 then
+                            local retval = reaper.SetMediaItemTake_Source(args[1], args[2])
+                            response.ok = true
+                            response.ret = retval
+                        else
+                            response.error = "SetMediaItemTake_Source requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "GetMediaItemTake_Source" then
+                        -- Get media source from take
+                        if #args >= 1 then
+                            local source = reaper.GetMediaItemTake_Source(args[1])
+                            response.ok = true
+                            response.ret = source
+                        else
+                            response.error = "GetMediaItemTake_Source requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "GetMediaSourceSampleRate" then
+                        -- Get sample rate from media source
+                        if #args >= 1 then
+                            local samplerate = reaper.GetMediaSourceSampleRate(args[1])
+                            response.ok = true
+                            response.ret = samplerate
+                        else
+                            response.error = "GetMediaSourceSampleRate requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "GetMediaSourceNumChannels" then
+                        -- Get channel count from media source
+                        if #args >= 1 then
+                            local channels = reaper.GetMediaSourceNumChannels(args[1])
+                            response.ok = true
+                            response.ret = channels
+                        else
+                            response.error = "GetMediaSourceNumChannels requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "DB2SLIDER" then
+                        -- Convert dB to slider value
+                        if #args >= 1 then
+                            local slider = reaper.DB2SLIDER(args[1])
+                            response.ok = true
+                            response.ret = slider
+                        else
+                            response.error = "DB2SLIDER requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "SLIDER2DB" then
+                        -- Convert slider value to dB
+                        if #args >= 1 then
+                            local db = reaper.SLIDER2DB(args[1])
+                            response.ok = true
+                            response.ret = db
+                        else
+                            response.error = "SLIDER2DB requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "AddTakeToMediaItem" then
+                        -- Add take to media item
+                        if #args >= 1 then
+                            local take = reaper.AddTakeToMediaItem(args[1])
+                            response.ok = true
+                            response.ret = take
+                        else
+                            response.error = "AddTakeToMediaItem requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "CountTakes" then
+                        -- Count takes in media item
+                        if #args >= 1 then
+                            local count = reaper.CountTakes(args[1])
+                            response.ok = true
+                            response.ret = count
+                        else
+                            response.error = "CountTakes requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "GetTake" then
+                        -- Get take from item by indices
+                        if #args >= 2 then
+                            local item = reaper.GetMediaItem(0, args[1])
+                            if item then
+                                local take = reaper.GetMediaItemTake(item, args[2])
+                                response.ok = true
+                                response.ret = take
+                            else
+                                response.error = "Item not found"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "GetTake requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "IsTrackVisible" then
+                        -- Check if track is visible in TCP/MCP
+                        if #args >= 2 then
+                            local visible = reaper.IsTrackVisible(args[1], args[2])
+                            response.ok = true
+                            response.ret = visible
+                        else
+                            response.error = "IsTrackVisible requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "SetOnlyTrackSelected" then
+                        -- Set only one track selected
+                        if #args >= 1 then
+                            local track = args[1]
+                            -- Handle track index
+                            if type(track) == "number" then
+                                track = reaper.GetTrack(0, track)
+                            end
+                            if track then
+                                reaper.SetOnlyTrackSelected(track)
+                                response.ok = true
+                            else
+                                response.error = "Track not found"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "SetOnlyTrackSelected requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "NamedCommandLookup" then
+                        -- Look up named command
+                        if #args >= 1 then
+                            local cmd_id = reaper.NamedCommandLookup(args[1])
+                            response.ok = true
+                            response.ret = cmd_id
+                        else
+                            response.error = "NamedCommandLookup requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "ReverseNamedCommandLookup" then
+                        -- Reverse command lookup
+                        if #args >= 2 then
+                            local name = reaper.ReverseNamedCommandLookup(args[1], args[2])
+                            response.ok = true
+                            response.ret = name or ""
+                        else
+                            response.error = "ReverseNamedCommandLookup requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "GetToggleCommandStateEx" then
+                        -- Get toggle command state for section
+                        if #args >= 2 then
+                            local state = reaper.GetToggleCommandStateEx(args[1], args[2])
+                            response.ok = true
+                            response.ret = state
+                        else
+                            response.error = "GetToggleCommandStateEx requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "RefreshToolbar" then
+                        -- Refresh toolbar
+                        if #args >= 1 then
+                            reaper.RefreshToolbar(args[1])
+                            response.ok = true
+                        else
+                            response.error = "RefreshToolbar requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "EnumerateFiles" then
+                        -- Enumerate files
+                        if #args >= 2 then
+                            local file = reaper.EnumerateFiles(args[1], args[2])
+                            response.ok = true
+                            response.ret = file or ""
+                        else
+                            response.error = "EnumerateFiles requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "EnumerateSubdirectories" then
+                        -- Enumerate subdirectories
+                        if #args >= 2 then
+                            local dir = reaper.EnumerateSubdirectories(args[1], args[2])
+                            response.ok = true
+                            response.ret = dir or ""
+                        else
+                            response.error = "EnumerateSubdirectories requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "GetProjectPath" then
+                        -- Get project path
+                        if #args >= 1 then
+                            local path = reaper.GetProjectPath(args[1])
+                            response.ok = true
+                            response.ret = path or ""
+                        else
+                            response.error = "GetProjectPath requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "GetProjectName" then
+                        -- Get project name
+                        if #args >= 1 then
+                            local name = reaper.GetProjectName(args[1])
+                            response.ok = true
+                            response.ret = name or ""
+                        else
+                            response.error = "GetProjectName requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "IsProjectDirty" then
+                        -- Check if project is dirty
+                        if #args >= 1 then
+                            local dirty = reaper.IsProjectDirty(args[1])
+                            response.ok = true
+                            response.ret = dirty
+                        else
+                            response.error = "IsProjectDirty requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "GetResourcePath" then
+                        -- Get resource path
+                        local path = reaper.GetResourcePath()
+                        response.ok = true
+                        response.ret = path
+                    
+                    elseif fname == "GetExePath" then
+                        -- Get exe path
+                        local path = reaper.GetExePath()
+                        response.ok = true
+                        response.ret = path
+                    
+                    elseif fname == "GetExtState" then
+                        -- Get extended state
+                        if #args >= 2 then
+                            local value = reaper.GetExtState(args[1], args[2])
+                            response.ok = true
+                            response.ret = value or ""
+                        else
+                            response.error = "GetExtState requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "SetExtState" then
+                        -- Set extended state
+                        if #args >= 4 then
+                            reaper.SetExtState(args[1], args[2], args[3], args[4])
+                            response.ok = true
+                        else
+                            response.error = "SetExtState requires 4 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "HasExtState" then
+                        -- Check if extended state exists
+                        if #args >= 2 then
+                            local exists = reaper.HasExtState(args[1], args[2])
+                            response.ok = true
+                            response.ret = exists
+                        else
+                            response.error = "HasExtState requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "DeleteExtState" then
+                        -- Delete extended state
+                        if #args >= 3 then
+                            reaper.DeleteExtState(args[1], args[2], args[3])
+                            response.ok = true
+                        else
+                            response.error = "DeleteExtState requires 3 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "DockWindowActivate" then
+                        -- Activate docker window
+                        if #args >= 1 then
+                            reaper.DockWindowActivate(args[1])
+                            response.ok = true
+                        else
+                            response.error = "DockWindowActivate requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "DockWindowAddEx" then
+                        -- Add window to docker
+                        if #args >= 4 then
+                            reaper.DockWindowAddEx(args[1], args[2], args[3], args[4])
+                            response.ok = true
+                        else
+                            response.error = "DockWindowAddEx requires 4 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "DockWindowRefresh" then
+                        -- Refresh docker windows
+                        reaper.DockWindowRefresh()
+                        response.ok = true
+                    
+                    elseif fname == "DockWindowRefreshByName" then
+                        -- Refresh docker window by name
+                        if #args >= 1 then
+                            reaper.DockWindowRefreshByName(args[1])
+                            response.ok = true
+                        else
+                            response.error = "DockWindowRefreshByName requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "DockGetPosition" then
+                        -- Get docker position
+                        if #args >= 1 then
+                            local pos = reaper.DockGetPosition(args[1])
+                            response.ok = true
+                            response.ret = pos
+                        else
+                            response.error = "DockGetPosition requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "DeleteTakeFromMediaItem" then
+                        -- Delete take from item
+                        if #args >= 1 then
+                            local result = reaper.DeleteTakeFromMediaItem(args[1])
+                            response.ok = result
+                        else
+                            response.error = "DeleteTakeFromMediaItem requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "GetNumTakeMarkers" then
+                        -- Get number of take markers
+                        if #args >= 1 then
+                            local count = reaper.GetNumTakeMarkers(args[1])
+                            response.ok = true
+                            response.ret = count
+                        else
+                            response.error = "GetNumTakeMarkers requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "GetTakeMarker" then
+                        -- Get take marker info
+                        if #args >= 2 then
+                            local position, name, color = reaper.GetTakeMarker(args[1], args[2])
+                            response.ok = true
+                            response.position = position
+                            response.name = name or ""
+                            response.color = color or 0
+                        else
+                            response.error = "GetTakeMarker requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "SetTakeMarker" then
+                        -- Set/add take marker
+                        if #args >= 5 then
+                            local idx = reaper.SetTakeMarker(args[1], args[2], args[3], args[4], args[5])
+                            response.ok = true
+                            response.ret = idx
+                        else
+                            response.error = "SetTakeMarker requires 5 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "DeleteTakeMarker" then
+                        -- Delete take marker
+                        if #args >= 2 then
+                            local result = reaper.DeleteTakeMarker(args[1], args[2])
+                            response.ok = result
+                        else
+                            response.error = "DeleteTakeMarker requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "CountTakeEnvelopes" then
+                        -- Count take envelopes
+                        if #args >= 1 then
+                            local count = reaper.CountTakeEnvelopes(args[1])
+                            response.ok = true
+                            response.ret = count
+                        else
+                            response.error = "CountTakeEnvelopes requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "GetTakeEnvelopeByName" then
+                        -- Get take envelope by name
+                        if #args >= 2 then
+                            local env = reaper.GetTakeEnvelopeByName(args[1], args[2])
+                            response.ok = true
+                            response.ret = env
+                        else
+                            response.error = "GetTakeEnvelopeByName requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "EnumProjectMarkers" then
+                        -- Enumerate project markers
+                        if #args >= 1 then
+                            local retval, isrgn, pos, rgnend, name, markrgnindexnumber = reaper.EnumProjectMarkers(args[1])
+                            response.ok = retval > 0
+                            response.isrgn = isrgn
+                            response.pos = pos
+                            response.rgnend = rgnend
+                            response.name = name or ""
+                            response.markrgnindexnumber = markrgnindexnumber
+                        else
+                            response.error = "EnumProjectMarkers requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "EnumProjectMarkers3" then
+                        -- Enumerate project markers with color
+                        if #args >= 2 then
+                            local retval, isrgn, pos, rgnend, name, markrgnindexnumber, color = reaper.EnumProjectMarkers3(args[1], args[2])
+                            response.ok = retval > 0
+                            response.isrgn = isrgn
+                            response.pos = pos
+                            response.rgnend = rgnend
+                            response.name = name or ""
+                            response.markrgnindexnumber = markrgnindexnumber
+                            response.color = color
+                        else
+                            response.error = "EnumProjectMarkers3 requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "CountProjectMarkers" then
+                        -- Count project markers
+                        if #args >= 1 then
+                            local num_markers, num_regions = reaper.CountProjectMarkers(args[1])
+                            response.ok = true
+                            response.num_markers = num_markers
+                            response.num_regions = num_regions
+                        else
+                            response.error = "CountProjectMarkers requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "SetProjectMarker" then
+                        -- Set project marker
+                        if #args >= 5 then
+                            local result = reaper.SetProjectMarker(args[1], args[2], args[3], args[4], args[5])
+                            response.ok = result
+                        else
+                            response.error = "SetProjectMarker requires 5 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "SetProjectMarker3" then
+                        -- Set project marker with color
+                        if #args >= 7 then
+                            local result = reaper.SetProjectMarker3(args[1], args[2], args[3], args[4], args[5], args[6], args[7])
+                            response.ok = result
+                        else
+                            response.error = "SetProjectMarker3 requires 7 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "DeleteProjectMarker" then
+                        -- Delete project marker
+                        if #args >= 3 then
+                            local result = reaper.DeleteProjectMarker(args[1], args[2], args[3])
+                            response.ok = true
+                            response.ret = result
+                        else
+                            response.error = "DeleteProjectMarker requires 3 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "GoToMarker" then
+                        -- Go to marker
+                        if #args >= 3 then
+                            reaper.GoToMarker(args[1], args[2], args[3])
+                            response.ok = true
+                        else
+                            response.error = "GoToMarker requires 3 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "CountTrackEnvelopes" then
+                        -- Count track envelopes
+                        if #args >= 1 then
+                            local count = reaper.CountTrackEnvelopes(args[1])
+                            response.ok = true
+                            response.ret = count
+                        else
+                            response.error = "CountTrackEnvelopes requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "GetTrackName" then
+                        -- Get track name
+                        if #args >= 1 then
+                            local track = reaper.GetTrack(0, args[1])
+                            if track then
+                                local retval, name = reaper.GetTrackName(track)
+                                response.ok = retval
+                                response.ret = name or ""
+                            else
+                                response.error = "Track not found"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "GetTrackName requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "GetMediaItem_Track" then
+                        -- Get item's track
+                        if #args >= 1 then
+                            local track = reaper.GetMediaItem_Track(args[1])
+                            response.ok = true
+                            response.ret = track
+                        else
+                            response.error = "GetMediaItem_Track requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "TakeIsMIDI" then
+                        -- Check if take is MIDI
+                        if #args >= 1 then
+                            local ismidi = reaper.TakeIsMIDI(args[1])
+                            response.ok = true
+                            response.ret = ismidi
+                        else
+                            response.error = "TakeIsMIDI requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "MIDI_GetNote" then
+                        -- Get MIDI note
+                        if #args >= 2 then
+                            local retval, selected, muted, startppqpos, endppqpos, chan, pitch, vel = reaper.MIDI_GetNote(args[1], args[2])
+                            response.ok = retval
+                            response.selected = selected
+                            response.muted = muted
+                            response.startppqpos = startppqpos
+                            response.endppqpos = endppqpos
+                            response.chan = chan
+                            response.pitch = pitch
+                            response.vel = vel
+                        else
+                            response.error = "MIDI_GetNote requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "TransposeMIDINotes" then
+                        -- Transpose MIDI notes by item/take indices
+                        if #args >= 4 then
+                            local item_index = args[1]
+                            local take_index = args[2]
+                            local semitones = args[3]
+                            local selected_only = args[4]
+                            
+                            -- Get item
+                            local item = reaper.GetMediaItem(0, item_index)
+                            if not item then
+                                response.error = "Item not found"
+                                response.ok = false
+                            else
+                                -- Get take
+                                local take = reaper.GetMediaItemTake(item, take_index)
+                                if not take then
+                                    response.error = "Take not found"
+                                    response.ok = false
+                                else
+                                    -- Check if MIDI
+                                    if not reaper.TakeIsMIDI(take) then
+                                        response.error = "Take is not MIDI"
+                                        response.ok = false
+                                    else
+                                        -- Count notes
+                                        local retval, notes = reaper.MIDI_CountEvts(take)
+                                        local transposed = 0
+                                        
+                                        -- Transpose each note
+                                        for i = 0, notes - 1 do
+                                            local retval, selected, muted, startppqpos, endppqpos, chan, pitch, vel = reaper.MIDI_GetNote(take, i)
+                                            
+                                            if retval and (not selected_only or selected) then
+                                                local new_pitch = math.max(0, math.min(127, pitch + semitones))
+                                                reaper.MIDI_SetNote(take, i, selected, muted, startppqpos, endppqpos, chan, new_pitch, vel, false)
+                                                transposed = transposed + 1
+                                            end
+                                        end
+                                        
+                                        -- Sort notes
+                                        reaper.MIDI_Sort(take)
+                                        
+                                        response.ok = true
+                                        response.transposed = transposed
+                                        response.notes = notes
+                                    end
+                                end
+                            end
+                        else
+                            response.error = "TransposeMIDINotes requires 4 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "QuantizeMIDINotes" then
+                        -- Quantize MIDI notes by item/take indices
+                        if #args >= 4 then
+                            local item_index = args[1]
+                            local take_index = args[2]
+                            local grid_size = args[3]  -- In PPQ
+                            local strength = args[4]
+                            
+                            -- Get item
+                            local item = reaper.GetMediaItem(0, item_index)
+                            if not item then
+                                response.error = "Item not found"
+                                response.ok = false
+                            else
+                                -- Get take
+                                local take = reaper.GetMediaItemTake(item, take_index)
+                                if not take then
+                                    response.error = "Take not found"
+                                    response.ok = false
+                                else
+                                    -- Check if MIDI
+                                    if not reaper.TakeIsMIDI(take) then
+                                        response.error = "Take is not MIDI"
+                                        response.ok = false
+                                    else
+                                        -- Count notes
+                                        local retval, notes = reaper.MIDI_CountEvts(take)
+                                        local quantized = 0
+                                        
+                                        -- Quantize each note
+                                        for i = 0, notes - 1 do
+                                            local retval, selected, muted, startppqpos, endppqpos, chan, pitch, vel = reaper.MIDI_GetNote(take, i)
+                                            
+                                            if retval then
+                                                -- Calculate quantized position
+                                                local nearest_grid = math.floor(startppqpos / grid_size + 0.5) * grid_size
+                                                -- Apply strength
+                                                local new_pos = startppqpos + (nearest_grid - startppqpos) * strength
+                                                -- Calculate new end position (maintain length)
+                                                local length = endppqpos - startppqpos
+                                                local new_end = new_pos + length
+                                                
+                                                reaper.MIDI_SetNote(take, i, selected, muted, new_pos, new_end, chan, pitch, vel, false)
+                                                quantized = quantized + 1
+                                            end
+                                        end
+                                        
+                                        -- Sort notes
+                                        reaper.MIDI_Sort(take)
+                                        
+                                        response.ok = true
+                                        response.quantized = quantized
+                                        response.notes = notes
+                                    end
+                                end
+                            end
+                        else
+                            response.error = "QuantizeMIDINotes requires 4 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "HumanizeMIDITiming" then
+                        -- Humanize MIDI notes by item/take indices
+                        if #args >= 4 then
+                            local item_index = args[1]
+                            local take_index = args[2]
+                            local timing_amount = args[3]  -- In seconds
+                            local velocity_amount = args[4]  -- 0-1 range
+                            
+                            -- Get item
+                            local item = reaper.GetMediaItem(0, item_index)
+                            if not item then
+                                response.error = "Item not found"
+                                response.ok = false
+                            else
+                                -- Get take
+                                local take = reaper.GetMediaItemTake(item, take_index)
+                                if not take then
+                                    response.error = "Take not found"
+                                    response.ok = false
+                                else
+                                    -- Check if MIDI
+                                    if not reaper.TakeIsMIDI(take) then
+                                        response.error = "Take is not MIDI"
+                                        response.ok = false
+                                    else
+                                        -- Count notes
+                                        local retval, notes = reaper.MIDI_CountEvts(take)
+                                        local humanized = 0
+                                        
+                                        local ppq_per_quarter = 960
+                                        local max_timing_shift = timing_amount * ppq_per_quarter
+                                        
+                                        -- Humanize each note
+                                        for i = 0, notes - 1 do
+                                            local retval, selected, muted, startppqpos, endppqpos, chan, pitch, vel = reaper.MIDI_GetNote(take, i)
+                                            
+                                            if retval then
+                                                -- Randomize timing
+                                                local timing_shift = (math.random() * 2 - 1) * max_timing_shift
+                                                local new_start = math.max(0, startppqpos + timing_shift)
+                                                local new_end = endppqpos + timing_shift
+                                                
+                                                -- Randomize velocity
+                                                local vel_shift = (math.random() * 2 - 1) * velocity_amount * 127
+                                                local new_vel = math.max(1, math.min(127, math.floor(vel + vel_shift)))
+                                                
+                                                reaper.MIDI_SetNote(take, i, selected, muted, new_start, new_end, chan, pitch, new_vel, false)
+                                                humanized = humanized + 1
+                                            end
+                                        end
+                                        
+                                        -- Sort notes
+                                        reaper.MIDI_Sort(take)
+                                        
+                                        response.ok = true
+                                        response.humanized = humanized
+                                        response.notes = notes
+                                    end
+                                end
+                            end
+                        else
+                            response.error = "HumanizeMIDITiming requires 4 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "AnalyzeMIDIPattern" then
+                        -- Analyze MIDI pattern by item/take indices
+                        if #args >= 2 then
+                            local item_index = args[1]
+                            local take_index = args[2]
+                            
+                            -- Get item
+                            local item = reaper.GetMediaItem(0, item_index)
+                            if not item then
+                                response.error = "Item not found"
+                                response.ok = false
+                            else
+                                -- Get take
+                                local take = reaper.GetMediaItemTake(item, take_index)
+                                if not take then
+                                    response.error = "Take not found"
+                                    response.ok = false
+                                else
+                                    -- Check if MIDI
+                                    if not reaper.TakeIsMIDI(take) then
+                                        response.error = "Take is not MIDI"
+                                        response.ok = false
+                                    else
+                                        -- Count notes
+                                        local retval, notes = reaper.MIDI_CountEvts(take)
+                                        
+                                        -- Analyze first few notes for patterns
+                                        local pitches = {}
+                                        local velocities = {}
+                                        local max_notes = math.min(notes, 50)
+                                        
+                                        for i = 0, max_notes - 1 do
+                                            local retval, selected, muted, startppqpos, endppqpos, chan, pitch, vel = reaper.MIDI_GetNote(take, i)
+                                            if retval then
+                                                table.insert(pitches, pitch)
+                                                table.insert(velocities, vel)
+                                            end
+                                        end
+                                        
+                                        if #pitches == 0 then
+                                            response.ok = true
+                                            response.analysis = "No notes to analyze"
+                                        else
+                                            -- Basic pattern analysis
+                                            local min_pitch = math.min(table.unpack(pitches))
+                                            local max_pitch = math.max(table.unpack(pitches))
+                                            local pitch_range = max_pitch - min_pitch
+                                            
+                                            local total_vel = 0
+                                            for _, v in ipairs(velocities) do
+                                                total_vel = total_vel + v
+                                            end
+                                            local avg_velocity = total_vel / #velocities
+                                            
+                                            -- Detect intervals
+                                            local ascending = true
+                                            local descending = true
+                                            for i = 2, #pitches do
+                                                if pitches[i] <= pitches[i-1] then
+                                                    ascending = false
+                                                end
+                                                if pitches[i] >= pitches[i-1] then
+                                                    descending = false
+                                                end
+                                            end
+                                            
+                                            local pattern_type = "mixed"
+                                            if ascending then pattern_type = "ascending"
+                                            elseif descending then pattern_type = "descending"
+                                            end
+                                            
+                                            response.ok = true
+                                            response.notes_analyzed = #pitches
+                                            response.pitch_range = pitch_range
+                                            response.pattern_type = pattern_type
+                                            response.avg_velocity = avg_velocity
+                                        end
+                                    end
+                                end
+                            end
+                        else
+                            response.error = "AnalyzeMIDIPattern requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "GenerateMIDIChordSequence" then
+                        -- Generate MIDI chord sequence by item/take indices
+                        if #args >= 4 then
+                            local item_index = args[1]
+                            local take_index = args[2]
+                            local chord_progression = args[3]  -- Table of chord names
+                            local duration = args[4]
+                            
+                            -- Get item
+                            local item = reaper.GetMediaItem(0, item_index)
+                            if not item then
+                                response.error = "Item not found"
+                                response.ok = false
+                            else
+                                -- Get take
+                                local take = reaper.GetMediaItemTake(item, take_index)
+                                if not take then
+                                    response.error = "Take not found"
+                                    response.ok = false
+                                else
+                                    -- Check if MIDI
+                                    if not reaper.TakeIsMIDI(take) then
+                                        response.error = "Take is not MIDI"
+                                        response.ok = false
+                                    else
+                                        -- Chord definitions (simplified)
+                                        local chord_types = {
+                                            maj = {0, 4, 7},
+                                            min = {0, 3, 7},
+                                            ["7"] = {0, 4, 7, 10},
+                                            maj7 = {0, 4, 7, 11},
+                                            min7 = {0, 3, 7, 10},
+                                            dim = {0, 3, 6},
+                                            aug = {0, 4, 8}
+                                        }
+                                        
+                                        -- Note name to MIDI mapping
+                                        local note_map = {C = 0, D = 2, E = 4, F = 5, G = 7, A = 9, B = 11}
+                                        
+                                        local ppq_per_quarter = 960
+                                        local current_pos = 0
+                                        local chords_added = 0
+                                        
+                                        for _, chord_name in ipairs(chord_progression) do
+                                            -- Parse chord (e.g., "Cmaj", "Am7")
+                                            local root_note = nil
+                                            local chord_type = nil
+                                            
+                                            -- Find root note
+                                            for note, value in pairs(note_map) do
+                                                if string.sub(chord_name, 1, #note) == note then
+                                                    root_note = value + 60  -- Middle octave
+                                                    local rest = string.sub(chord_name, #note + 1)
+                                                    
+                                                    -- Handle sharps/flats
+                                                    if string.sub(rest, 1, 1) == "#" then
+                                                        root_note = root_note + 1
+                                                        rest = string.sub(rest, 2)
+                                                    elseif string.sub(rest, 1, 1) == "b" then
+                                                        root_note = root_note - 1
+                                                        rest = string.sub(rest, 2)
+                                                    end
+                                                    
+                                                    -- Find chord type
+                                                    chord_type = chord_types[rest] or chord_types.maj
+                                                    break
+                                                end
+                                            end
+                                            
+                                            if root_note then
+                                                -- Insert chord notes
+                                                for _, interval in ipairs(chord_type) do
+                                                    local pitch = root_note + interval
+                                                    reaper.MIDI_InsertNote(take, false, false, current_pos, 
+                                                                          current_pos + (duration * ppq_per_quarter),
+                                                                          0, pitch, 80, false)
+                                                end
+                                                chords_added = chords_added + 1
+                                                current_pos = current_pos + (duration * ppq_per_quarter)
+                                            end
+                                        end
+                                        
+                                        -- Sort notes
+                                        reaper.MIDI_Sort(take)
+                                        
+                                        response.ok = true
+                                        response.chords_added = chords_added
+                                        response.progression = table.concat(chord_progression, " → ")
+                                    end
+                                end
+                            end
+                        else
+                            response.error = "GenerateMIDIChordSequence requires 4 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "DetectMIDIChordProgressions" then
+                        -- Detect chord progressions by item/take indices
+                        if #args >= 2 then
+                            local item_index = args[1]
+                            local take_index = args[2]
+                            
+                            -- Get item
+                            local item = reaper.GetMediaItem(0, item_index)
+                            if not item then
+                                response.error = "Item not found"
+                                response.ok = false
+                            else
+                                -- Get take
+                                local take = reaper.GetMediaItemTake(item, take_index)
+                                if not take then
+                                    response.error = "Take not found"
+                                    response.ok = false
+                                else
+                                    -- Check if MIDI
+                                    if not reaper.TakeIsMIDI(take) then
+                                        response.error = "Take is not MIDI"
+                                        response.ok = false
+                                    else
+                                        -- Get all notes
+                                        local retval, notes = reaper.MIDI_CountEvts(take)
+                                        
+                                        -- Group notes by time to find chords
+                                        local time_groups = {}
+                                        
+                                        for i = 0, notes - 1 do
+                                            local retval, selected, muted, startppqpos, endppqpos, chan, pitch, vel = reaper.MIDI_GetNote(take, i)
+                                            if retval then
+                                                -- Quantize time to group simultaneous notes
+                                                local time_key = math.floor(startppqpos / 240) * 240  -- Quarter note quantization
+                                                
+                                                if not time_groups[time_key] then
+                                                    time_groups[time_key] = {}
+                                                end
+                                                table.insert(time_groups[time_key], pitch)
+                                            end
+                                        end
+                                        
+                                        -- Analyze chords
+                                        local chords = {}
+                                        local sorted_times = {}
+                                        for time, _ in pairs(time_groups) do
+                                            table.insert(sorted_times, time)
+                                        end
+                                        table.sort(sorted_times)
+                                        
+                                        local count = 0
+                                        for _, time in ipairs(sorted_times) do
+                                            if count >= 10 then break end  -- First 10 chords
+                                            
+                                            local pitches = time_groups[time]
+                                            if #pitches >= 3 then  -- At least 3 notes for a chord
+                                                -- Sort pitches
+                                                table.sort(pitches)
+                                                
+                                                -- Basic chord detection
+                                                local root = pitches[1] % 12
+                                                local note_names = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"}
+                                                local chord_name = note_names[root + 1]
+                                                
+                                                -- Check for major/minor (simplified)
+                                                if #pitches >= 3 then
+                                                    local third = (pitches[2] - pitches[1]) % 12
+                                                    if third == 4 then
+                                                        chord_name = chord_name .. " major"
+                                                    elseif third == 3 then
+                                                        chord_name = chord_name .. " minor"
+                                                    end
+                                                end
+                                                
+                                                table.insert(chords, chord_name)
+                                                count = count + 1
+                                            end
+                                        end
+                                        
+                                        if #chords > 0 then
+                                            response.ok = true
+                                            response.progression = table.concat(chords, " → ")
+                                        else
+                                            response.ok = true
+                                            response.progression = "No clear chord progression detected"
+                                        end
+                                    end
+                                end
+                            end
+                        else
+                            response.error = "DetectMIDIChordProgressions requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "GetMIDINoteDistribution" then
+                        -- Get MIDI note distribution by item/take indices
+                        if #args >= 2 then
+                            local item_index = args[1]
+                            local take_index = args[2]
+                            
+                            -- Get item
+                            local item = reaper.GetMediaItem(0, item_index)
+                            if not item then
+                                response.error = "Item not found"
+                                response.ok = false
+                            else
+                                -- Get take
+                                local take = reaper.GetMediaItemTake(item, take_index)
+                                if not take then
+                                    response.error = "Take not found"
+                                    response.ok = false
+                                else
+                                    -- Check if MIDI
+                                    if not reaper.TakeIsMIDI(take) then
+                                        response.error = "Take is not MIDI"
+                                        response.ok = false
+                                    else
+                                        -- Get all notes
+                                        local retval, notes = reaper.MIDI_CountEvts(take)
+                                        
+                                        -- Count note occurrences
+                                        local pitch_counts = {}
+                                        local total_velocity = 0
+                                        
+                                        for i = 0, notes - 1 do
+                                            local retval, selected, muted, startppqpos, endppqpos, chan, pitch, vel = reaper.MIDI_GetNote(take, i)
+                                            if retval then
+                                                pitch_counts[pitch] = (pitch_counts[pitch] or 0) + 1
+                                                total_velocity = total_velocity + vel
+                                            end
+                                        end
+                                        
+                                        -- Build distribution info
+                                        local distribution = {}
+                                        for pitch, count in pairs(pitch_counts) do
+                                            table.insert(distribution, {pitch=pitch, count=count})
+                                        end
+                                        
+                                        -- Sort by count
+                                        table.sort(distribution, function(a, b) return a.count > b.count end)
+                                        
+                                        response.ok = true
+                                        response.notes_total = notes
+                                        response.distribution = distribution
+                                        response.avg_velocity = notes > 0 and (total_velocity / notes) or 0
+                                    end
+                                end
+                            end
+                        else
+                            response.error = "GetMIDINoteDistribution requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "DetectMIDIKeySignature" then
+                        -- Detect key signature by item/take indices
+                        if #args >= 2 then
+                            local item_index = args[1]
+                            local take_index = args[2]
+                            
+                            -- Get item
+                            local item = reaper.GetMediaItem(0, item_index)
+                            if not item then
+                                response.error = "Item not found"
+                                response.ok = false
+                            else
+                                -- Get take
+                                local take = reaper.GetMediaItemTake(item, take_index)
+                                if not take then
+                                    response.error = "Take not found"
+                                    response.ok = false
+                                else
+                                    -- Check if MIDI
+                                    if not reaper.TakeIsMIDI(take) then
+                                        response.error = "Take is not MIDI"
+                                        response.ok = false
+                                    else
+                                        -- Get all notes
+                                        local retval, notes = reaper.MIDI_CountEvts(take)
+                                        
+                                        -- Count pitch classes
+                                        local pitch_classes = {}
+                                        for i = 0, 11 do
+                                            pitch_classes[i] = 0
+                                        end
+                                        
+                                        for i = 0, notes - 1 do
+                                            local retval, selected, muted, startppqpos, endppqpos, chan, pitch, vel = reaper.MIDI_GetNote(take, i)
+                                            if retval then
+                                                local pitch_class = pitch % 12
+                                                pitch_classes[pitch_class] = pitch_classes[pitch_class] + 1
+                                            end
+                                        end
+                                        
+                                        -- Key profiles (simplified)
+                                        local major_profile = {6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88}
+                                        local minor_profile = {6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17}
+                                        
+                                        local note_names = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"}
+                                        
+                                        -- Calculate correlation with each key
+                                        local best_major_key = nil
+                                        local best_major_score = -1
+                                        local best_minor_key = nil
+                                        local best_minor_score = -1
+                                        
+                                        for root = 0, 11 do
+                                            -- Calculate major correlation
+                                            local major_score = 0
+                                            local minor_score = 0
+                                            
+                                            for i = 0, 11 do
+                                                local shifted_idx = (i + root) % 12
+                                                major_score = major_score + pitch_classes[shifted_idx] * major_profile[i + 1]
+                                                minor_score = minor_score + pitch_classes[shifted_idx] * minor_profile[i + 1]
+                                            end
+                                            
+                                            if major_score > best_major_score then
+                                                best_major_score = major_score
+                                                best_major_key = root
+                                            end
+                                            
+                                            if minor_score > best_minor_score then
+                                                best_minor_score = minor_score
+                                                best_minor_key = root
+                                            end
+                                        end
+                                        
+                                        -- Determine major or minor
+                                        local key, confidence
+                                        if best_major_score > best_minor_score then
+                                            key = note_names[best_major_key + 1] .. " major"
+                                            confidence = (best_major_score / (best_major_score + best_minor_score)) * 100
+                                        else
+                                            key = note_names[best_minor_key + 1] .. " minor"
+                                            confidence = (best_minor_score / (best_major_score + best_minor_score)) * 100
+                                        end
+                                        
+                                        response.ok = true
+                                        response.key = key
+                                        response.confidence = confidence
+                                        response.notes_analyzed = notes
+                                    end
+                                end
+                            end
+                        else
+                            response.error = "DetectMIDIKeySignature requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "Master_GetTempo" then
+                        -- Get master tempo
+                        local tempo = reaper.Master_GetTempo()
+                        response.ok = true
+                        response.ret = tempo
+                    
+                    elseif fname == "CountTempoTimeSigMarkers" then
+                        -- Count tempo/time sig markers
+                        if #args >= 1 then
+                            local count = reaper.CountTempoTimeSigMarkers(args[1])
+                            response.ok = true
+                            response.ret = count
+                        else
+                            response.error = "CountTempoTimeSigMarkers requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "PCM_Source_GetSectionInfo" then
+                        -- Get PCM source section info
+                        if #args >= 2 then
+                            local source = args[1]
+                            local offset = args[2]
+                            -- Note: This is a simplified version - real API has more params
+                            -- For video detection, we'll check file extension
+                            local filename_result = reaper.GetMediaSourceFileName(source, "")
+                            local has_video = false
+                            if filename_result and filename_result ~= "" then
+                                local ext = filename_result:match("%.([^%.]+)$")
+                                if ext then
+                                    ext = ext:lower()
+                                    has_video = (ext == "mp4" or ext == "mov" or ext == "avi" or 
+                                               ext == "mkv" or ext == "webm" or ext == "wmv")
+                                end
+                            end
+                            response.ok = true
+                            response.has_video = has_video
+                            response.ret = true
+                        else
+                            response.error = "PCM_Source_GetSectionInfo requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "GetMediaSourceFileName" then
+                        -- Get media source filename
+                        if #args >= 2 then
+                            local filename = reaper.GetMediaSourceFileName(args[1], args[2])
+                            response.ok = true
+                            response.ret = filename
+                        else
+                            response.error = "GetMediaSourceFileName requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "GetProjectInfo" then
+                        -- Get project info (simplified)
+                        if #args >= 2 then
+                            local proj = args[1]
+                            local param = args[2]
+                            if param == "PROJECT_FRAMERATE" then
+                                -- Get project frame rate (default 30)
+                                local fps = 30.0  -- Default
+                                response.ok = true
+                                response.ret = fps
+                            else
+                                response.error = "Unknown project info parameter: " .. param
+                                response.ok = false
+                            end
+                        else
+                            response.error = "GetProjectInfo requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "SetEditCurPos" then
+                        -- Set edit cursor position
+                        if #args >= 3 then
+                            reaper.SetEditCurPos(args[1], args[2], args[3])
+                            response.ok = true
+                            response.ret = true
+                        else
+                            response.error = "SetEditCurPos requires 3 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "PCM_Source_BuildPeaks" then
+                        -- Build peaks for PCM source
+                        if #args >= 2 then
+                            local ret = reaper.PCM_Source_BuildPeaks(args[1], args[2])
+                            response.ok = true
+                            response.ret = ret
+                        else
+                            response.error = "PCM_Source_BuildPeaks requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "UpdateItemInProject" then
+                        -- Update item in project
+                        if #args >= 1 then
+                            reaper.UpdateItemInProject(args[1])
+                            response.ok = true
+                            response.ret = true
+                        else
+                            response.error = "UpdateItemInProject requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "GetSet_ArrangeView2" then
+                        -- Get/set arrange view
+                        if #args >= 4 then
+                            local screen_x_start, screen_x_end = reaper.GetSet_ArrangeView2(args[1], args[2], args[3], args[4])
+                            response.ok = true
+                            response.start_time = screen_x_start
+                            response.end_time = screen_x_end
+                            response.ret = true
+                        else
+                            response.error = "GetSet_ArrangeView2 requires 4 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "GetMediaItemTakeInfo_Value" then
+                        -- Get take info value
+                        if #args >= 2 then
+                            local value = reaper.GetMediaItemTakeInfo_Value(args[1], args[2])
+                            response.ok = true
+                            response.ret = value
+                        else
+                            response.error = "GetMediaItemTakeInfo_Value requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "DeleteExtState" then
+                        -- Delete extended state
+                        if #args >= 3 then
+                            reaper.DeleteExtState(args[1], args[2], args[3])
+                            response.ok = true
+                            response.ret = true
+                        else
+                            response.error = "DeleteExtState requires 3 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "GetResourcePath" then
+                        -- Get REAPER resource path
+                        local path = reaper.GetResourcePath()
+                        response.ok = true
+                        response.ret = path
+                    
+                    elseif fname == "ShowConsoleMsg" then
+                        -- Show console message
+                        if #args >= 1 then
+                            reaper.ShowConsoleMsg(args[1])
+                            response.ok = true
+                            response.ret = true
+                        else
+                            response.error = "ShowConsoleMsg requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "ValidatePtr" then
+                        -- Validate pointer
+                        if #args >= 2 then
+                            local ptr = reaper.ValidatePtr(args[1], args[2])
+                            response.ok = true
+                            response.ret = ptr
+                        else
+                            response.error = "ValidatePtr requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "GetCurrentProjectInLoadSave" then
+                        -- Get current project
+                        local proj = reaper.GetCurrentProjectInLoadSave()
+                        response.ok = true
+                        response.ret = proj
+                    
+                    elseif fname == "Main_openProject" then
+                        -- Open project
+                        if #args >= 1 then
+                            reaper.Main_openProject(args[1])
+                            response.ok = true
+                            response.ret = true
+                        else
+                            response.error = "Main_openProject requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "GetProjectName" then
+                        -- Get project name
+                        if #args >= 2 then
+                            local name = reaper.GetProjectName(args[1], args[2])
+                            response.ok = true
+                            response.ret = name
+                        else
+                            response.error = "GetProjectName requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "IsProjectDirty" then
+                        -- Check if project is dirty
+                        if #args >= 1 then
+                            local dirty = reaper.IsProjectDirty(args[1])
+                            response.ok = true
+                            response.ret = dirty
+                        else
+                            response.error = "IsProjectDirty requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "GetProjectNotes" then
+                        -- Get project notes
+                        if #args >= 1 then
+                            local notes = reaper.GetProjectNotes(args[1])
+                            response.ok = true
+                            response.ret = notes
+                        else
+                            response.error = "GetProjectNotes requires 1 argument"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "SetProjectNotes" then
+                        -- Set project notes
+                        if #args >= 2 then
+                            reaper.SetProjectNotes(args[1], args[2])
+                            response.ok = true
+                            response.ret = true
+                        else
+                            response.error = "SetProjectNotes requires 2 arguments"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "MIDI_SetNote" then
+                        -- Set MIDI note properties
+                        if #args >= 9 then
+                            local retval = reaper.MIDI_SetNote(args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9])
+                            response.ok = retval
+                            response.ret = retval
+                        else
+                            response.error = "MIDI_SetNote requires 9 arguments"
                             response.ok = false
                         end
                     

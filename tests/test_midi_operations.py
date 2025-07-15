@@ -45,6 +45,13 @@ async def test_midi_note_operations(reaper_mcp_client):
         reaper_mcp_client, track_index, position=0.0, length=8.0
     )
     
+    # Debug: Check if the item has takes
+    result = await reaper_mcp_client.call_tool(
+        "count_takes",
+        {"item_index": item_index}
+    )
+    print(f"Count takes result: {result.content[0].text}")
+    
     # Insert a C4 note
     result = await reaper_mcp_client.call_tool(
         "insert_midi_note",

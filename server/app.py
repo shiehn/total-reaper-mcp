@@ -53,6 +53,17 @@ from .tools.recording import register_recording_tools
 from .tools.envelope_extended import register_envelope_extended_tools
 from .tools.time_tempo_extended import register_time_tempo_extended_tools
 from .tools.track_management_extended import register_track_management_extended_tools
+from .tools.action_management import register_action_management_tools
+from .tools.file_io import register_file_io_tools
+from .tools.layouts import register_layouts_tools
+from .tools.take_management import register_take_management_tools
+from .tools.regions_markers_extended import register_regions_markers_extended_tools
+from .tools.analysis_tools import register_analysis_tools
+from .tools.video_media import register_video_media_tools
+from .tools.peaks_waveform import register_peaks_waveform_tools
+from .tools.script_extensions import register_script_extensions_tools
+from .tools.project_tabs import register_project_tabs_tools
+from .tools.midi_advanced import register_midi_advanced_tools
 
 # Register all tools
 def register_all_tools():
@@ -89,6 +100,17 @@ def register_all_tools():
         ("Envelope Extended", register_envelope_extended_tools),
         ("Time/Tempo Extended", register_time_tempo_extended_tools),
         ("Track Management Extended", register_track_management_extended_tools),
+        ("Action Management", register_action_management_tools),
+        ("File I/O & Project Management", register_file_io_tools),
+        ("Layouts & Screensets", register_layouts_tools),
+        ("Take Management Extended", register_take_management_tools),
+        ("Regions & Markers Extended", register_regions_markers_extended_tools),
+        ("Analysis Tools", register_analysis_tools),
+        ("Video & Visual Media", register_video_media_tools),
+        ("Peak & Waveform Display", register_peaks_waveform_tools),
+        ("Script Extension Management", register_script_extensions_tools),
+        ("Project Tab Management", register_project_tabs_tools),
+        ("Advanced MIDI Analysis & Generation", register_midi_advanced_tools),
     ]
     
     for category_name, register_func in categories:

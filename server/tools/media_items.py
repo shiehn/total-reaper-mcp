@@ -116,11 +116,7 @@ async def set_media_item_position(item_index: int, position: float) -> str:
 
 async def set_media_item_selected(item_index: int, selected: bool) -> str:
     """Set the selection state of a media item"""
-    # Get item first
-    item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
-    if not item_result.get("ok") or not item_result.get("ret"):
-        raise Exception(f"Failed to find media item at index {item_index}")
-    
+    # Pass item index directly - the bridge will handle getting the item
     result = await bridge.call_lua("SetMediaItemSelected", [item_index, selected])
     
     if result.get("ok"):

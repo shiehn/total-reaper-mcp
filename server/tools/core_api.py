@@ -164,8 +164,17 @@ async def get_media_source_sample_rate(item_index: int, take_index: int) -> str:
     if not item_result.get("ok") or not item_result.get("ret"):
         raise Exception(f"Failed to get media item at index {item_index}")
     
+    item = item_result.get("ret")
+    
+    # Get take count
+    take_count_result = await bridge.call_lua("CountTakes", [item])
+    take_count = take_count_result.get("ret", 0) if take_count_result.get("ok") else 0
+    
+    if take_count == 0:
+        raise Exception("Media item has no takes")
+    
     # Get take
-    take_result = await bridge.call_lua("GetMediaItemTake", [item_result.get("ret"), take_index])
+    take_result = await bridge.call_lua("GetMediaItemTake", [item, take_index])
     if not take_result.get("ok") or not take_result.get("ret"):
         raise Exception(f"Failed to get take at index {take_index}")
     
@@ -190,8 +199,17 @@ async def get_media_source_num_channels(item_index: int, take_index: int) -> str
     if not item_result.get("ok") or not item_result.get("ret"):
         raise Exception(f"Failed to get media item at index {item_index}")
     
+    item = item_result.get("ret")
+    
+    # Get take count
+    take_count_result = await bridge.call_lua("CountTakes", [item])
+    take_count = take_count_result.get("ret", 0) if take_count_result.get("ok") else 0
+    
+    if take_count == 0:
+        raise Exception("Media item has no takes")
+    
     # Get take
-    take_result = await bridge.call_lua("GetMediaItemTake", [item_result.get("ret"), take_index])
+    take_result = await bridge.call_lua("GetMediaItemTake", [item, take_index])
     if not take_result.get("ok") or not take_result.get("ret"):
         raise Exception(f"Failed to get take at index {take_index}")
     
@@ -213,6 +231,48 @@ async def get_media_source_num_channels(item_index: int, take_index: int) -> str
             return f"Channels: {channels}"
     else:
         raise Exception("Failed to get channel count")
+
+
+async def pcm_source_create_from_file(filename: str, item_index: int, take_index: int) -> str:
+    """Create a PCM source from file and add to item take"""
+    # Get media item
+    item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
+    if not item_result.get("ok") or not item_result.get("ret"):
+        raise Exception(f"Failed to get media item at index {item_index}")
+    
+    item = item_result.get("ret")
+    
+    # Get take count first
+    take_count_result = await bridge.call_lua("CountTakes", [item])
+    take_count = take_count_result.get("ret", 0) if take_count_result.get("ok") else 0
+    
+    # If no takes exist, add one
+    if take_count == 0:
+        add_take_result = await bridge.call_lua("AddTakeToMediaItem", [item])
+        if not add_take_result.get("ok") or not add_take_result.get("ret"):
+            raise Exception("Failed to add take to media item")
+        take = add_take_result.get("ret")
+    else:
+        # Get existing take
+        take_result = await bridge.call_lua("GetMediaItemTake", [item, take_index])
+        if not take_result.get("ok") or not take_result.get("ret"):
+            raise Exception(f"Failed to get take at index {take_index}")
+        take = take_result.get("ret")
+    
+    # Create PCM source from file
+    source_result = await bridge.call_lua("PCM_Source_CreateFromFile", [filename])
+    if not source_result.get("ok") or not source_result.get("ret"):
+        raise Exception(f"Failed to create PCM source from file: {filename}")
+    
+    # Set the source on the take
+    set_result = await bridge.call_lua("SetMediaItemTake_Source", [take, source_result.get("ret")])
+    if not set_result.get("ok"):
+        raise Exception("Failed to set media source on take")
+    
+    # Update the item to ensure changes are applied
+    update_result = await bridge.call_lua("UpdateItemInProject", [item])
+    
+    return f"Created PCM source from '{filename}' and added to item {item_index}, take {take_index}"
 
 
 # ============================================================================
@@ -278,6 +338,7 @@ def register_core_api_tools(mcp) -> int:
         (time_map_get_measure_info, "Get measure information"),
         
         # Audio Source
+        (pcm_source_create_from_file, "Create a PCM source from file and add to item take"),
         (get_media_source_sample_rate, "Get the sample rate of a media source"),
         (get_media_source_num_channels, "Get the number of channels in a media source"),
         

@@ -22,11 +22,28 @@ async def test_envelope_basic_operations(reaper_mcp_client):
     
     # Create a track and get its actual index
     track_index = await create_track_with_verification(reaper_mcp_client)
+    print(f"Created track with index: {track_index} (type: {type(track_index)})")
+    
+    # Verify track exists
+    track_result = await reaper_mcp_client.call_tool(
+        "get_track",
+        {"track_index": track_index}
+    )
+    print(f"Get track result: {track_result}")
+    
+    # Small delay to ensure REAPER has processed the track
+    import asyncio
+    await asyncio.sleep(0.1)
+    
+    # Check track count
+    count_result = await reaper_mcp_client.call_tool("get_track_count", {})
+    print(f"Track count after creation: {count_result}")
     
     # Get volume envelope
+    # Force track_index to be passed as a simple value
     result = await reaper_mcp_client.call_tool(
         "get_track_envelope_by_name",
-        {"track_index": track_index, "envelope_name": "Volume"}
+        {"track_index": int(track_index), "envelope_name": "Volume"}
     )
     print(f"Get volume envelope result: {result}")
     assert_response_contains(result, "Found envelope")

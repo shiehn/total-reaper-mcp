@@ -67,22 +67,8 @@ async def get_track_midi_note_name(track_index: int, pitch: int) -> str:
 
 async def midi_sort(item_index: int, take_index: int) -> str:
     """Sort MIDI events in a take"""
-    # Get media item
-    item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
-    if not item_result.get("ok") or not item_result.get("ret"):
-        raise Exception(f"Failed to find media item at index {item_index}")
-    
-    item_handle = item_result.get("ret")
-    
-    # Get take
-    take_result = await bridge.call_lua("GetMediaItemTake", [item_handle, take_index])
-    if not take_result.get("ok") or not take_result.get("ret"):
-        raise Exception(f"Failed to find take at index {take_index}")
-    
-    take_handle = take_result.get("ret")
-    
-    # Sort MIDI
-    result = await bridge.call_lua("MIDI_Sort", [take_handle])
+    # Use a combined bridge function that handles indices
+    result = await bridge.call_lua("SortMIDIInItemTake", [item_index, take_index])
     
     if result.get("ok"):
         return "MIDI events sorted successfully"

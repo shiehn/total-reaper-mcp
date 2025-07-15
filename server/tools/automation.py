@@ -14,6 +14,12 @@ from ..bridge import bridge
 
 async def get_track_envelope_by_name(track_index: int, envelope_name: str) -> str:
     """Get a track envelope by name (e.g., 'Volume', 'Pan', 'Mute')"""
+    # Force track_index to be an integer
+    if isinstance(track_index, dict) and '__ptr' in track_index:
+        raise ValueError(f"Received track handle instead of track index: {track_index}")
+    
+    track_index = int(track_index)
+    
     # Pass track index directly - the bridge will handle getting the track
     result = await bridge.call_lua("GetTrackEnvelopeByName", [track_index, envelope_name])
     

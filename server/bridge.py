@@ -41,6 +41,7 @@ class ReaperFileBridge:
             "args": args or []
         }
         
+        
         try:
             with open(request_file, 'w') as f:
                 json.dump(request_data, f)

@@ -166,13 +166,8 @@ async def set_track_selected(track_index: int, selected: bool) -> str:
 
 async def set_only_track_selected(track_index: int) -> str:
     """Set only one track selected, deselecting all others"""
-    # Get the track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to get track at index {track_index}")
-    
-    # Set only this track selected
-    result = await bridge.call_lua("SetOnlyTrackSelected", [track_result.get("ret")])
+    # Pass track index directly - the Lua bridge will handle getting the track
+    result = await bridge.call_lua("SetOnlyTrackSelected", [track_index])
     if result.get("ok"):
         # Update arrange view
         await bridge.call_lua("UpdateArrange", [])
@@ -309,12 +304,13 @@ async def set_track_color(track_index: int, color: int) -> str:
 
 async def is_track_visible(track_index: int, mixer: bool = False) -> str:
     """Check if a track is visible in TCP or MCP"""
-    # Get the track
+    # Pass track index directly - the Lua bridge will handle getting the track
+    # First get the track to ensure it exists
     track_result = await bridge.call_lua("GetTrack", [0, track_index])
     if not track_result.get("ok") or not track_result.get("ret"):
         raise Exception(f"Failed to get track at index {track_index}")
     
-    # Check visibility
+    # Check visibility using the track pointer
     result = await bridge.call_lua("IsTrackVisible", [track_result.get("ret"), mixer])
     if result.get("ok"):
         visible = result.get("ret", False)
@@ -880,38 +876,7 @@ async def get_track_peak_info(track_index: int) -> str:
 # Track Advanced Operations (7 tools)
 # ============================================================================
 
-async def freeze_track(track_index: int) -> str:
-    """Freeze a track"""
-    # Get track
-    result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not result.get("ok") or not result.get("ret"):
-        raise Exception(f"Track {track_index} not found")
-    
-    track_handle = result["retval"]
-    
-    # Freeze track
-    result = await bridge.call_lua("Main_OnCommandEx", [41223, 0, 0])  # Track: Freeze to stereo
-    if result.get("ok"):
-        return f"Froze track {track_index}"
-    
-    raise Exception("Failed to freeze track")
-
-
-async def unfreeze_track(track_index: int) -> str:
-    """Unfreeze a track"""
-    # Get track
-    result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not result.get("ok") or not result.get("ret"):
-        raise Exception(f"Track {track_index} not found")
-    
-    track_handle = result["retval"]
-    
-    # Unfreeze track
-    result = await bridge.call_lua("Main_OnCommandEx", [41644, 0, 0])  # Track: Unfreeze
-    if result.get("ok"):
-        return f"Unfroze track {track_index}"
-    
-    raise Exception("Failed to unfreeze track")
+# Note: freeze_track and unfreeze_track moved to rendering.py
 
 
 async def bounce_tracks(add_to_project: bool = True) -> str:
@@ -990,6 +955,30 @@ async def get_track_midi_note_name(track_index: int, pitch: int, channel: int = 
     default_name = f"{note}{octave}"
     
     return f"MIDI note {pitch} on track {track_index} channel {channel}: {default_name} (default)"
+
+
+# ============================================================================
+# Media Item Selection Functions
+# ============================================================================
+
+async def select_all_media_items() -> str:
+    """Select all media items in the project"""
+    result = await bridge.call_lua("Main_OnCommand", [40182, 0])  # Item: Select all items
+    
+    if result.get("ok"):
+        return "Select all media items: true"
+    else:
+        raise Exception(f"Failed to select all media items: {result.get('error', 'Unknown error')}")
+
+
+async def unselect_all_media_items() -> str:
+    """Unselect all media items in the project"""
+    result = await bridge.call_lua("Main_OnCommand", [40289, 0])  # Item: Unselect all items
+    
+    if result.get("ok"):
+        return "Unselect all media items: true"
+    else:
+        raise Exception(f"Failed to unselect all media items: {result.get('error', 'Unknown error')}")
 
 
 # ============================================================================
@@ -1100,9 +1089,7 @@ def register_track_tools(mcp) -> int:
         (get_track_peak, "Get the current peak level of a track"),
         (get_track_peak_info, "Get detailed peak information for a track"),
         
-        # Advanced (7)
-        (freeze_track, "Freeze a track"),
-        (unfreeze_track, "Unfreeze a track"),
+        # Advanced (5) - freeze_track and unfreeze_track moved to rendering.py
         (bounce_tracks, "Bounce selected tracks to a new track"),
         (add_video_to_track, "Add a video file to a track"),
         (get_track_state_chunk, "Get the state chunk of a track"),
@@ -1112,6 +1099,10 @@ def register_track_tools(mcp) -> int:
         # Additional (2)
         (get_mixer_scroll, "Get the leftmost track visible in the mixer"),
         (set_mixer_scroll, "Set the leftmost track visible in the mixer"),
+        
+        # Media Item Selection (2)
+        (select_all_media_items, "Select all media items in the project"),
+        (unselect_all_media_items, "Unselect all media items in the project"),
     ]
     
     # Register each tool

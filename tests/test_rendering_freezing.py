@@ -41,21 +41,21 @@ async def test_track_freeze_operations(reaper_mcp_client):
         "freeze_track",
         {"track_index": track_index}
     )
-    assert_response_contains(result, f"Froze track at index {track_index}")
+    assert_response_contains(result, f"Froze track {track_index}")
     
     # Check freeze state (should be frozen)
     result = await reaper_mcp_client.call_tool(
         "is_track_frozen",
         {"track_index": track_index}
     )
-    assert_response_contains(result, "Track frozen:")
+    assert_response_contains(result, "Track frozen: True")
     
     # Unfreeze the track
     result = await reaper_mcp_client.call_tool(
         "unfreeze_track",
-        {"track_index": 0}
+        {"track_index": track_index}
     )
-    assert "Unfroze track at index 0" in result.content[0].text
+    assert_response_contains(result, f"Unfroze track {track_index}")
 
 
 @pytest.mark.asyncio
@@ -146,7 +146,7 @@ async def test_project_render(reaper_mcp_client):
     
     # Note: Actual rendering would open dialog, so we just test the call
     result = await reaper_mcp_client.call_tool(
-        "main_render_project",
-        {"render_tail_ms": 1000}
+        "render_project",
+        {"bounds": "entire_project"}
     )
-    assert "Rendering project" in result.content[0].text or "Failed" in result.content[0].text
+    assert "Started render dialog" in result.content[0].text or "Failed" in result.content[0].text

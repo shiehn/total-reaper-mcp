@@ -44,27 +44,94 @@ async def bounce_tracks(add_to_project: bool = True) -> str:
         raise Exception(f"Failed to bounce tracks: {result.get('error', 'Unknown error')}")
 
 
-# ============================================================================
-# Freezing Operations (2 tools)
-# ============================================================================
+async def render_time_selection(add_to_project: bool = True) -> str:
+    """Render time selection to new track or file"""
+    if add_to_project:
+        # Render to new track (action 42006)
+        result = await bridge.call_lua("Main_OnCommand", [42006, 0])
+        
+        if result.get("ok"):
+            return "Rendered time selection to new track"
+        else:
+            raise Exception(f"Failed to render time selection: {result.get('error', 'Unknown error')}")
+    else:
+        # Render to file (action 41825)
+        result = await bridge.call_lua("Main_OnCommand", [41825, 0])
+        
+        if result.get("ok"):
+            return "Started render dialog for time selection"
+        else:
+            raise Exception(f"Failed to render time selection: {result.get('error', 'Unknown error')}")
 
-async def freeze_track(track_index: int) -> str:
-    """Freeze a track"""
+
+async def apply_fx_to_items(track_index: int) -> str:
+    """Apply track FX to items destructively"""
     # Get track
     track_result = await bridge.call_lua("GetTrack", [0, track_index])
     if not track_result.get("ok") or not track_result.get("ret"):
         raise Exception(f"Track {track_index} not found")
     
+    # Unselect all tracks first
+    await bridge.call_lua("Main_OnCommand", [40297, 0])  # Track: Unselect all tracks
+    
     # Select only this track
-    await bridge.call_lua("SetOnlyTrackSelected", [track_result.get("ret")])
+    await bridge.call_lua("SetTrackSelected", [track_index, True])
+    
+    # Apply track FX to items as new take (action 40209)
+    result = await bridge.call_lua("Main_OnCommand", [40209, 0])
+    
+    if result.get("ok"):
+        return f"Applied FX to items on track {track_index}"
+    else:
+        raise Exception("Failed to apply FX to items")
+
+
+# ============================================================================
+# Freezing Operations (3 tools)
+# ============================================================================
+
+async def is_track_frozen(track_index: int) -> str:
+    """Check if a track is frozen"""
+    # Pass track index directly - the bridge will handle getting the track  
+    result = await bridge.call_lua("GetMediaTrackInfo_Value", [track_index, "I_FREEZE"])
+    
+    if result.get("ok"):
+        freeze_value = int(result.get("ret", 0))
+        # I_FREEZE: 0 = unfrozen, 1 = frozen
+        is_frozen = freeze_value > 0
+        return f"Track frozen: {is_frozen}"
+    else:
+        raise Exception(f"Failed to check freeze state: {result.get('error', 'Unknown error')}")
+
+
+async def freeze_track(track_index: int) -> str:
+    """Freeze a track"""
+    # Get track to verify it exists
+    track_result = await bridge.call_lua("GetTrack", [0, track_index])
+    if not track_result.get("ok") or not track_result.get("ret"):
+        raise Exception(f"Track {track_index} not found")
+    
+    # Unselect all tracks first
+    unselect_result = await bridge.call_lua("Main_OnCommand", [40297, 0])  # Track: Unselect all tracks
+    if not unselect_result.get("ok"):
+        raise Exception("Failed to unselect tracks")
+    
+    # Select only this track
+    select_result = await bridge.call_lua("SetTrackSelected", [track_index, True])
+    if not select_result.get("ok"):
+        raise Exception(f"Failed to select track {track_index}")
     
     # Freeze track to stereo
     result = await bridge.call_lua("Main_OnCommand", [41223, 0])  # Track: Freeze to stereo
     
-    if result.get("ok"):
+    if result and result.get("ok"):
+        # Wait a moment for the freeze to complete
+        import asyncio
+        await asyncio.sleep(0.5)
         return f"Froze track {track_index}"
     else:
-        raise Exception("Failed to freeze track")
+        error_msg = result.get("error", "Unknown error") if result else "No response"
+        raise Exception(f"Failed to freeze track: {error_msg}")
 
 
 async def unfreeze_track(track_index: int) -> str:
@@ -74,8 +141,11 @@ async def unfreeze_track(track_index: int) -> str:
     if not track_result.get("ok") or not track_result.get("ret"):
         raise Exception(f"Track {track_index} not found")
     
+    # Unselect all tracks first
+    await bridge.call_lua("Main_OnCommand", [40297, 0])  # Track: Unselect all tracks
+    
     # Select only this track
-    await bridge.call_lua("SetOnlyTrackSelected", [track_result.get("ret")])
+    await bridge.call_lua("SetTrackSelected", [track_index, True])
     
     # Unfreeze track
     result = await bridge.call_lua("Main_OnCommand", [41644, 0])  # Track: Unfreeze
@@ -116,8 +186,11 @@ def register_rendering_tools(mcp) -> int:
         # Rendering Operations
         (render_project, "Render the entire project to file (opens render dialog)"),
         (bounce_tracks, "Bounce selected tracks to new track"),
+        (render_time_selection, "Render time selection to new track or file"),
+        (apply_fx_to_items, "Apply track FX to items destructively"),
         
         # Freezing Operations
+        (is_track_frozen, "Check if a track is frozen"),
         (freeze_track, "Freeze a track"),
         (unfreeze_track, "Unfreeze a track"),
     ]
