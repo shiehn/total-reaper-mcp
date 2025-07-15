@@ -827,18 +827,8 @@ async def get_track_envelope_by_name(track_index: int, envelope_name: str) -> st
 
 async def delete_track_media_item(track_index: int, item_index: int) -> str:
     """Delete a media item from track"""
-    # Get track first
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    # Get item on track
-    item_result = await bridge.call_lua("GetTrackMediaItem", [track_result.get("ret"), item_index])
-    if not item_result.get("ok") or not item_result.get("ret"):
-        raise Exception(f"Failed to find media item {item_index} on track {track_index}")
-    
-    # Delete item
-    result = await bridge.call_lua("DeleteTrackMediaItem", [track_result.get("ret"), item_result.get("ret")])
+    # Pass indices directly - the bridge will handle getting the track and item
+    result = await bridge.call_lua("DeleteTrackMediaItem", [track_index, item_index])
     
     if result.get("ok"):
         return f"Deleted media item {item_index} from track {track_index}"

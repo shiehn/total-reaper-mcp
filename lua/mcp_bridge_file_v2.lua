@@ -585,8 +585,32 @@ local function process_request()
                     
                     elseif fname == "DeleteTrackMediaItem" then
                         if #args >= 2 then
-                            local result = reaper.DeleteTrackMediaItem(args[1], args[2])
-                            response.ok = result
+                            local track_index = args[1]
+                            local item_index = args[2]
+                            
+                            -- Get track by index
+                            local track
+                            if track_index == -1 then
+                                track = reaper.GetMasterTrack(0)
+                            else
+                                track = reaper.GetTrack(0, track_index)
+                            end
+                            
+                            if not track then
+                                response.error = "Track not found at index " .. tostring(track_index)
+                                response.ok = false
+                            else
+                                -- Get item on track
+                                local item = reaper.GetTrackMediaItem(track, item_index)
+                                if not item then
+                                    response.error = "Media item not found at index " .. tostring(item_index) .. " on track"
+                                    response.ok = false
+                                else
+                                    -- Delete the item
+                                    local result = reaper.DeleteTrackMediaItem(track, item)
+                                    response.ok = result
+                                end
+                            end
                         else
                             response.error = "DeleteTrackMediaItem requires 2 arguments"
                         end
