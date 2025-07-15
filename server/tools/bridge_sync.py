@@ -101,6 +101,18 @@ class ReaperBridge:
             # Map common return patterns
             if isinstance(result, dict):
                 response.update(result)
+                
+                # Special handling for GetSet_LoopTimeRange
+                if action == "GetSet_LoopTimeRange" and "ret" in result:
+                    ret = result.get("ret", [0.0, 0.0])
+                    if len(ret) >= 2:
+                        response["startOut"] = ret[0]
+                        response["endOut"] = ret[1]
+                
+                # Map 'ok' to 'result' if needed
+                if "ok" in result and "result" not in result:
+                    response["result"] = result["ok"]
+                    
             elif isinstance(result, (int, float, str, bool)):
                 # Single value returns
                 if "track" in action.lower():
