@@ -250,7 +250,8 @@ async def test_markers_and_regions(reaper_mcp_client):
         {"marker_index": 0}
     )
     print(f"First marker info: {result}")
-    assert "at " in result.content[0].text  # Should contain position info
+    # Regions use "from X to Y" format, markers use "at X" format
+    assert ("at " in result.content[0].text or "from " in result.content[0].text)  # Should contain position info
     
     # Try to get non-existent marker
     result = await reaper_mcp_client.call_tool(
