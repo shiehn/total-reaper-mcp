@@ -3,24 +3,30 @@ import pytest_asyncio
 import asyncio
 import json
 import time
+from .test_utils import (
+    ensure_clean_project,
+    create_track_with_verification,
+    assert_response_contains,
+    assert_response_success,
+    extract_number_from_response
+)
 
 @pytest.mark.asyncio
 async def test_insert_track(reaper_mcp_client):
     """Test inserting a track at index 0"""
-    # First, get initial track count
+    # Ensure clean project state
+    await ensure_clean_project(reaper_mcp_client)
+    
+    # Get initial track count
     result = await reaper_mcp_client.call_tool(
         "get_track_count",
         {}
     )
     print(f"Initial track count result: {result}")
+    initial_count = extract_number_from_response(result.content[0].text, r'(\d+) tracks?') or 0
     
-    # Insert a new track
-    result = await reaper_mcp_client.call_tool(
-        "insert_track",
-        {"index": 0, "use_defaults": True}
-    )
-    print(f"Insert track result: {result}")
-    assert result.content[0].text == "Successfully inserted track at index 0"
+    # Insert a new track using our utility
+    track_index = await create_track_with_verification(reaper_mcp_client)
     
     # Verify track count increased
     result = await reaper_mcp_client.call_tool(
@@ -28,16 +34,21 @@ async def test_insert_track(reaper_mcp_client):
         {}
     )
     print(f"Final track count result: {result}")
+    final_count = extract_number_from_response(result.content[0].text, r'(\d+) tracks?') or 0
+    assert final_count == initial_count + 1
 
 @pytest.mark.asyncio
 async def test_get_reaper_version(reaper_mcp_client):
     """Test getting REAPER version"""
+    # Ensure clean project state
+    await ensure_clean_project(reaper_mcp_client)
+    
     result = await reaper_mcp_client.call_tool(
         "get_reaper_version",
         {}
     )
     print(f"REAPER version result: {result}")
-    assert "REAPER version:" in result.content[0].text
+    assert_response_contains(result, "REAPER version:")
 
 @pytest.mark.asyncio
 async def test_get_track(reaper_mcp_client):

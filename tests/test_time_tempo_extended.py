@@ -7,18 +7,26 @@ Tests the MCP tools with the REAPER Lua bridge
 import pytest
 import pytest_asyncio
 import asyncio
+from .test_utils import (
+    ensure_clean_project,
+    assert_response_contains,
+    assert_response_success
+)
 
 @pytest.mark.asyncio
 async def test_time_map_conversions(reaper_mcp_client):
     """Test converting between time and quarter notes"""
+    # Ensure clean project state
+    await ensure_clean_project(reaper_mcp_client)
+    
     # Test QN to time
     result = await reaper_mcp_client.call_tool(
         "time_map2_qn_to_time",
         {"qn": 4.0}  # 4 quarter notes (1 measure at 4/4)
     )
     assert result is not None
-    assert "quarter notes" in result.content[0].text.lower()
-    assert "seconds" in result.content[0].text.lower()
+    assert_response_contains(result, "quarter notes")
+    assert_response_contains(result, "seconds")
     
     # Test time to QN
     result = await reaper_mcp_client.call_tool(
@@ -26,8 +34,8 @@ async def test_time_map_conversions(reaper_mcp_client):
         {"time": 2.0}  # 2 seconds
     )
     assert result is not None
-    assert "seconds" in result.content[0].text.lower()
-    assert "quarter notes" in result.content[0].text.lower()
+    assert_response_contains(result, "seconds")
+    assert_response_contains(result, "quarter notes")
     
     # Test round-trip conversion
     # First convert 8 QN to time

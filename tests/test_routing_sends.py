@@ -1,33 +1,43 @@
 import pytest
 import pytest_asyncio
 import asyncio
+from .test_utils import (
+    ensure_clean_project,
+    create_track_with_verification,
+    assert_response_contains,
+    assert_response_success,
+    extract_number_from_response
+)
 
 @pytest.mark.asyncio
 async def test_track_send_basic_operations(reaper_mcp_client):
     """Test basic track send operations"""
-    # Create two tracks
-    await reaper_mcp_client.call_tool("insert_track", {"index": 0, "use_defaults": True})
-    await reaper_mcp_client.call_tool("insert_track", {"index": 1, "use_defaults": True})
+    # Ensure clean project state
+    await ensure_clean_project(reaper_mcp_client)
+    
+    # Create two tracks and track their indices
+    src_track_index = await create_track_with_verification(reaper_mcp_client, 0)
+    dst_track_index = await create_track_with_verification(reaper_mcp_client, 1)
     
     # Set track names for clarity
-    await reaper_mcp_client.call_tool("set_track_name", {"track_index": 0, "name": "Source Track"})
-    await reaper_mcp_client.call_tool("set_track_name", {"track_index": 1, "name": "Destination Track"})
+    await reaper_mcp_client.call_tool("set_track_name", {"track_index": src_track_index, "name": "Source Track"})
+    await reaper_mcp_client.call_tool("set_track_name", {"track_index": dst_track_index, "name": "Destination Track"})
     
     # Get initial send count
     result = await reaper_mcp_client.call_tool(
         "get_track_num_sends",
-        {"track_index": 0, "category": 0}  # 0=sends
+        {"track_index": src_track_index, "category": 0}  # 0=sends
     )
     print(f"Initial send count: {result}")
-    assert "Track has 0 sends" in result.content[0].text
+    assert_response_contains(result, "Track has 0 sends")
     
-    # Create a send from track 0 to track 1
+    # Create a send from source to destination track
     result = await reaper_mcp_client.call_tool(
         "create_track_send",
-        {"src_track_index": 0, "dst_track_index": 1}
+        {"src_track_index": src_track_index, "dst_track_index": dst_track_index}
     )
     print(f"Create send: {result}")
-    assert "Created send from track 0 to track 1" in result.content[0].text
+    assert_response_contains(result, f"Created send from track {src_track_index} to track {dst_track_index}")
     
     # Get send count after creation
     result = await reaper_mcp_client.call_tool(

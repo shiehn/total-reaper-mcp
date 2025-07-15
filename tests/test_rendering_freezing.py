@@ -2,51 +2,53 @@
 import pytest
 import pytest_asyncio
 import asyncio
+from .test_utils import (
+    ensure_clean_project,
+    create_track_with_verification,
+    create_media_item_with_verification,
+    assert_response_contains,
+    assert_response_success
+)
 
 
 @pytest.mark.asyncio
 async def test_track_freeze_operations(reaper_mcp_client):
     """Test track freezing and unfreezing"""
-    # Create a track
-    result = await reaper_mcp_client.call_tool(
-        "insert_track_at_index",
-        {"index": 0, "want_defaults": True}
-    )
-    assert "Successfully inserted track" in result.content[0].text
+    # Ensure clean project state
+    await ensure_clean_project(reaper_mcp_client)
+    
+    # Create a track and get its actual index
+    track_index = await create_track_with_verification(reaper_mcp_client)
     
     # Add an FX to the track
     result = await reaper_mcp_client.call_tool(
         "track_fx_add_by_name",
-        {"track_index": 0, "fx_name": "ReaEQ", "instantiate": False}
+        {"track_index": track_index, "fx_name": "ReaEQ", "instantiate": False}
     )
     
     # Add a media item
-    result = await reaper_mcp_client.call_tool(
-        "add_media_item_to_track",
-        {"track_index": 0}
-    )
-    assert "Added media item" in result.content[0].text
+    item_index = await create_media_item_with_verification(reaper_mcp_client, track_index)
     
     # Check freeze state (should be unfrozen)
     result = await reaper_mcp_client.call_tool(
         "is_track_frozen",
-        {"track_index": 0}
+        {"track_index": track_index}
     )
-    assert "Track frozen: False" in result.content[0].text
+    assert_response_contains(result, "Track frozen: False")
     
     # Freeze the track
     result = await reaper_mcp_client.call_tool(
         "freeze_track",
-        {"track_index": 0}
+        {"track_index": track_index}
     )
-    assert "Froze track at index 0" in result.content[0].text
+    assert_response_contains(result, f"Froze track at index {track_index}")
     
     # Check freeze state (should be frozen)
     result = await reaper_mcp_client.call_tool(
         "is_track_frozen",
-        {"track_index": 0}
+        {"track_index": track_index}
     )
-    assert "Track frozen:" in result.content[0].text
+    assert_response_contains(result, "Track frozen:")
     
     # Unfreeze the track
     result = await reaper_mcp_client.call_tool(

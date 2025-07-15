@@ -1,124 +1,130 @@
 import pytest
 import pytest_asyncio
+from .test_utils import (
+    ensure_clean_project,
+    create_track_with_verification,
+    assert_response_contains,
+    assert_response_success
+)
 
 @pytest.mark.asyncio
 async def test_track_volume_operations(reaper_mcp_client):
     """Test track volume operations"""
-    # Create a track first
-    result = await reaper_mcp_client.call_tool(
-        "insert_track",
-        {"index": 0, "use_defaults": True}
-    )
-    assert "success" in result.content[0].text.lower()
+    # Ensure clean project state
+    await ensure_clean_project(reaper_mcp_client)
+    
+    # Create a track and get its actual index
+    track_index = await create_track_with_verification(reaper_mcp_client)
     
     # Set track volume
     result = await reaper_mcp_client.call_tool(
         "set_track_volume",
-        {"track_index": 0, "volume": 0.5}
+        {"track_index": track_index, "volume": 0.5}
     )
     print(f"Set track volume result: {result}")
-    assert "success" in result.content[0].text.lower() or "volume" in result.content[0].text.lower()
+    assert_response_success(result)
     
     # Get track volume
     result = await reaper_mcp_client.call_tool(
         "get_track_volume",
-        {"track_index": 0}
+        {"track_index": track_index}
     )
     print(f"Get track volume result: {result}")
-    assert "0.5" in result.content[0].text or "volume" in result.content[0].text.lower()
+    assert_response_contains(result, "0.5")
     
     # Test with dB value
     result = await reaper_mcp_client.call_tool(
         "set_track_volume_db",
-        {"track_index": 0, "volume_db": -6.0}
+        {"track_index": track_index, "volume_db": -6.0}
     )
     print(f"Set track volume dB result: {result}")
-    assert "success" in result.content[0].text.lower() or "-6" in result.content[0].text
+    assert_response_success(result)
     
     # Get track volume in dB
     result = await reaper_mcp_client.call_tool(
         "get_track_volume_db",
-        {"track_index": 0}
+        {"track_index": track_index}
     )
     print(f"Get track volume dB result: {result}")
-    assert "-6" in result.content[0].text or "dB" in result.content[0].text
+    assert_response_contains(result, "-6")
 
 @pytest.mark.asyncio
 async def test_track_pan_operations(reaper_mcp_client):
     """Test track pan operations"""
-    # Create a track first
-    result = await reaper_mcp_client.call_tool(
-        "insert_track",
-        {"index": 0, "use_defaults": True}
-    )
-    assert "success" in result.content[0].text.lower()
+    # Ensure clean project state
+    await ensure_clean_project(reaper_mcp_client)
+    
+    # Create a track and get its actual index
+    track_index = await create_track_with_verification(reaper_mcp_client)
     
     # Set track pan
     result = await reaper_mcp_client.call_tool(
         "set_track_pan",
-        {"track_index": 0, "pan": -0.5}
+        {"track_index": track_index, "pan": -0.5}
     )
     print(f"Set track pan result: {result}")
-    assert "success" in result.content[0].text.lower() or "pan" in result.content[0].text.lower()
+    assert_response_success(result)
     
     # Get track pan
     result = await reaper_mcp_client.call_tool(
         "get_track_pan",
-        {"track_index": 0}
+        {"track_index": track_index}
     )
     print(f"Get track pan result: {result}")
-    assert "-0.5" in result.content[0].text or "pan" in result.content[0].text.lower()
+    assert_response_contains(result, "-0.5")
     
     # Test center pan
     result = await reaper_mcp_client.call_tool(
         "set_track_pan",
-        {"track_index": 0, "pan": 0.0}
+        {"track_index": track_index, "pan": 0.0}
     )
-    assert "success" in result.content[0].text.lower() or "center" in result.content[0].text.lower()
+    assert_response_success(result)
     
     # Test right pan
     result = await reaper_mcp_client.call_tool(
         "set_track_pan",
-        {"track_index": 0, "pan": 1.0}
+        {"track_index": track_index, "pan": 1.0}
     )
-    assert "success" in result.content[0].text.lower() or "right" in result.content[0].text.lower()
+    assert_response_success(result)
 
 @pytest.mark.asyncio
 async def test_track_record_operations(reaper_mcp_client):
     """Test track record arming operations"""
-    # Create a track first
-    result = await reaper_mcp_client.call_tool(
-        "insert_track",
-        {"index": 0, "use_defaults": True}
-    )
-    assert "success" in result.content[0].text.lower()
+    # Ensure clean project state
+    await ensure_clean_project(reaper_mcp_client)
+    
+    # Create a track and get its actual index
+    track_index = await create_track_with_verification(reaper_mcp_client)
     
     # Arm track for recording
     result = await reaper_mcp_client.call_tool(
         "set_track_record_armed",
-        {"track_index": 0, "armed": True}
+        {"track_index": track_index, "armed": True}
     )
     print(f"Arm track result: {result}")
-    assert "success" in result.content[0].text.lower() or "armed" in result.content[0].text.lower()
+    assert_response_success(result)
     
     # Get track record armed state
     result = await reaper_mcp_client.call_tool(
         "get_track_record_armed",
-        {"track_index": 0}
+        {"track_index": track_index}
     )
     print(f"Get track armed state result: {result}")
-    assert "armed" in result.content[0].text.lower()
+    assert_response_contains(result, "armed")
     
     # Disarm track
     result = await reaper_mcp_client.call_tool(
         "set_track_record_armed",
-        {"track_index": 0, "armed": False}
+        {"track_index": track_index, "armed": False}
     )
-    assert "success" in result.content[0].text.lower() or "disarmed" in result.content[0].text.lower()
+    assert_response_success(result)
 
 @pytest.mark.asyncio
 async def test_track_error_handling(reaper_mcp_client):
     """Test error handling for volume/pan operations"""
+    # Ensure clean project state
+    await ensure_clean_project(reaper_mcp_client)
+    
     # Test setting volume on non-existent track
     result = await reaper_mcp_client.call_tool(
         "set_track_volume",

@@ -9,18 +9,26 @@ import pytest_asyncio
 import asyncio
 import os
 from pathlib import Path
+from .test_utils import (
+    ensure_clean_project,
+    assert_response_contains,
+    assert_response_success
+)
 
 @pytest.mark.asyncio
 async def test_api_exists(reaper_mcp_client):
     """Test checking if API functions exist"""
+    # Ensure clean project state
+    await ensure_clean_project(reaper_mcp_client)
+    
     # Test with a function that should exist
     result = await reaper_mcp_client.call_tool(
         "api_exists",
         {"function_name": "CountTracks"}
     )
     assert result is not None
-    assert "exists" in result.content[0].text.lower()
-    assert "counttracks" in result.content[0].text.lower()
+    assert_response_contains(result, "exists")
+    assert_response_contains(result, "counttracks")
     
     # Test with a function that should not exist
     result = await reaper_mcp_client.call_tool(
@@ -28,11 +36,14 @@ async def test_api_exists(reaper_mcp_client):
         {"function_name": "NonExistentFunction123"}
     )
     assert result is not None
-    assert "does not exist" in result.content[0].text.lower()
+    assert_response_contains(result, "does not exist")
 
 @pytest.mark.asyncio
 async def test_get_last_color_theme_file(reaper_mcp_client):
     """Test getting the last color theme file"""
+    # Ensure clean project state
+    await ensure_clean_project(reaper_mcp_client)
+    
     result = await reaper_mcp_client.call_tool(
         "get_last_color_theme_file",
         {}
