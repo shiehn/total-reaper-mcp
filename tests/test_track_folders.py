@@ -2,50 +2,55 @@
 import pytest
 import pytest_asyncio
 import asyncio
+from .test_utils import (
+    ensure_clean_project,
+    create_track_with_verification,
+    assert_response_contains,
+    assert_response_success
+)
 
 
 @pytest.mark.asyncio
 async def test_track_folder_operations(reaper_mcp_client):
     """Test track folder operations"""
+    # Ensure clean project state
+    await ensure_clean_project(reaper_mcp_client)
+    
     # Create parent folder track
-    result = await reaper_mcp_client.call_tool(
-        "insert_track_at_index",
-        {"index": 0, "want_defaults": True}
-    )
-    assert "Successfully inserted track" in result.content[0].text
+    folder_track_index = await create_track_with_verification(reaper_mcp_client, 0)
     
     # Set track name for clarity
     result = await reaper_mcp_client.call_tool(
         "set_track_name",
-        {"track_index": 0, "name": "Folder Track"}
+        {"track_index": folder_track_index, "name": "Folder Track"}
     )
     
-    # Create child tracks
+    # Create child tracks and track their indices
+    child_indices = []
     for i in range(1, 4):
-        result = await reaper_mcp_client.call_tool(
-            "insert_track_at_index",
-            {"index": i, "want_defaults": True}
-        )
-        assert "Successfully inserted track" in result.content[0].text
+        child_index = await create_track_with_verification(reaper_mcp_client, i)
+        child_indices.append(child_index)
         
         result = await reaper_mcp_client.call_tool(
             "set_track_name",
-            {"track_index": i, "name": f"Child Track {i}"}
+            {"track_index": child_index, "name": f"Child Track {i}"}
         )
     
     # Set first track as folder parent
     result = await reaper_mcp_client.call_tool(
         "set_track_folder_state",
-        {"track_index": 0, "folder_state": 1}
+        {"track_index": folder_track_index, "folder_state": 1}
     )
-    assert "Set track folder state:" in result.content[0].text
+    assert_response_contains(result, "Set track folder state:")
     
     # Set last child track as last in folder
-    result = await reaper_mcp_client.call_tool(
-        "set_track_folder_state",
-        {"track_index": 3, "folder_state": -1}
-    )
-    assert "Set track folder state:" in result.content[0].text
+    if child_indices:
+        last_child_index = child_indices[-1]
+        result = await reaper_mcp_client.call_tool(
+            "set_track_folder_state",
+            {"track_index": last_child_index, "folder_state": -1}
+        )
+        assert_response_contains(result, "Set track folder state:")
     
     # Get track depth of a child track
     result = await reaper_mcp_client.call_tool(

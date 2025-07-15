@@ -1,53 +1,61 @@
 import pytest
 import pytest_asyncio
+from .test_utils import (
+    ensure_clean_project,
+    create_track_with_verification,
+    assert_response_contains,
+    assert_response_success,
+    extract_number_from_response
+)
 
 @pytest.mark.asyncio
 async def test_track_send_creation(reaper_mcp_client):
     """Test creating sends between tracks"""
+    # Ensure clean project state
+    await ensure_clean_project(reaper_mcp_client)
+    
     # Create source and destination tracks
-    for i in range(2):
-        result = await reaper_mcp_client.call_tool(
-            "insert_track",
-            {"index": i, "use_defaults": True}
-        )
-        assert "success" in result.content[0].text.lower()
+    source_track_index = await create_track_with_verification(reaper_mcp_client, 0)
+    dest_track_index = await create_track_with_verification(reaper_mcp_client, 1)
     
     # Name the tracks for clarity
     await reaper_mcp_client.call_tool(
         "set_track_name",
-        {"track_index": 0, "name": "Source Track"}
+        {"track_index": source_track_index, "name": "Source Track"}
     )
     await reaper_mcp_client.call_tool(
         "set_track_name",
-        {"track_index": 1, "name": "Destination Track"}
+        {"track_index": dest_track_index, "name": "Destination Track"}
     )
     
-    # Create send from track 0 to track 1
+    # Create send from source to destination track
     result = await reaper_mcp_client.call_tool(
         "create_track_send",
-        {"source_track_index": 0, "dest_track_index": 1}
+        {"source_track_index": source_track_index, "dest_track_index": dest_track_index}
     )
     print(f"Create send result: {result}")
-    assert "created send" in result.content[0].text.lower()
-    assert "send index" in result.content[0].text.lower()
+    assert_response_contains(result, "created send")
+    assert_response_contains(result, "send index")
     
     # Check number of sends on source track
     result = await reaper_mcp_client.call_tool(
         "get_track_num_sends",
-        {"track_index": 0}
+        {"track_index": source_track_index}
     )
     print(f"Number of sends: {result}")
-    assert "1 sends" in result.content[0].text or "1 send" in result.content[0].text
+    # Extract number from response
+    num_sends = extract_number_from_response(result.content[0].text, r'(\d+) sends?') or 0
+    assert num_sends == 1
 
 @pytest.mark.asyncio
 async def test_track_send_volume(reaper_mcp_client):
     """Test setting and getting send volume"""
-    # Create tracks and send
-    for i in range(2):
-        await reaper_mcp_client.call_tool(
-            "insert_track",
-            {"index": i, "use_defaults": True}
-        )
+    # Ensure clean project state
+    await ensure_clean_project(reaper_mcp_client)
+    
+    # Create tracks
+    source_track_index = await create_track_with_verification(reaper_mcp_client, 0)
+    dest_track_index = await create_track_with_verification(reaper_mcp_client, 1)
     
     await reaper_mcp_client.call_tool(
         "create_track_send",

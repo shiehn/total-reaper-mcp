@@ -1,30 +1,33 @@
 import pytest
 import pytest_asyncio
+from .test_utils import (
+    ensure_clean_project,
+    create_track_with_verification,
+    create_media_item_with_verification,
+    assert_response_contains,
+    assert_response_success,
+    extract_number_from_response
+)
 
 @pytest.mark.asyncio
 async def test_selected_items_operations(reaper_mcp_client):
     """Test operations on selected items"""
-    # Create a track and add an item first
-    result = await reaper_mcp_client.call_tool(
-        "insert_track",
-        {"index": 0, "use_defaults": True}
-    )
-    assert "success" in result.content[0].text.lower()
+    # Ensure clean project state
+    await ensure_clean_project(reaper_mcp_client)
     
-    # Add media item
-    result = await reaper_mcp_client.call_tool(
-        "add_media_item_to_track",
-        {"track_index": 0}
-    )
-    assert "success" in result.content[0].text.lower() or "added" in result.content[0].text.lower()
+    # Create a track and get its actual index
+    track_index = await create_track_with_verification(reaper_mcp_client)
+    
+    # Add media item and get its index
+    item_index = await create_media_item_with_verification(reaper_mcp_client, track_index)
     
     # Select the item
     result = await reaper_mcp_client.call_tool(
         "set_media_item_selected",
-        {"item_index": 0, "selected": True}
+        {"item_index": item_index, "selected": True}
     )
     print(f"Select item result: {result}")
-    assert "success" in result.content[0].text.lower() or "selected" in result.content[0].text.lower()
+    assert_response_success(result)
     
     # Count selected items
     result = await reaper_mcp_client.call_tool(
@@ -32,7 +35,8 @@ async def test_selected_items_operations(reaper_mcp_client):
         {}
     )
     print(f"Count selected items result: {result}")
-    assert "1" in result.content[0].text
+    count = extract_number_from_response(result.content[0].text, r'(\d+)') or 0
+    assert count == 1
     
     # Get first selected item
     result = await reaper_mcp_client.call_tool(
@@ -40,14 +44,14 @@ async def test_selected_items_operations(reaper_mcp_client):
         {"index": 0}
     )
     print(f"Get selected item result: {result}")
-    assert "item" in result.content[0].text.lower() or "handle" in result.content[0].text
+    assert_response_contains(result, "item")
     
     # Deselect item
     result = await reaper_mcp_client.call_tool(
         "set_media_item_selected",
-        {"item_index": 0, "selected": False}
+        {"item_index": item_index, "selected": False}
     )
-    assert "success" in result.content[0].text.lower() or "deselected" in result.content[0].text.lower()
+    assert_response_success(result)
     
     # Verify no items selected
     result = await reaper_mcp_client.call_tool(
