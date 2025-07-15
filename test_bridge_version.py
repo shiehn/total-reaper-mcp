@@ -11,7 +11,7 @@ async def test_bridge_version():
         if result.get('ret') == "2024-07-14-20:15":
             print("✓ Bridge has been successfully updated!")
         else:
-            print("✗ Bridge is still using old version. Please reload mcp_bridge_file_full.lua in REAPER")
+            print("✗ Bridge is still using old version. Please reload mcp_bridge_file_v2.lua in REAPER")
     except Exception as e:
         print(f"Error: {e}")
 

@@ -74,7 +74,7 @@ This method requires no additional dependencies and is the most reliable:
    python -m server.app
    ```
 
-**Note:** The server will display "Make sure mcp_bridge_no_socket.lua is running" but you should use `mcp_bridge_file_v2.lua` as documented above.
+**Note:** The server logs will mention `mcp_bridge_file_v2.lua` - make sure this is the version loaded in REAPER.
 
 #### Socket-based Bridge (Not Currently Implemented)
 
