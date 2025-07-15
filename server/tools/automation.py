@@ -14,15 +14,8 @@ from ..bridge import bridge
 
 async def get_track_envelope_by_name(track_index: int, envelope_name: str) -> str:
     """Get a track envelope by name (e.g., 'Volume', 'Pan', 'Mute')"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Get envelope by name
-    result = await bridge.call_lua("GetTrackEnvelopeByName", [track_handle, envelope_name])
+    # Pass track index directly - the bridge will handle getting the track
+    result = await bridge.call_lua("GetTrackEnvelopeByName", [track_index, envelope_name])
     
     if result.get("ok"):
         envelope_handle = result.get("ret")
@@ -36,13 +29,8 @@ async def get_track_envelope_by_name(track_index: int, envelope_name: str) -> st
 
 async def count_envelope_points(track_index: int, envelope_name: str) -> str:
     """Count the number of points in an envelope"""
-    # Get track and envelope
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    env_result = await bridge.call_lua("GetTrackEnvelopeByName", [track_handle, envelope_name])
+    # Get envelope - pass track index directly
+    env_result = await bridge.call_lua("GetTrackEnvelopeByName", [track_index, envelope_name])
     
     if not env_result.get("ok") or not env_result.get("ret"):
         raise Exception(f"Failed to find envelope '{envelope_name}' on track {track_index}")
@@ -62,13 +50,8 @@ async def count_envelope_points(track_index: int, envelope_name: str) -> str:
 async def insert_envelope_point(track_index: int, envelope_name: str, time: float, value: float,
                                shape: int = 0, selected: bool = False) -> str:
     """Insert an automation point in an envelope"""
-    # Get track and envelope
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    env_result = await bridge.call_lua("GetTrackEnvelopeByName", [track_handle, envelope_name])
+    # Get envelope - pass track index directly
+    env_result = await bridge.call_lua("GetTrackEnvelopeByName", [track_index, envelope_name])
     
     if not env_result.get("ok") or not env_result.get("ret"):
         raise Exception(f"Failed to find envelope '{envelope_name}' on track {track_index}")
@@ -88,13 +71,8 @@ async def insert_envelope_point(track_index: int, envelope_name: str, time: floa
 
 async def delete_envelope_point(track_index: int, envelope_name: str, point_index: int) -> str:
     """Delete an automation point from an envelope"""
-    # Get track and envelope
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    env_result = await bridge.call_lua("GetTrackEnvelopeByName", [track_handle, envelope_name])
+    # Get envelope - pass track index directly
+    env_result = await bridge.call_lua("GetTrackEnvelopeByName", [track_index, envelope_name])
     
     if not env_result.get("ok") or not env_result.get("ret"):
         raise Exception(f"Failed to find envelope '{envelope_name}' on track {track_index}")
@@ -112,13 +90,8 @@ async def delete_envelope_point(track_index: int, envelope_name: str, point_inde
 
 async def get_envelope_point(track_index: int, envelope_name: str, point_index: int) -> str:
     """Get information about an envelope point"""
-    # Get track and envelope
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    env_result = await bridge.call_lua("GetTrackEnvelopeByName", [track_handle, envelope_name])
+    # Get envelope - pass track index directly
+    env_result = await bridge.call_lua("GetTrackEnvelopeByName", [track_index, envelope_name])
     
     if not env_result.get("ok") or not env_result.get("ret"):
         raise Exception(f"Failed to find envelope '{envelope_name}' on track {track_index}")
@@ -142,13 +115,8 @@ async def get_envelope_point(track_index: int, envelope_name: str, point_index: 
 async def set_envelope_point_value(track_index: int, envelope_name: str, point_index: int, 
                                   value: float, time: Optional[float] = None) -> str:
     """Set the value of an existing envelope point"""
-    # Get track and envelope
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    env_result = await bridge.call_lua("GetTrackEnvelopeByName", [track_handle, envelope_name])
+    # Get envelope - pass track index directly
+    env_result = await bridge.call_lua("GetTrackEnvelopeByName", [track_index, envelope_name])
     
     if not env_result.get("ok") or not env_result.get("ret"):
         raise Exception(f"Failed to find envelope '{envelope_name}' on track {track_index}")
@@ -188,13 +156,8 @@ async def set_envelope_point_value(track_index: int, envelope_name: str, point_i
 
 async def envelope_evaluate(track_index: int, envelope_name: str, time: float) -> str:
     """Evaluate envelope value at a specific time"""
-    # Get track and envelope
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    env_result = await bridge.call_lua("GetTrackEnvelopeByName", [track_handle, envelope_name])
+    # Get envelope - pass track index directly
+    env_result = await bridge.call_lua("GetTrackEnvelopeByName", [track_index, envelope_name])
     
     if not env_result.get("ok") or not env_result.get("ret"):
         raise Exception(f"Failed to find envelope '{envelope_name}' on track {track_index}")
@@ -218,13 +181,8 @@ async def envelope_evaluate(track_index: int, envelope_name: str, time: float) -
 async def delete_envelope_point_range(track_index: int, envelope_name: str, 
                                      start_time: float, end_time: float) -> str:
     """Delete all envelope points within a time range"""
-    # Get track and envelope
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    env_result = await bridge.call_lua("GetTrackEnvelopeByName", [track_handle, envelope_name])
+    # Get envelope - pass track index directly
+    env_result = await bridge.call_lua("GetTrackEnvelopeByName", [track_index, envelope_name])
     
     if not env_result.get("ok") or not env_result.get("ret"):
         raise Exception(f"Failed to find envelope '{envelope_name}' on track {track_index}")
@@ -242,13 +200,8 @@ async def delete_envelope_point_range(track_index: int, envelope_name: str,
 
 async def envelope_sort_points(track_index: int, envelope_name: str) -> str:
     """Sort envelope points by time"""
-    # Get track and envelope
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    env_result = await bridge.call_lua("GetTrackEnvelopeByName", [track_handle, envelope_name])
+    # Get envelope - pass track index directly
+    env_result = await bridge.call_lua("GetTrackEnvelopeByName", [track_index, envelope_name])
     
     if not env_result.get("ok") or not env_result.get("ret"):
         raise Exception(f"Failed to find envelope '{envelope_name}' on track {track_index}")
@@ -266,15 +219,8 @@ async def envelope_sort_points(track_index: int, envelope_name: str) -> str:
 
 async def get_envelope_name(track_index: int, envelope_index: int) -> str:
     """Get the name of an envelope by index"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Get envelope by index
-    env_result = await bridge.call_lua("GetTrackEnvelope", [track_handle, envelope_index])
+    # Get envelope by index - pass track index directly
+    env_result = await bridge.call_lua("GetTrackEnvelope", [track_index, envelope_index])
     if not env_result.get("ok") or not env_result.get("ret"):
         raise Exception(f"Failed to find envelope at index {envelope_index}")
     
@@ -292,13 +238,8 @@ async def get_envelope_name(track_index: int, envelope_index: int) -> str:
 
 async def get_envelope_scaling_mode(track_index: int, envelope_name: str) -> str:
     """Get envelope scaling mode"""
-    # Get track and envelope
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    env_result = await bridge.call_lua("GetTrackEnvelopeByName", [track_handle, envelope_name])
+    # Get envelope - pass track index directly
+    env_result = await bridge.call_lua("GetTrackEnvelopeByName", [track_index, envelope_name])
     
     if not env_result.get("ok") or not env_result.get("ret"):
         raise Exception(f"Failed to find envelope '{envelope_name}' on track {track_index}")
@@ -319,15 +260,8 @@ async def get_envelope_scaling_mode(track_index: int, envelope_name: str) -> str
 
 async def get_fx_envelope(track_index: int, fx_index: int, param_index: int) -> str:
     """Get parameter envelope for a track FX"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Get FX envelope
-    result = await bridge.call_lua("GetFXEnvelope", [track_handle, fx_index, param_index, False])
+    # Get FX envelope - pass track index directly
+    result = await bridge.call_lua("GetFXEnvelope", [track_index, fx_index, param_index, False])
     
     if result.get("ok"):
         envelope_handle = result.get("ret")
@@ -346,13 +280,8 @@ async def insert_envelope_point_ex(track_index: int, envelope_name: str, time: f
                                   shape: int = 0, tension: float = 0.0, selected: bool = False,
                                   no_sort: bool = False) -> str:
     """Insert an automation point with extended parameters"""
-    # Get track and envelope
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    env_result = await bridge.call_lua("GetTrackEnvelopeByName", [track_handle, envelope_name])
+    # Get envelope - pass track index directly
+    env_result = await bridge.call_lua("GetTrackEnvelopeByName", [track_index, envelope_name])
     
     if not env_result.get("ok") or not env_result.get("ret"):
         raise Exception(f"Failed to find envelope '{envelope_name}' on track {track_index}")
@@ -389,15 +318,8 @@ async def get_selected_envelope(project_index: int = 0) -> str:
 
 async def get_track_envelope(track_index: int, envelope_index: int) -> str:
     """Get track envelope by index"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Get envelope by index
-    result = await bridge.call_lua("GetTrackEnvelope", [track_handle, envelope_index])
+    # Get envelope by index - pass track index directly
+    result = await bridge.call_lua("GetTrackEnvelope", [track_index, envelope_index])
     
     if result.get("ok"):
         envelope_handle = result.get("ret")
@@ -414,15 +336,8 @@ async def get_track_envelope(track_index: int, envelope_index: int) -> str:
 
 async def count_track_envelopes(track_index: int) -> str:
     """Count the number of envelopes on a track"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Count envelopes
-    result = await bridge.call_lua("CountTrackEnvelopes", [track_handle])
+    # Count envelopes - pass track index directly
+    result = await bridge.call_lua("CountTrackEnvelopes", [track_index])
     
     if result.get("ok"):
         count = result.get("ret", 0)
