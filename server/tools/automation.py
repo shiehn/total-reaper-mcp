@@ -490,6 +490,54 @@ async def set_track_automation_mode(track_index: int, mode: int) -> str:
         raise Exception(f"Failed to set track automation mode: {result.get('error', 'Unknown error')}")
 
 
+async def get_global_automation_override() -> str:
+    """Get the global automation override state"""
+    result = await bridge.call_lua("GetGlobalAutomationOverride", [])
+    
+    if result.get("ok"):
+        mode = result.get("ret", -1)
+        mode_names = {
+            -1: "No override",
+            0: "No override",
+            1: "Bypass all automation",
+            2: "Write current values for all writing tracks",
+            3: "Write current values for all tracks",
+            4: "All tracks set to touch mode",
+            5: "All tracks set to read mode",
+            6: "All tracks set to latch mode"
+        }
+        mode_name = mode_names.get(mode, f"Unknown ({mode})")
+        return f"Global automation override: {mode_name}"
+    else:
+        raise Exception(f"Failed to get global automation override: {result.get('error', 'Unknown error')}")
+
+
+async def set_global_automation_override(mode: int) -> str:
+    """Set the global automation override state"""
+    # Validate mode
+    mode_names = {
+        -1: "No override",
+        0: "No override", 
+        1: "Bypass all automation",
+        2: "Write current values for all writing tracks",
+        3: "Write current values for all tracks",
+        4: "All tracks set to touch mode",
+        5: "All tracks set to read mode",
+        6: "All tracks set to latch mode"
+    }
+    
+    if mode not in mode_names:
+        raise Exception(f"Invalid automation override mode: {mode}. Valid modes: {list(mode_names.keys())}")
+    
+    # Set global automation override
+    result = await bridge.call_lua("SetGlobalAutomationOverride", [mode])
+    
+    if result.get("ok"):
+        return f"Set global automation override to: {mode_names[mode]}"
+    else:
+        raise Exception(f"Failed to set global automation override: {result.get('error', 'Unknown error')}")
+
+
 # ============================================================================
 # Registration Function
 # ============================================================================
@@ -518,6 +566,8 @@ def register_automation_tools(mcp) -> int:
         (count_track_envelopes, "Count the number of envelopes on a track"),
         (get_track_automation_mode, "Get the automation mode for a track"),
         (set_track_automation_mode, "Set the automation mode for a track"),
+        (get_global_automation_override, "Get the global automation override state"),
+        (set_global_automation_override, "Set the global automation override state"),
     ]
     
     # Register each tool

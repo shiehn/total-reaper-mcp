@@ -1,5 +1,13 @@
 import pytest
 import pytest_asyncio
+from .test_utils import (
+    ensure_clean_project,
+    create_track_with_verification,
+    get_track_envelope_with_verification,
+    assert_response_contains,
+    assert_response_success,
+    extract_number_from_response
+)
 
 def assert_tools_available(available_tools, required_tools):
     """Assert that all required tools are available, failing with clear message if not"""
@@ -9,34 +17,34 @@ def assert_tools_available(available_tools, required_tools):
 @pytest.mark.asyncio
 async def test_envelope_basic_operations(reaper_mcp_client):
     """Test basic envelope operations"""
-    # Create a track first
-    result = await reaper_mcp_client.call_tool(
-        "insert_track",
-        {"index": 0, "use_defaults": True}
-    )
-    assert "success" in result.content[0].text.lower()
+    # Ensure clean project state
+    await ensure_clean_project(reaper_mcp_client)
+    
+    # Create a track and get its actual index
+    track_index = await create_track_with_verification(reaper_mcp_client)
     
     # Get volume envelope
     result = await reaper_mcp_client.call_tool(
         "get_track_envelope_by_name",
-        {"track_index": 0, "envelope_name": "Volume"}
+        {"track_index": track_index, "envelope_name": "Volume"}
     )
     print(f"Get volume envelope result: {result}")
-    assert "Found envelope" in result.content[0].text and "Volume" in result.content[0].text
+    assert_response_contains(result, "Found envelope")
+    assert_response_contains(result, "Volume")
     
     # Count initial points (should be 0 or minimal)
     result = await reaper_mcp_client.call_tool(
         "count_envelope_points",
-        {"track_index": 0, "envelope_name": "Volume"}
+        {"track_index": track_index, "envelope_name": "Volume"}
     )
     print(f"Count points result: {result}")
-    initial_count = int(''.join(filter(str.isdigit, result.content[0].text)) or "0")
+    initial_count = extract_number_from_response(result.content[0].text, r'has (\d+) points') or 0
     
     # Insert a point at 0s with full volume
     result = await reaper_mcp_client.call_tool(
         "insert_envelope_point",
         {
-            "track_index": 0,
+            "track_index": track_index,
             "envelope_name": "Volume",
             "time": 0.0,
             "value": 1.0,
@@ -44,43 +52,43 @@ async def test_envelope_basic_operations(reaper_mcp_client):
         }
     )
     print(f"Insert point result: {result}")
-    assert "Inserted point at" in result.content[0].text
+    assert_response_contains(result, "Inserted point at")
     
     # Insert another point at 2s with half volume
     result = await reaper_mcp_client.call_tool(
         "insert_envelope_point",
         {
-            "track_index": 0,
+            "track_index": track_index,
             "envelope_name": "Volume",
             "time": 2.0,
             "value": 0.5,
             "shape": 0
         }
     )
-    assert "Inserted point at" in result.content[0].text
+    assert_response_contains(result, "Inserted point at")
     
     # Count points again
     result = await reaper_mcp_client.call_tool(
         "count_envelope_points",
-        {"track_index": 0, "envelope_name": "Volume"}
+        {"track_index": track_index, "envelope_name": "Volume"}
     )
-    new_count = int(''.join(filter(str.isdigit, result.content[0].text)) or "0")
+    new_count = extract_number_from_response(result.content[0].text, r'has (\d+) points') or 0
     assert new_count >= initial_count + 2
 
 @pytest.mark.asyncio
 async def test_envelope_point_manipulation(reaper_mcp_client):
     """Test getting and setting envelope points"""
-    # Create track and insert points
-    await reaper_mcp_client.call_tool(
-        "insert_track",
-        {"index": 0, "use_defaults": True}
-    )
+    # Ensure clean project state
+    await ensure_clean_project(reaper_mcp_client)
+    
+    # Create track and get its actual index
+    track_index = await create_track_with_verification(reaper_mcp_client)
     
     # Insert a point
     await reaper_mcp_client.call_tool(
         "insert_envelope_point",
         {
-            "track_index": 0,
+            "track_index": track_index,
             "envelope_name": "Volume",
             "time": 1.0,
             "value": 0.8,
@@ -92,7 +100,7 @@ async def test_envelope_point_manipulation(reaper_mcp_client):
     result = await reaper_mcp_client.call_tool(
         "get_envelope_point",
         {
-            "track_index": 0,
+            "track_index": track_index,
             "envelope_name": "Volume",
             "point_index": 0
         }

@@ -1524,6 +1524,22 @@ local function process_request()
                             response.ok = false
                         end
                     
+                    elseif fname == "GetGlobalAutomationOverride" then
+                        -- Get global automation override
+                        local mode = reaper.GetGlobalAutomationOverride()
+                        response.ok = true
+                        response.ret = mode
+                    
+                    elseif fname == "SetGlobalAutomationOverride" then
+                        -- Set global automation override
+                        if #args >= 1 then
+                            reaper.SetGlobalAutomationOverride(args[1])
+                            response.ok = true
+                        else
+                            response.error = "SetGlobalAutomationOverride requires 1 argument"
+                            response.ok = false
+                        end
+                    
                     else
                         -- Try generic function call
                         if reaper[fname] then
