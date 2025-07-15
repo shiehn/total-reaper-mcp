@@ -11,6 +11,17 @@ from ..bridge import bridge
 # Core API Functions
 # ============================================================================
 
+async def get_reaper_version() -> str:
+    """Get the REAPER version string"""
+    result = await bridge.call_lua("GetAppVersion", [])
+    
+    if result.get("ok"):
+        version = result.get("ret", "Unknown")
+        return f"REAPER version: {version}"
+    else:
+        raise Exception(f"Failed to get REAPER version: {result.get('error', 'Unknown error')}")
+
+
 async def api_exists(function_name: str) -> str:
     """Check if a ReaScript API function exists"""
     result = await bridge.call_lua("APIExists", [function_name])
@@ -240,6 +251,7 @@ def register_core_api_tools(mcp) -> int:
     """Register all core API and utility tools with the MCP instance"""
     tools = [
         # Core API
+        (get_reaper_version, "Get the REAPER version string"),
         (api_exists, "Check if a ReaScript API function exists"),
         (get_last_color_theme_file, "Get the last color theme file"),
         (get_toggle_command_state, "Get toggle command state"),

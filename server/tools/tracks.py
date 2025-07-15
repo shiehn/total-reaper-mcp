@@ -799,65 +799,11 @@ async def get_track_receive_info(track_index: int, receive_index: int) -> str:
 
 
 # ============================================================================
-# Track Automation & Envelopes (3 tools)
+# Note: Track automation functions moved to automation.py
 # ============================================================================
 
-async def get_track_automation_mode(track_index: int) -> str:
-    """Get the automation mode for a track"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Get automation mode
-    result = await bridge.call_lua("GetTrackAutomationMode", [track_handle])
-    
-    if result.get("ok"):
-        mode = result.get("ret", 0)
-        mode_names = {
-            0: "Trim/Read",
-            1: "Read",
-            2: "Touch", 
-            3: "Write",
-            4: "Latch",
-            5: "Latch Preview"
-        }
-        mode_name = mode_names.get(mode, f"Unknown ({mode})")
-        
-        return f"Track {track_index} automation mode: {mode_name}"
-    else:
-        raise Exception(f"Failed to get automation mode: {result.get('error', 'Unknown error')}")
-
-
-async def set_track_automation_mode(track_index: int, mode: int) -> str:
-    """Set the automation mode for a track"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Set automation mode
-    result = await bridge.call_lua("SetTrackAutomationMode", [track_handle, mode])
-    
-    if result.get("ok"):
-        mode_names = {
-            0: "Trim/Read",
-            1: "Read",
-            2: "Touch",
-            3: "Write",
-            4: "Latch"
-        }
-        mode_name = mode_names.get(mode, f"Mode {mode}")
-        
-        return f"Set track {track_index} to {mode_name} mode"
-    else:
-        raise Exception(f"Failed to set automation mode: {result.get('error', 'Unknown error')}")
-
-
+# Note: get_track_envelope_by_name is also defined in automation.py
+# Keeping this version for now as it may have different behavior
 async def get_track_envelope_by_name(track_index: int, envelope_name: str) -> str:
     """Get a track envelope by name (e.g., 'Volume', 'Pan', 'Mute')"""
     # Get track
@@ -1174,9 +1120,7 @@ def register_track_tools(mcp) -> int:
         (get_track_receive_count, "Get the number of receives on a track"),
         (get_track_receive_info, "Get information about a track receive"),
         
-        # Automation (3)
-        (get_track_automation_mode, "Get the automation mode for a track"),
-        (set_track_automation_mode, "Set the automation mode for a track"),
+        # Automation (1) - others moved to automation.py
         (get_track_envelope_by_name, "Get a track envelope by name"),
         
         # Media Items (3)

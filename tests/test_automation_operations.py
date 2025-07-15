@@ -37,28 +37,28 @@ async def test_track_automation_mode(reaper_mcp_client):
         {"track_index": track_index, "mode": 1}  # 1 = Read
     )
     print(f"Set automation mode result: {result}")
-    assert_response_contains(result, "to Read mode")
+    assert_response_contains(result, "automation mode to: Read")
     
     # Set to write mode
     result = await reaper_mcp_client.call_tool(
         "set_track_automation_mode",
         {"track_index": track_index, "mode": 3}  # 3 = Write
     )
-    assert_response_contains(result, "to Write mode")
+    assert_response_contains(result, "automation mode to: Write")
     
     # Set to touch mode
     result = await reaper_mcp_client.call_tool(
         "set_track_automation_mode",
         {"track_index": track_index, "mode": 2}  # 2 = Touch
     )
-    assert_response_contains(result, "to Touch mode")
+    assert_response_contains(result, "automation mode to: Touch")
     
     # Set to trim/read mode
     result = await reaper_mcp_client.call_tool(
         "set_track_automation_mode",
         {"track_index": track_index, "mode": 0}  # 0 = Trim/Read
     )
-    assert_response_contains(result, "to Trim/Read mode")
+    assert_response_contains(result, "automation mode to: Trim/Read")
 
 @pytest.mark.asyncio 
 async def test_global_automation_override(reaper_mcp_client):

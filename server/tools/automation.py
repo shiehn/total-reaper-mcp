@@ -433,15 +433,8 @@ async def count_track_envelopes(track_index: int) -> str:
 
 async def get_track_automation_mode(track_index: int) -> str:
     """Get the automation mode for a track"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Get automation mode
-    result = await bridge.call_lua("GetTrackAutomationMode", [track_handle])
+    # Get automation mode - pass track index, not handle
+    result = await bridge.call_lua("GetTrackAutomationMode", [track_index])
     
     if result.get("ok"):
         mode = result.get("ret", -1)
@@ -461,13 +454,6 @@ async def get_track_automation_mode(track_index: int) -> str:
 
 async def set_track_automation_mode(track_index: int, mode: int) -> str:
     """Set the automation mode for a track"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
     # Validate mode
     mode_names = {
         -1: "Global",
@@ -481,8 +467,8 @@ async def set_track_automation_mode(track_index: int, mode: int) -> str:
     if mode not in mode_names:
         raise Exception(f"Invalid automation mode: {mode}. Valid modes: {list(mode_names.keys())}")
     
-    # Set automation mode
-    result = await bridge.call_lua("SetTrackAutomationMode", [track_handle, mode])
+    # Set automation mode - pass track index, not handle
+    result = await bridge.call_lua("SetTrackAutomationMode", [track_index, mode])
     
     if result.get("ok"):
         return f"Set track {track_index} automation mode to: {mode_names[mode]}"

@@ -6,6 +6,7 @@ the initial REAPER project state.
 """
 
 import re
+import asyncio
 from typing import Optional, Tuple
 
 
@@ -54,6 +55,9 @@ async def create_track_with_verification(reaper_mcp_client, index: int = 0) -> i
     
     if "success" not in result.content[0].text.lower() and "inserted" not in result.content[0].text.lower():
         raise Exception(f"Failed to create track: {result.content[0].text}")
+    
+    # Small delay to ensure REAPER has processed the track creation
+    await asyncio.sleep(0.1)
     
     # Get new track count
     result = await reaper_mcp_client.call_tool("get_track_count", {})
