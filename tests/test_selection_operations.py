@@ -2,96 +2,92 @@
 import pytest
 import pytest_asyncio
 import asyncio
+from .test_utils import (
+    ensure_clean_project,
+    create_track_with_verification,
+    create_media_item_with_verification,
+    assert_response_contains,
+    assert_response_success,
+    extract_number_from_response
+)
 
 
 @pytest.mark.asyncio
 async def test_track_selection_operations(reaper_mcp_client):
     """Test track selection operations"""
-    # Create some tracks
-    result = await reaper_mcp_client.call_tool(
-        "insert_track_at_index",
-        {"index": 0, "want_defaults": True}
-    )
-    assert "Successfully inserted track" in result.content[0].text
+    # Ensure clean project state
+    await ensure_clean_project(reaper_mcp_client)
     
-    result = await reaper_mcp_client.call_tool(
-        "insert_track_at_index",
-        {"index": 1, "want_defaults": True}
-    )
-    assert "Successfully inserted track" in result.content[0].text
-    
-    result = await reaper_mcp_client.call_tool(
-        "insert_track_at_index",
-        {"index": 2, "want_defaults": True}
-    )
-    assert "Successfully inserted track" in result.content[0].text
+    # Create some tracks and keep track of their indices
+    track1_index = await create_track_with_verification(reaper_mcp_client, 0)
+    track2_index = await create_track_with_verification(reaper_mcp_client, 1)
+    track3_index = await create_track_with_verification(reaper_mcp_client, 2)
     
     # Count selected tracks (should be 0 initially)
     result = await reaper_mcp_client.call_tool(
         "count_selected_tracks",
         {}
     )
-    assert "Count selected tracks: 0" in result.content[0].text
+    assert_response_contains(result, "Count selected tracks: 0")
     
     # Select first track
     result = await reaper_mcp_client.call_tool(
         "set_track_selected",
-        {"track_index": 0, "selected": True}
+        {"track_index": track1_index, "selected": True}
     )
-    assert "Set track selected: true" in result.content[0].text
+    assert_response_contains(result, "Set track selected: true")
     
     # Count selected tracks (should be 1)
     result = await reaper_mcp_client.call_tool(
         "count_selected_tracks",
         {}
     )
-    assert "Count selected tracks: 1" in result.content[0].text
+    assert_response_contains(result, "Count selected tracks: 1")
     
     # Get selected track
     result = await reaper_mcp_client.call_tool(
         "get_selected_track",
         {"selected_track_index": 0}
     )
-    assert "Get selected track:" in result.content[0].text
+    assert_response_contains(result, "Get selected track:")
     
     # Select second track too
     result = await reaper_mcp_client.call_tool(
         "set_track_selected",
-        {"track_index": 1, "selected": True}
+        {"track_index": track2_index, "selected": True}
     )
-    assert "Set track selected: true" in result.content[0].text
+    assert_response_contains(result, "Set track selected: true")
     
     # Count selected tracks (should be 2)
     result = await reaper_mcp_client.call_tool(
         "count_selected_tracks",
         {}
     )
-    assert "Count selected tracks: 2" in result.content[0].text
+    assert_response_contains(result, "Count selected tracks: 2")
     
     # Unselect first track
     result = await reaper_mcp_client.call_tool(
         "set_track_selected",
-        {"track_index": 0, "selected": False}
+        {"track_index": track1_index, "selected": False}
     )
-    assert "Set track selected: true" in result.content[0].text
+    assert_response_contains(result, "Set track selected: true")
     
     # Count selected tracks (should be 1)
     result = await reaper_mcp_client.call_tool(
         "count_selected_tracks",
         {}
     )
-    assert "Count selected tracks: 1" in result.content[0].text
+    assert_response_contains(result, "Count selected tracks: 1")
 
 
 @pytest.mark.asyncio
 async def test_media_item_selection_operations(reaper_mcp_client):
     """Test media item selection operations"""
+    # Ensure clean project state
+    await ensure_clean_project(reaper_mcp_client)
+    
     # Create a track
-    result = await reaper_mcp_client.call_tool(
-        "insert_track_at_index",
-        {"index": 0, "want_defaults": True}
-    )
-    assert "Successfully inserted track" in result.content[0].text
+    track_index = await create_track_with_verification(reaper_mcp_client)
     
     # Add some media items
     result = await reaper_mcp_client.call_tool(
