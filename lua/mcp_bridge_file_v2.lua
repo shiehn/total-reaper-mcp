@@ -254,13 +254,34 @@ local function process_request()
                     
                     elseif fname == "GetTrackName" then
                         if #args >= 1 then
-                            local track = reaper.GetTrack(0, args[1])
+                            local track = args[1]
+                            -- Handle track index or pointer object
+                            if type(args[1]) == "number" then
+                                -- It's a track index
+                                if args[1] == -1 then
+                                    -- Special case for master track
+                                    track = reaper.GetMasterTrack(0)
+                                else
+                                    track = reaper.GetTrack(0, args[1])
+                                end
+                                if not track then
+                                    response.error = "Track not found at index " .. tostring(args[1])
+                                    response.ok = false
+                                end
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                -- It's a pointer object - we can't use it
+                                response.error = "Cannot use track pointer from previous call - use track index instead"
+                                response.ok = false
+                                track = nil
+                            elseif type(args[1]) == "userdata" then
+                                -- It's already a track object
+                                track = args[1]
+                            end
+                            
                             if track then
                                 local retval, name = reaper.GetTrackName(track)
                                 response.ok = true
                                 response.ret = name
-                            else
-                                response.error = "Track not found"
                             end
                         else
                             response.error = "GetTrackName requires 1 argument"
@@ -386,6 +407,45 @@ local function process_request()
                             end
                         else
                             response.error = "SetMediaTrackInfo_Value requires 3 arguments"
+                        end
+                    
+                    elseif fname == "GetSetMediaTrackInfo_String" then
+                        if #args >= 4 then
+                            local track = args[1]
+                            local param = args[2]
+                            local newvalue = args[3]
+                            local setnewvalue = args[4]
+                            
+                            -- Handle track index or pointer object
+                            if type(args[1]) == "number" then
+                                -- It's a track index
+                                if args[1] == -1 then
+                                    -- Special case for master track
+                                    track = reaper.GetMasterTrack(0)
+                                else
+                                    track = reaper.GetTrack(0, args[1])
+                                end
+                                if not track then
+                                    response.error = "Track not found at index " .. tostring(args[1])
+                                    response.ok = false
+                                end
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                -- It's a pointer object - we can't use it
+                                response.error = "Cannot use track pointer from previous call - use track index instead"
+                                response.ok = false
+                                track = nil
+                            elseif type(args[1]) == "userdata" then
+                                -- It's already a track object
+                                track = args[1]
+                            end
+                            
+                            if track then
+                                local ok, strval = reaper.GetSetMediaTrackInfo_String(track, param, newvalue, setnewvalue)
+                                response.ok = ok
+                                response.ret = strval
+                            end
+                        else
+                            response.error = "GetSetMediaTrackInfo_String requires 4 arguments"
                         end
                     
                     elseif fname == "AddMediaItemToTrack" then
@@ -633,9 +693,19 @@ local function process_request()
                     elseif fname == "SetPlayState" then
                         if #args >= 3 then
                             local play = args[1] and 1 or 0
-                            local pause = args[2] and 1 or 0
-                            local rec = args[3] and 1 or 0
-                            reaper.CSurf_SetPlayState(play, pause, rec, 0)
+                            local pause = args[2] and 2 or 0
+                            local rec = args[3] and 4 or 0
+                            -- Use Main_OnCommand instead of CSurf_SetPlayState
+                            -- Play = 1007, Pause = 1008, Stop = 1016, Record = 1013
+                            if rec > 0 then
+                                reaper.Main_OnCommand(1013, 0)  -- Record
+                            elseif play > 0 then
+                                reaper.Main_OnCommand(1007, 0)  -- Play
+                            elseif pause > 0 then
+                                reaper.Main_OnCommand(1008, 0)  -- Pause
+                            else
+                                reaper.Main_OnCommand(1016, 0)  -- Stop
+                            end
                             response.ok = true
                         else
                             response.error = "SetPlayState requires 3 arguments"

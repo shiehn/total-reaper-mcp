@@ -60,13 +60,13 @@ This method requires no additional dependencies and is the most reliable:
 
 1. Copy the bridge script to REAPER:
    ```bash
-   cp lua/mcp_bridge_file_full.lua ~/Library/Application\ Support/REAPER/Scripts/
+   cp lua/mcp_bridge_file_v2.lua ~/Library/Application\ Support/REAPER/Scripts/
    ```
 
 2. Load the bridge in REAPER:
    - Open REAPER
    - Go to Actions → Show action list
-   - Click "Load..." and select `mcp_bridge_file_full.lua`
+   - Click "Load..." and select `mcp_bridge_file_v2.lua`
    - Run the action (check the REAPER console for startup message)
 
 3. Start the MCP server:
@@ -74,7 +74,7 @@ This method requires no additional dependencies and is the most reliable:
    python -m server.app
    ```
 
-**Note:** The server will display "Make sure mcp_bridge_no_socket.lua is running" but you should use `mcp_bridge_file_full.lua` as documented above.
+**Note:** The server will display "Make sure mcp_bridge_no_socket.lua is running" but you should use `mcp_bridge_file_v2.lua` as documented above.
 
 #### Socket-based Bridge (Not Currently Implemented)
 
@@ -89,7 +89,7 @@ While the Lua script `lua/mcp_bridge.lua` exists for socket-based communication,
 ## Testing
 
 Make sure you have:
-1. REAPER running with `mcp_bridge_file_full.lua` loaded
+1. REAPER running with `mcp_bridge_file_v2.lua` loaded
 2. The MCP server running (`python -m server.app`)
 
 Then run the tests:

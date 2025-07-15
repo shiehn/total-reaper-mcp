@@ -50,3 +50,4 @@ coverage.xml
 *.log
 .env
 .env.local.venv-py310/
+.venv-py310/

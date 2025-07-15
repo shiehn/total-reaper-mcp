@@ -226,29 +226,9 @@ async def midi_delete_event(item_index: int, take_index: int, event_index: int) 
 async def insert_midi_cc(item_index: int, take_index: int, time: float, channel: int, 
                         cc_number: int, value: int, selected: bool = False, muted: bool = False) -> str:
     """Insert a MIDI CC event"""
-    # Get media item and take
-    item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
-    if not item_result.get("ok") or not item_result.get("ret"):
-        raise Exception(f"Failed to find media item at index {item_index}")
-    
-    item_handle = item_result.get("ret")
-    
-    take_result = await bridge.call_lua("GetMediaItemTake", [item_handle, take_index])
-    if not take_result.get("ok") or not take_result.get("ret"):
-        raise Exception(f"Failed to find take at index {take_index}")
-    
-    take_handle = take_result.get("ret")
-    
-    # Convert time to PPQ
-    ppq_result = await bridge.call_lua("MIDI_GetPPQPosFromProjTime", [take_handle, time])
-    if not ppq_result.get("ok"):
-        raise Exception("Failed to convert time to PPQ")
-    
-    ppq_pos = ppq_result.get("ret")
-    
-    # Insert CC (0xB0 + channel for CC message type)
-    result = await bridge.call_lua("MIDI_InsertCC", [
-        take_handle, selected, muted, ppq_pos, 0xB0 + channel, cc_number, value
+    # Use the combined bridge function that handles all operations in one call
+    result = await bridge.call_lua("InsertMIDICCToItemTake", [
+        item_index, take_index, time, channel, cc_number, value, selected
     ])
     
     if result.get("ok"):

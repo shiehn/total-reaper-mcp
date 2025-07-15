@@ -108,7 +108,7 @@ def main():
     logger.info("REAPER MCP Server - Modern Pattern")
     logger.info("=" * 60)
     logger.info(f"Bridge directory: {BRIDGE_DIR}")
-    logger.info("Make sure mcp_bridge_file_full.lua is running in REAPER!")
+    logger.info("Make sure mcp_bridge_file_v2.lua is running in REAPER!")
     logger.info("")
     
     # Register all tools

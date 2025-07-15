@@ -61,7 +61,7 @@ async def test_get_toggle_command_state(reaper_mcp_client):
         {"command_id": 40041}
     )
     assert result is not None
-    assert "toggle state" in result.content[0].text.lower()
+    assert "state:" in result.content[0].text.lower()
     assert any(state in result.content[0].text.lower() for state in ["on", "off", "not found"])
 
 @pytest.mark.asyncio
@@ -224,7 +224,8 @@ async def test_db_slider_conversion(reaper_mcp_client):
             {"db": db}
         )
         assert result is not None
-        assert f"{db} dB" in result.content[0].text
+        assert str(db) in result.content[0].text
+        assert "dB" in result.content[0].text
         assert "slider value" in result.content[0].text
         print(f"DB to slider: {result.content[0].text}")
     

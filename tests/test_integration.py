@@ -62,18 +62,18 @@ async def test_get_track(reaper_mcp_client):
     # Get the track at index 0
     result = await reaper_mcp_client.call_tool(
         "get_track",
-        {"index": 0}
+        {"track_index": 0}
     )
     print(f"Get track result: {result}")
-    assert "Track at index 0:" in result.content[0].text
+    assert "Found track at index 0" in result.content[0].text
     
     # Try to get a non-existent track
     result = await reaper_mcp_client.call_tool(
         "get_track",
-        {"index": 999}
+        {"track_index": 999}
     )
     print(f"Get non-existent track result: {result}")
-    assert "No track found at index 999" in result.content[0].text
+    assert "Track not found at index 999" in result.content[0].text
 
 @pytest.mark.asyncio
 async def test_set_track_selected(reaper_mcp_client):
@@ -124,7 +124,7 @@ async def test_get_track_name(reaper_mcp_client):
     )
     print(f"Get track name result: {result}")
     # Track might have no name or a default name
-    assert "Track 0" in result.content[0].text
+    assert ("Track 0 name:" in result.content[0].text or "Track 0 has no name" in result.content[0].text)
     
     # Try to get name of non-existent track
     result = await reaper_mcp_client.call_tool(
@@ -132,7 +132,7 @@ async def test_get_track_name(reaper_mcp_client):
         {"track_index": 999}
     )
     print(f"Get non-existent track name result: {result}")
-    assert "Failed to get track name" in result.content[0].text
+    assert "Failed to find track at index 999" in result.content[0].text
 
 @pytest.mark.asyncio
 async def test_set_track_name(reaper_mcp_client):
@@ -149,7 +149,7 @@ async def test_set_track_name(reaper_mcp_client):
         {"track_index": 0, "name": "My Test Track"}
     )
     print(f"Set track name result: {result}")
-    assert "Track 0 renamed to \"My Test Track\"" in result.content[0].text
+    assert "Set track 0 name to: My Test Track" in result.content[0].text
     
     # Verify the name was set
     result = await reaper_mcp_client.call_tool(
@@ -165,7 +165,7 @@ async def test_set_track_name(reaper_mcp_client):
         {"track_index": 999, "name": "Should Fail"}
     )
     print(f"Set non-existent track name result: {result}")
-    assert "Failed to set track name" in result.content[0].text
+    assert "Failed to find track at index 999" in result.content[0].text
 
 @pytest.mark.asyncio
 async def test_list_tools(reaper_mcp_client):
@@ -188,7 +188,7 @@ async def test_list_tools(reaper_mcp_client):
     assert "use_defaults" in insert_track_tool.inputSchema["properties"]
     
     get_track_tool = next(t for t in tools if t.name == "get_track")
-    assert "index" in get_track_tool.inputSchema["properties"]
+    assert "track_index" in get_track_tool.inputSchema["properties"]
     
     set_track_selected_tool = next(t for t in tools if t.name == "set_track_selected")
     assert "track_index" in set_track_selected_tool.inputSchema["properties"]

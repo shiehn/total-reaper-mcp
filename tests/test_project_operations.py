@@ -59,8 +59,8 @@ async def test_undo_operations(reaper_mcp_client):
     
     # Begin undo block
     result = await reaper_mcp_client.call_tool(
-        "undo_begin_block",
-        {}
+        "undo_begin_block2",
+        {"project_index": 0}
     )
     print(f"Begin undo block result: {result}")
     assert_response_success(result)
@@ -73,8 +73,8 @@ async def test_undo_operations(reaper_mcp_client):
     
     # End undo block
     result = await reaper_mcp_client.call_tool(
-        "undo_end_block",
-        {"description": "Test Undo Block"}
+        "undo_end_block2",
+        {"desc": "Test Undo Block", "extra_flags": 0}
     )
     print(f"End undo block result: {result}")
     assert_response_success(result)

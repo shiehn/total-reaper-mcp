@@ -265,7 +265,7 @@ def main():
     """Run the MCP server"""
     logger.info("Starting REAPER MCP Server (Modern Pattern)")
     logger.info(f"Bridge directory: {BRIDGE_DIR}")
-    logger.info("Make sure to run mcp_bridge_file_full.lua in REAPER!")
+    logger.info("Make sure to run mcp_bridge_file_v2.lua in REAPER!")
     
     # FastMCP has its own built-in stdio handling
     mcp.run(transport="stdio")

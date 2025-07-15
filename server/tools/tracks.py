@@ -197,7 +197,7 @@ async def get_track_name(track_index: int) -> str:
         raise Exception(f"Failed to find track at index {track_index}")
     
     # Get its name
-    name_result = await bridge.call_lua("GetTrackName", [track_result.get("ret")])
+    name_result = await bridge.call_lua("GetTrackName", [track_index])
     if name_result.get("ok"):
         name = name_result.get("ret", "")
         if name:
@@ -221,7 +221,7 @@ async def set_track_name(track_index: int, name: str) -> str:
     
     # Set its name
     set_result = await bridge.call_lua("GetSetMediaTrackInfo_String", 
-                                     [track_result.get("ret"), "P_NAME", name, True])
+                                     [track_index, "P_NAME", name, True])
     if set_result.get("ok"):
         return f"Set track {track_index} name to: {name}"
     else:
@@ -362,18 +362,14 @@ async def get_track_volume(track_index: int) -> str:
 
 async def set_track_volume(track_index: int, volume_db: float) -> str:
     """Set track volume in dB"""
-    # Get track first
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
     # Convert dB to linear
     if volume_db > -150:
         vol_linear = 10 ** (volume_db / 20)
     else:
         vol_linear = 0
     
-    result = await bridge.call_lua("SetMediaTrackInfo_Value", [track_result.get("ret"), "D_VOL", vol_linear])
+    # Use the index-based function to avoid track handle issues
+    result = await bridge.call_lua("SetTrackVolumeByIndex", [track_index, "D_VOL", vol_linear])
     
     if result.get("ok"):
         return f"Track {track_index} volume set to {volume_db:.2f} dB"
@@ -409,15 +405,11 @@ async def get_track_pan(track_index: int) -> str:
 
 async def set_track_pan(track_index: int, pan: float) -> str:
     """Set track pan position (-1.0 to 1.0)"""
-    # Get track first
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
     # Clamp pan value
     pan = max(-1.0, min(1.0, pan))
     
-    result = await bridge.call_lua("SetMediaTrackInfo_Value", [track_result.get("ret"), "D_PAN", pan])
+    # Use the index-based function to avoid track handle issues
+    result = await bridge.call_lua("SetTrackVolumeByIndex", [track_index, "D_PAN", pan])
     
     if result.get("ok"):
         return f"Track {track_index} pan set to {pan:.2f}"
@@ -827,23 +819,10 @@ async def get_track_envelope_by_name(track_index: int, envelope_name: str) -> st
 
 
 # ============================================================================
-# Track Media Items (3 tools)
+# Track Media Items (2 tools) - add_media_item_to_track moved to media_items.py
 # ============================================================================
 
-async def add_media_item_to_track(track_index: int) -> str:
-    """Add a new media item to a track"""
-    # Get track first
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    result = await bridge.call_lua("AddMediaItemToTrack", [track_result.get("ret")])
-    
-    if result.get("ok"):
-        item = result.get("ret")
-        return f"Added media item to track {track_index}: {item}"
-    else:
-        raise Exception(f"Failed to add media item: {result.get('error', 'Unknown error')}")
+# Note: add_media_item_to_track is defined in media_items.py
 
 
 async def delete_track_media_item(track_index: int, item_index: int) -> str:
@@ -1123,8 +1102,7 @@ def register_track_tools(mcp) -> int:
         # Automation (1) - others moved to automation.py
         (get_track_envelope_by_name, "Get a track envelope by name"),
         
-        # Media Items (3)
-        (add_media_item_to_track, "Add a new media item to a track"),
+        # Media Items (2) - add_media_item_to_track moved to media_items.py
         (delete_track_media_item, "Delete a media item from track"),
         (get_media_item_take_track, "Get the track of a media item take"),
         

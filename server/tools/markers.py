@@ -62,10 +62,17 @@ async def enum_project_markers(marker_index: int) -> str:
     if result.get("ok"):
         ret = result.get("ret", [])
         if isinstance(ret, list) and len(ret) >= 5:
+            # Check if the marker actually exists
+            # ret[0] is the actual index, it's 0 when marker doesn't exist
+            # Also check if the position is 0 and name is empty
+            actual_index = ret[0]
             is_region = ret[1]
             position = ret[2]
             region_end = ret[3]
             name = ret[4]
+            
+            if marker_index > 0 and actual_index == 0 and position == 0.0 and name == '':
+                return f"No marker/region found at index {marker_index}"
             
             if is_region:
                 return f"Region {marker_index}: '{name}' from {position:.3f}s to {region_end:.3f}s"

@@ -88,12 +88,8 @@ async def get_media_item_length(item_index: int) -> str:
 
 async def set_media_item_length(item_index: int, length: float) -> str:
     """Set the length of a media item in seconds"""
-    # Get item first
-    item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
-    if not item_result.get("ok") or not item_result.get("ret"):
-        raise Exception(f"Failed to find media item at index {item_index}")
-    
-    result = await bridge.call_lua("SetMediaItemLength", [item_result.get("ret"), length, True])
+    # Use the index-based bridge function
+    result = await bridge.call_lua("SetMediaItemLength", [item_index, length, True])
     
     if result.get("ok"):
         return f"Set media item {item_index} length to {length:.3f} seconds"
@@ -119,12 +115,8 @@ async def get_media_item_position(item_index: int) -> str:
 
 async def set_media_item_position(item_index: int, position: float) -> str:
     """Set the position of a media item in seconds"""
-    # Get item first
-    item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
-    if not item_result.get("ok") or not item_result.get("ret"):
-        raise Exception(f"Failed to find media item at index {item_index}")
-    
-    result = await bridge.call_lua("SetMediaItemPosition", [item_result.get("ret"), position, True])
+    # Use the index-based bridge function
+    result = await bridge.call_lua("SetMediaItemPosition", [item_index, position, True])
     
     if result.get("ok"):
         return f"Set media item {item_index} position to {position:.3f} seconds"
@@ -225,12 +217,8 @@ async def duplicate_media_item(item_index: int) -> str:
 
 async def set_media_item_color(item_index: int, color: int) -> str:
     """Set the color of a media item"""
-    # Get item first
-    item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
-    if not item_result.get("ok") or not item_result.get("ret"):
-        raise Exception(f"Failed to find media item at index {item_index}")
-    
-    result = await bridge.call_lua("SetMediaItemInfo_Value", [item_result.get("ret"), "I_CUSTOMCOLOR", color | 0x01000000])
+    # Use the index-based bridge function
+    result = await bridge.call_lua("SetMediaItemInfoValueByIndex", [item_index, "I_CUSTOMCOLOR", color | 0x01000000])
     
     if result.get("ok"):
         return f"Set media item {item_index} color to {color:#08x}"
@@ -240,12 +228,8 @@ async def set_media_item_color(item_index: int, color: int) -> str:
 
 async def get_media_item_color(item_index: int) -> str:
     """Get the color of a media item"""
-    # Get item first
-    item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
-    if not item_result.get("ok") or not item_result.get("ret"):
-        raise Exception(f"Failed to find media item at index {item_index}")
-    
-    result = await bridge.call_lua("GetMediaItemInfo_Value", [item_result.get("ret"), "I_CUSTOMCOLOR"])
+    # Use the index-based bridge function
+    result = await bridge.call_lua("GetMediaItemInfoValueByIndex", [item_index, "I_CUSTOMCOLOR"])
     
     if result.get("ok"):
         color = int(result.get("ret", 0))

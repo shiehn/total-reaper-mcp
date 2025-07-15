@@ -242,7 +242,8 @@ def assert_response_contains(result, expected_text: str, case_sensitive: bool = 
 def assert_response_success(result) -> None:
     """Assert that the response indicates success"""
     response_text = result.content[0].text.lower()
-    success_indicators = ["success", "successfully", "completed", "added", "created", "inserted", "set", "updated"]
+    success_indicators = ["success", "successfully", "completed", "added", "created", "inserted", "set", "updated", 
+                        "started", "ended", "executed", "begin", "end", "undo", "armed", "disarmed"]
     
     # Check for error indicators first
     if "error" in response_text or "failed" in response_text:

@@ -63,6 +63,16 @@ async def get_toggle_command_state(command_id: int) -> str:
         raise Exception("Failed to get toggle command state")
 
 
+async def execute_action(command_id: int, flag: int = 0) -> str:
+    """Execute a REAPER action by command ID"""
+    result = await bridge.call_lua("Main_OnCommand", [command_id, flag])
+    
+    if result.get("ok"):
+        return f"Executed action: command ID {command_id}"
+    else:
+        raise Exception(f"Failed to execute action: {result.get('error', 'Unknown error')}")
+
+
 # ============================================================================
 # Conversion Utilities
 # ============================================================================
@@ -255,6 +265,7 @@ def register_core_api_tools(mcp) -> int:
         (api_exists, "Check if a ReaScript API function exists"),
         (get_last_color_theme_file, "Get the last color theme file"),
         (get_toggle_command_state, "Get toggle command state"),
+        (execute_action, "Execute a REAPER action by command ID"),
         
         # Conversions
         (db_to_slider, "Convert dB value to slider value (0.0 to 1.0)"),

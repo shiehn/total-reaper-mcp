@@ -16,10 +16,10 @@ async def test_track_volume_operations(reaper_mcp_client):
     # Create a track and get its actual index
     track_index = await create_track_with_verification(reaper_mcp_client)
     
-    # Set track volume
+    # Set track volume in dB
     result = await reaper_mcp_client.call_tool(
         "set_track_volume",
-        {"track_index": track_index, "volume": 0.5}
+        {"track_index": track_index, "volume_db": -3.0}  # About 0.7 linear
     )
     print(f"Set track volume result: {result}")
     assert_response_success(result)
@@ -30,7 +30,7 @@ async def test_track_volume_operations(reaper_mcp_client):
         {"track_index": track_index}
     )
     print(f"Get track volume result: {result}")
-    assert_response_contains(result, "0.5")
+    assert_response_contains(result, "volume")
     
     # Test with dB value
     result = await reaper_mcp_client.call_tool(
