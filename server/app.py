@@ -64,6 +64,8 @@ from .tools.peaks_waveform import register_peaks_waveform_tools
 from .tools.script_extensions import register_script_extensions_tools
 from .tools.project_tabs import register_project_tabs_tools
 from .tools.midi_advanced import register_midi_advanced_tools
+from .tools.loop_management import register_loop_management_tools
+from .tools.bounce_render import register_bounce_render_tools
 
 # Register all tools
 def register_all_tools():
@@ -111,6 +113,8 @@ def register_all_tools():
         ("Script Extension Management", register_script_extensions_tools),
         ("Project Tab Management", register_project_tabs_tools),
         ("Advanced MIDI Analysis & Generation", register_midi_advanced_tools),
+        ("Loop & Time Selection Management", register_loop_management_tools),
+        ("Bounce & Render Operations", register_bounce_render_tools),
     ]
     
     for category_name, register_func in categories:
