@@ -51,18 +51,8 @@ async def get_media_item(item_index: int, project_index: int = 0) -> str:
 
 async def delete_track_media_item(track_index: int, item_index: int) -> str:
     """Delete a media item from a track"""
-    # Get track first
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    # Get item on track
-    item_result = await bridge.call_lua("GetTrackMediaItem", [track_result.get("ret"), item_index])
-    if not item_result.get("ok") or not item_result.get("ret"):
-        raise Exception(f"Failed to find media item {item_index} on track {track_index}")
-    
-    # Delete item
-    result = await bridge.call_lua("DeleteTrackMediaItem", [track_result.get("ret"), item_result.get("ret")])
+    # Pass indices directly - the bridge will handle getting the track and item
+    result = await bridge.call_lua("DeleteTrackMediaItem", [track_index, item_index])
     
     if result.get("ok"):
         return f"Deleted media item {item_index} from track {track_index}"
@@ -77,7 +67,7 @@ async def get_media_item_length(item_index: int) -> str:
     if not item_result.get("ok") or not item_result.get("ret"):
         raise Exception(f"Failed to find media item at index {item_index}")
     
-    result = await bridge.call_lua("GetMediaItemInfo_Value", [item_result.get("ret"), "D_LENGTH"])
+    result = await bridge.call_lua("GetMediaItemInfo_Value", [item_index, "D_LENGTH"])
     
     if result.get("ok"):
         length = result.get("ret", 0.0)
@@ -104,7 +94,7 @@ async def get_media_item_position(item_index: int) -> str:
     if not item_result.get("ok") or not item_result.get("ret"):
         raise Exception(f"Failed to find media item at index {item_index}")
     
-    result = await bridge.call_lua("GetMediaItemInfo_Value", [item_result.get("ret"), "D_POSITION"])
+    result = await bridge.call_lua("GetMediaItemInfo_Value", [item_index, "D_POSITION"])
     
     if result.get("ok"):
         position = result.get("ret", 0.0)
@@ -131,7 +121,7 @@ async def set_media_item_selected(item_index: int, selected: bool) -> str:
     if not item_result.get("ok") or not item_result.get("ret"):
         raise Exception(f"Failed to find media item at index {item_index}")
     
-    result = await bridge.call_lua("SetMediaItemSelected", [item_result.get("ret"), selected])
+    result = await bridge.call_lua("SetMediaItemSelected", [item_index, selected])
     
     if result.get("ok"):
         state = "selected" if selected else "unselected"
@@ -176,7 +166,7 @@ async def split_media_item(item_index: int, split_position: float) -> str:
     if not item_result.get("ok") or not item_result.get("ret"):
         raise Exception(f"Failed to find media item at index {item_index}")
     
-    result = await bridge.call_lua("SplitMediaItem", [item_result.get("ret"), split_position])
+    result = await bridge.call_lua("SplitMediaItem", [item_index, split_position])
     
     if result.get("ok"):
         return f"Split media item {item_index} at position {split_position:.3f}"
@@ -204,7 +194,7 @@ async def duplicate_media_item(item_index: int) -> str:
         raise Exception(f"Failed to find media item at index {item_index}")
     
     # Select the item
-    await bridge.call_lua("SetMediaItemSelected", [item_result.get("ret"), True])
+    await bridge.call_lua("SetMediaItemSelected", [item_index, True])
     
     # Duplicate selected items
     result = await bridge.call_lua("Main_OnCommand", [41295, 0])  # Duplicate items
@@ -250,12 +240,12 @@ async def get_media_item_peak(item_index: int) -> str:
         raise Exception(f"Failed to find media item at index {item_index}")
     
     # Get active take
-    take_result = await bridge.call_lua("GetActiveTake", [item_result.get("ret")])
+    take_result = await bridge.call_lua("GetActiveTake", [item_index])
     if not take_result.get("ok") or not take_result.get("ret"):
         raise Exception("No active take in media item")
     
     # Get peak
-    result = await bridge.call_lua("NF_GetMediaItemMaxPeak", [item_result.get("ret")])
+    result = await bridge.call_lua("NF_GetMediaItemMaxPeak", [item_index])
     
     if result.get("ok"):
         peak = result.get("ret", 0.0)
@@ -271,7 +261,7 @@ async def get_media_item_take_track(item_index: int, take_index: int) -> str:
     if not item_result.get("ok") or not item_result.get("ret"):
         raise Exception(f"Failed to find media item at index {item_index}")
     
-    result = await bridge.call_lua("GetMediaItem_Track", [item_result.get("ret")])
+    result = await bridge.call_lua("GetMediaItem_Track", [item_index])
     
     if result.get("ok"):
         track = result.get("ret")
@@ -286,21 +276,14 @@ async def get_media_item_take_track(item_index: int, take_index: int) -> str:
 
 async def add_take_to_item(item_index: int) -> str:
     """Add a new take to a media item"""
-    # Get item first
-    item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
-    if not item_result.get("ok") or not item_result.get("ret"):
-        raise Exception(f"Failed to find media item at index {item_index}")
-    
-    item_handle = item_result.get("ret")
-    
-    # Add take
-    result = await bridge.call_lua("AddTakeToMediaItem", [item_handle])
+    # Add take using item index directly
+    result = await bridge.call_lua("AddTakeToMediaItem", [item_index])
     
     if result.get("ok"):
         take_handle = result.get("ret")
         if take_handle:
             # Get take count for info
-            count_result = await bridge.call_lua("CountTakes", [item_handle])
+            count_result = await bridge.call_lua("CountTakes", [item_index])
             take_count = count_result.get("ret", 0) if count_result.get("ok") else 0
             return f"Added take to media item {item_index}. Item now has {take_count} takes"
         else:
@@ -315,7 +298,7 @@ async def count_takes(item_index: int) -> str:
     if not item_result.get("ok") or not item_result.get("ret"):
         raise Exception(f"Failed to find media item at index {item_index}")
     
-    result = await bridge.call_lua("CountTakes", [item_result.get("ret")])
+    result = await bridge.call_lua("CountTakes", [item_index])
     
     if result.get("ok"):
         count = result.get("ret", 0)
@@ -326,12 +309,8 @@ async def count_takes(item_index: int) -> str:
 
 async def get_active_take(item_index: int) -> str:
     """Get the active take of a media item"""
-    # Get item first
-    item_result = await bridge.call_lua("GetMediaItem", [0, item_index])
-    if not item_result.get("ok") or not item_result.get("ret"):
-        raise Exception(f"Failed to find media item at index {item_index}")
-    
-    result = await bridge.call_lua("GetActiveTake", [item_result.get("ret")])
+    # Get active take using item index directly
+    result = await bridge.call_lua("GetActiveTake", [item_index])
     
     if result.get("ok"):
         take = result.get("ret")
@@ -354,7 +333,7 @@ async def set_active_take(item_index: int, take_index: int) -> str:
         raise Exception(f"Failed to find media item at index {item_index}")
     
     # Get the specific take
-    take_result = await bridge.call_lua("GetMediaItemTake", [item_result.get("ret"), take_index])
+    take_result = await bridge.call_lua("GetMediaItemTake", [item_index, take_index])
     if not take_result.get("ok") or not take_result.get("ret"):
         raise Exception(f"Failed to find take {take_index} in media item")
     
@@ -375,7 +354,7 @@ async def get_take_name(item_index: int, take_index: int) -> str:
         raise Exception(f"Failed to find media item at index {item_index}")
     
     # Get the specific take
-    take_result = await bridge.call_lua("GetMediaItemTake", [item_result.get("ret"), take_index])
+    take_result = await bridge.call_lua("GetMediaItemTake", [item_index, take_index])
     if not take_result.get("ok") or not take_result.get("ret"):
         raise Exception(f"Failed to find take {take_index} in media item")
     
@@ -396,7 +375,7 @@ async def set_take_name(item_index: int, take_index: int, name: str) -> str:
         raise Exception(f"Failed to find media item at index {item_index}")
     
     # Get the specific take
-    take_result = await bridge.call_lua("GetMediaItemTake", [item_result.get("ret"), take_index])
+    take_result = await bridge.call_lua("GetMediaItemTake", [item_index, take_index])
     if not take_result.get("ok") or not take_result.get("ret"):
         raise Exception(f"Failed to find take {take_index} in media item")
     
@@ -416,7 +395,7 @@ async def get_media_item_take_source(item_index: int, take_index: int) -> str:
         raise Exception(f"Failed to find media item at index {item_index}")
     
     # Get the specific take
-    take_result = await bridge.call_lua("GetMediaItemTake", [item_result.get("ret"), take_index])
+    take_result = await bridge.call_lua("GetMediaItemTake", [item_index, take_index])
     if not take_result.get("ok") or not take_result.get("ret"):
         raise Exception(f"Failed to find take {take_index} in media item")
     
@@ -443,7 +422,7 @@ async def set_media_item_take_source(item_index: int, take_index: int, source_fi
         raise Exception(f"Failed to find media item at index {item_index}")
     
     # Get the specific take
-    take_result = await bridge.call_lua("GetMediaItemTake", [item_result.get("ret"), take_index])
+    take_result = await bridge.call_lua("GetMediaItemTake", [item_index, take_index])
     if not take_result.get("ok") or not take_result.get("ret"):
         raise Exception(f"Failed to find take {take_index} in media item")
     
@@ -469,7 +448,7 @@ async def get_media_item_take_peaks(item_index: int, take_index: int, channel: i
         raise Exception(f"Failed to find media item at index {item_index}")
     
     # Get the specific take
-    take_result = await bridge.call_lua("GetMediaItemTake", [item_result.get("ret"), take_index])
+    take_result = await bridge.call_lua("GetMediaItemTake", [item_index, take_index])
     if not take_result.get("ok") or not take_result.get("ret"):
         raise Exception(f"Failed to find take {take_index} in media item")
     
@@ -489,7 +468,7 @@ async def get_media_item_take_info_value(item_index: int, take_index: int, param
         raise Exception(f"Failed to find media item at index {item_index}")
     
     # Get the specific take
-    take_result = await bridge.call_lua("GetMediaItemTake", [item_result.get("ret"), take_index])
+    take_result = await bridge.call_lua("GetMediaItemTake", [item_index, take_index])
     if not take_result.get("ok") or not take_result.get("ret"):
         raise Exception(f"Failed to find take {take_index} in media item")
     
@@ -510,7 +489,7 @@ async def set_media_item_take_info_value(item_index: int, take_index: int, param
         raise Exception(f"Failed to find media item at index {item_index}")
     
     # Get the specific take
-    take_result = await bridge.call_lua("GetMediaItemTake", [item_result.get("ret"), take_index])
+    take_result = await bridge.call_lua("GetMediaItemTake", [item_index, take_index])
     if not take_result.get("ok") or not take_result.get("ret"):
         raise Exception(f"Failed to find take {take_index} in media item")
     

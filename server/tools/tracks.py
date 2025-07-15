@@ -346,7 +346,7 @@ async def get_track_volume(track_index: int) -> str:
     if not track_result.get("ok") or not track_result.get("ret"):
         raise Exception(f"Failed to find track at index {track_index}")
     
-    result = await bridge.call_lua("GetMediaTrackInfo_Value", [track_result.get("ret"), "D_VOL"])
+    result = await bridge.call_lua("GetMediaTrackInfo_Value", [track_index, "D_VOL"])
     
     if result.get("ok"):
         vol_linear = result.get("ret", 1.0)
@@ -369,7 +369,7 @@ async def set_track_volume(track_index: int, volume_db: float) -> str:
         vol_linear = 0
     
     # Use the index-based function to avoid track handle issues
-    result = await bridge.call_lua("SetTrackVolumeByIndex", [track_index, "D_VOL", vol_linear])
+    result = await bridge.call_lua("SetMediaTrackInfo_Value", [track_index, "D_VOL", vol_linear])
     
     if result.get("ok"):
         return f"Track {track_index} volume set to {volume_db:.2f} dB"
@@ -394,7 +394,7 @@ async def get_track_pan(track_index: int) -> str:
     if not track_result.get("ok") or not track_result.get("ret"):
         raise Exception(f"Failed to find track at index {track_index}")
     
-    result = await bridge.call_lua("GetMediaTrackInfo_Value", [track_result.get("ret"), "D_PAN"])
+    result = await bridge.call_lua("GetMediaTrackInfo_Value", [track_index, "D_PAN"])
     
     if result.get("ok"):
         pan = result.get("ret", 0.0)
@@ -409,7 +409,7 @@ async def set_track_pan(track_index: int, pan: float) -> str:
     pan = max(-1.0, min(1.0, pan))
     
     # Use the index-based function to avoid track handle issues
-    result = await bridge.call_lua("SetTrackVolumeByIndex", [track_index, "D_PAN", pan])
+    result = await bridge.call_lua("SetMediaTrackInfo_Value", [track_index, "D_PAN", pan])
     
     if result.get("ok"):
         return f"Track {track_index} pan set to {pan:.2f}"

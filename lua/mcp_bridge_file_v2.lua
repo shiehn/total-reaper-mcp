@@ -593,9 +593,30 @@ local function process_request()
                     
                     elseif fname == "GetMediaItemInfo_Value" then
                         if #args >= 2 then
-                            local value = reaper.GetMediaItemInfo_Value(args[1], args[2])
-                            response.ok = true
-                            response.ret = value
+                            local item = args[1]
+                            -- Handle item index or pointer
+                            if type(args[1]) == "number" then
+                                -- It's an item index
+                                item = reaper.GetMediaItem(0, args[1])
+                                if not item then
+                                    response.error = "Item not found at index " .. tostring(args[1])
+                                    response.ok = false
+                                end
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                -- It's a pointer reference from a previous call - we can't use it
+                                response.error = "Cannot use item pointer from previous call - use item index instead"
+                                response.ok = false
+                                item = nil
+                            elseif type(args[1]) == "userdata" then
+                                -- It's already an item object
+                                item = args[1]
+                            end
+                            
+                            if item then
+                                local value = reaper.GetMediaItemInfo_Value(item, args[2])
+                                response.ok = true
+                                response.ret = value
+                            end
                         else
                             response.error = "GetMediaItemInfo_Value requires 2 arguments"
                         end
