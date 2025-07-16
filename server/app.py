@@ -68,6 +68,8 @@ from .tools.loop_management import register_loop_management_tools
 from .tools.bounce_render import register_bounce_render_tools
 from .tools.groove_quantization import register_groove_quantization_tools
 from .tools.bus_routing import register_bus_routing_tools
+from .tools.tempo_time_management import register_tempo_time_tools
+from .tools.advanced_midi_generation import register_advanced_midi_tools
 
 # Register all tools
 def register_all_tools():
@@ -119,6 +121,8 @@ def register_all_tools():
         ("Bounce & Render Operations", register_bounce_render_tools),
         ("Groove & Quantization Tools", register_groove_quantization_tools),
         ("Bus Routing & Mixing Workflows", register_bus_routing_tools),
+        ("Tempo & Time Management", register_tempo_time_tools),
+        ("Advanced MIDI Generation", register_advanced_midi_tools),
     ]
     
     for category_name, register_func in categories:

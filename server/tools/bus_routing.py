@@ -734,7 +734,7 @@ def register_bus_routing_tools(mcp):
 tools = [
     {
         "name": "create_bus_track",
-        "description": "Create a bus track for routing multiple tracks",
+        "description": "Create a bus/submix track for routing and grouping multiple source tracks. Sets up as a folder track with customizable channel count and color. Essential for organizing complex mixes and creating stem groups.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -748,7 +748,7 @@ tools = [
     },
     {
         "name": "route_tracks_to_bus",
-        "description": "Route multiple tracks to a bus track",
+        "description": "Connect multiple source tracks to a destination bus track via sends. Choose pre-fader for independent monitor mixes, post-fader for submixes, or pre-fx for parallel processing. Set individual send levels for perfect balance.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -771,7 +771,7 @@ tools = [
     },
     {
         "name": "create_parallel_compression_bus",
-        "description": "Create a parallel compression setup with a bus",
+        "description": "Set up New York style parallel compression by creating a heavily compressed copy of tracks blended with the original. Automatically adds ReaComp with aggressive settings. Perfect for drums, vocals, and full mixes needing punch without losing dynamics.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -788,7 +788,7 @@ tools = [
     },
     {
         "name": "create_reverb_send_bus",
-        "description": "Create a reverb send bus with reverb plugin",
+        "description": "Create an aux reverb bus with ReaVerbate configured for 100% wet signal. Choose reverb type (hall, room, plate, spring) and return level. Ready to receive sends from any track needing spatial enhancement.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -805,7 +805,7 @@ tools = [
     },
     {
         "name": "create_stem_buses",
-        "description": "Create stem buses for groups of tracks",
+        "description": "Organize your mix by creating color-coded stem buses for instrument groups (drums, bass, keys, etc). Automatically routes tracks and removes their master sends. Essential for stem mixing, mastering preparation, and organized project structure.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -823,7 +823,7 @@ tools = [
     },
     {
         "name": "create_sidechain_routing",
-        "description": "Create sidechain routing between tracks",
+        "description": "Set up sidechain routing to use one track's signal to control effects on another. Routes to channels 3/4 by default for compressor sidechain inputs. Common uses: kick-triggered bass ducking, vocal-triggered reverb ducking, rhythmic gating.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -836,7 +836,7 @@ tools = [
     },
     {
         "name": "setup_monitor_mix",
-        "description": "Setup a monitor mix for performers",
+        "description": "Create a dedicated monitor mix bus with pre-fader sends from performer tracks. Routes directly to hardware outputs bypassing the master. Optionally includes click track. Perfect for live recording and rehearsal monitoring.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -853,7 +853,7 @@ tools = [
     },
     {
         "name": "create_headphone_cue_mixes",
-        "description": "Create multiple headphone cue mixes",
+        "description": "Set up multiple independent headphone mixes for different performers. Each mix gets its own bus routed to separate hardware output pairs (1/2, 3/4, etc). Essential for studio recording where each musician needs a custom mix.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -864,7 +864,7 @@ tools = [
     },
     {
         "name": "analyze_routing_matrix",
-        "description": "Analyze and return the current routing matrix",
+        "description": "Generate a complete analysis of your project's signal routing including all sends, receives, and bus assignments. Shows which tracks route where, helping you understand and troubleshoot complex routing setups. Returns detailed routing information for every track.",
         "input_schema": {
             "type": "object",
             "properties": {},

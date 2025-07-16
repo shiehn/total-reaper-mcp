@@ -51,3 +51,21 @@ coverage.xml
 .env
 .env.local.venv-py310/
 .venv-py310/
+
+# Backup files
+*.bak
+*.old
+*_backup*
+*.backup_*
+
+# REAPER project files
+*.RPP
+*.RPP-bak
+*.rpp
+*.rpp-bak
+
+# Temporary files
+*.tmp
+*.temp
+/tmp/
+/temp/

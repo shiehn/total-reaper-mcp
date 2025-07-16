@@ -696,7 +696,7 @@ def register_groove_quantization_tools(mcp):
 tools = [
     {
         "name": "quantize_items_to_grid",
-        "description": "Quantize selected items to the project grid with optional swing",
+        "description": "Snap selected items to the project grid with adjustable strength and swing. Use strength < 1.0 to maintain some human timing. Swing adds groove by delaying off-beats. Essential for tightening performances while preserving feel.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -708,7 +708,7 @@ tools = [
     },
     {
         "name": "humanize_items",
-        "description": "Add human timing and velocity variations to selected items",
+        "description": "Make robotic patterns more natural by adding controlled timing and velocity variations. Choose random for realistic human feel, late for laid-back groove, or early for rushing/urgent feel. Works on both audio and MIDI items.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -721,7 +721,7 @@ tools = [
     },
     {
         "name": "create_groove_template",
-        "description": "Create a groove template from selected items",
+        "description": "Extract the timing and feel from selected items to create a reusable groove template. Captures the subtle timing variations that give a performance its unique feel. Use this template to apply the same groove to other tracks.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -733,7 +733,7 @@ tools = [
     },
     {
         "name": "apply_groove_to_items",
-        "description": "Apply a groove template to selected items",
+        "description": "Transfer the timing feel from a saved groove template to selected items. Adjustable strength lets you blend between original timing and the groove. Perfect for matching the feel between different instrumental parts.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -745,7 +745,7 @@ tools = [
     },
     {
         "name": "generate_random_rhythm",
-        "description": "Generate a random rhythm pattern on a track",
+        "description": "Create MIDI rhythm patterns with controlled randomness. Generates notes at grid positions based on density setting. Great for quickly sketching drum patterns, percussion parts, or experimental rhythmic ideas. Creates MIDI items with note data.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -759,7 +759,7 @@ tools = [
     },
     {
         "name": "apply_shuffle",
-        "description": "Apply shuffle/swing to selected items",
+        "description": "Add shuffle or swing feel to selected items by delaying off-beat notes. Choose between 8th note swing (jazz/blues), 16th note shuffle (funk/hip-hop), or triplet feel. Amount controls how much the off-beats are pushed back.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -771,7 +771,7 @@ tools = [
     },
     {
         "name": "create_polyrhythm",
-        "description": "Create polyrhythmic patterns across multiple tracks",
+        "description": "Generate interlocking polyrhythmic patterns across multiple tracks. Creates complex rhythmic relationships like 3:4:5 where each track plays a different number of evenly-spaced notes within the same time period. Essential for African, prog, and experimental music.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -792,7 +792,7 @@ tools = [
     },
     {
         "name": "stretch_items_to_tempo",
-        "description": "Stretch selected items to match a target tempo",
+        "description": "Time-stretch selected audio items to match a specific BPM. Preserves pitch by default to maintain tonality. Use for tempo-matching loops, conforming samples to project tempo, or creative tempo effects. Works on audio items only.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -804,7 +804,7 @@ tools = [
     },
     {
         "name": "detect_tempo_from_selection",
-        "description": "Detect tempo from selected audio items",
+        "description": "Analyze selected audio items to detect their tempo/BPM. Uses REAPER's tempo detection algorithm to find the most likely tempo. Results are stored in the item for future stretching operations. Works best with rhythmic material.",
         "input_schema": {
             "type": "object",
             "properties": {},

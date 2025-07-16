@@ -502,7 +502,7 @@ def register_loop_management_tools(mcp):
 tools = [
     {
         "name": "get_time_selection",
-        "description": "Get the current time selection (loop) in the project",
+        "description": "Get the current time selection (loop) boundaries in the project. Returns start time, end time, length, and whether a selection exists. Use this to check what portion of the timeline is selected for looping or editing operations.",
         "input_schema": {
             "type": "object",
             "properties": {},
@@ -511,7 +511,7 @@ tools = [
     },
     {
         "name": "set_time_selection", 
-        "description": "Set the time selection (loop) in the project",
+        "description": "Set the time selection (loop) boundaries in the project by specifying start and end times in seconds. This defines the region for looping playback, duplication, or other time-based operations. Essential for loop-based music production.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -523,7 +523,7 @@ tools = [
     },
     {
         "name": "clear_time_selection",
-        "description": "Clear the time selection",
+        "description": "Clear/remove the current time selection. Resets the loop region so no portion of the timeline is selected. Use this when you want to work on the full project without loop constraints.",
         "input_schema": {
             "type": "object",
             "properties": {},
@@ -532,7 +532,7 @@ tools = [
     },
     {
         "name": "get_loop_points",
-        "description": "Get the loop point positions and status",
+        "description": "Get the current loop point positions and whether looping is enabled. Returns the loop start/end times and enabled status. Use this to check if transport will loop during playback.",
         "input_schema": {
             "type": "object",
             "properties": {},
@@ -541,7 +541,7 @@ tools = [
     },
     {
         "name": "set_loop_enabled",
-        "description": "Enable or disable looping",
+        "description": "Enable or disable transport looping (repeat mode). When enabled, playback will loop between the time selection boundaries. Use this to toggle between linear and looped playback modes.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -552,7 +552,7 @@ tools = [
     },
     {
         "name": "set_loop_points",
-        "description": "Set loop points and optionally enable looping",
+        "description": "Set loop point boundaries and optionally enable looping in one operation. Combines setting time selection with enabling repeat mode. Ideal for quickly establishing a loop region for production.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -565,7 +565,7 @@ tools = [
     },
     {
         "name": "duplicate_time_selection",
-        "description": "Duplicate the contents of the time selection",
+        "description": "Duplicate all items within the time selection, placing copies immediately after. Specify count for multiple duplications. Essential for building arrangements from loops. Preserves all item properties and automation.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -576,7 +576,7 @@ tools = [
     },
     {
         "name": "shift_time_selection",
-        "description": "Shift the time selection by an offset",
+        "description": "Move the time selection forward or backward by a specified offset in seconds. Positive values shift right, negative shift left. Useful for navigating through a project in loop-sized chunks.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -587,7 +587,7 @@ tools = [
     },
     {
         "name": "create_loop_from_items",
-        "description": "Create a time selection loop from selected items",
+        "description": "Automatically create a time selection that encompasses all currently selected items. Sets loop boundaries to the earliest start and latest end of selected items. Useful for quickly looping a specific phrase or section.",
         "input_schema": {
             "type": "object",
             "properties": {},
@@ -596,7 +596,7 @@ tools = [
     },
     {
         "name": "split_items_at_loop_points",
-        "description": "Split all items at the loop point boundaries",
+        "description": "Split all media items at both the start and end of the time selection. Creates clean edit points at loop boundaries. Essential for isolating loop sections or preparing for arrangement changes.",
         "input_schema": {
             "type": "object",
             "properties": {},
@@ -605,7 +605,7 @@ tools = [
     },
     {
         "name": "get_grid_division",
-        "description": "Get the current grid division setting",
+        "description": "Get the current grid division setting for snapping and quantization. Returns the division value (e.g., 0.25 for 1/4 note), swing amount, and swing mode. Use to check quantization resolution.",
         "input_schema": {
             "type": "object",
             "properties": {},
@@ -614,7 +614,7 @@ tools = [
     },
     {
         "name": "set_grid_division",
-        "description": "Set the grid division for quantization",
+        "description": "Set the grid division for snapping and quantization operations. Division is in whole notes (0.25 = 1/4 note, 0.125 = 1/8 note). Optional swing adds groove. Critical for rhythm programming accuracy.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -626,7 +626,7 @@ tools = [
     },
     {
         "name": "quantize_time_selection",
-        "description": "Quantize items in the time selection to the grid",
+        "description": "Quantize the position of all items within the time selection to the current grid. Strength parameter (0-1) allows partial quantization for more human feel. Essential for tightening timing while preserving groove.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -637,7 +637,7 @@ tools = [
     },
     {
         "name": "crop_to_time_selection",
-        "description": "Crop the project to the time selection",
+        "description": "Remove all content outside the time selection, cropping the project to just the selected region. Destructive operation that permanently deletes content outside the loop. Use for extracting loops from longer recordings.",
         "input_schema": {
             "type": "object",
             "properties": {},
@@ -646,7 +646,7 @@ tools = [
     },
     {
         "name": "insert_time_at_loop_start",
-        "description": "Insert empty time at the loop start position",
+        "description": "Insert empty space at the beginning of the time selection, pushing all content forward. Specify length in seconds. Non-destructive way to add silence or make room for new content at loop start.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -657,7 +657,7 @@ tools = [
     },
     {
         "name": "remove_time_selection",
-        "description": "Remove contents of time selection with ripple edit",
+        "description": "Delete all content within the time selection and close the gap, moving later content backward. Ripple edit maintains timing relationships. Use for removing sections while keeping the rest of the project intact.",
         "input_schema": {
             "type": "object",
             "properties": {},

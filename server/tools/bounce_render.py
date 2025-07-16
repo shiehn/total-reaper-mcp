@@ -810,7 +810,7 @@ def register_bounce_render_tools(mcp):
 tools = [
     {
         "name": "bounce_track_in_place",
-        "description": "Bounce a track in place, replacing it with rendered audio",
+        "description": "Bounce/render a track in place, replacing its content with a single rendered audio item. Applies all track FX and automation. Use for committing effects, reducing CPU load, or preparing stems. Includes option for reverb/delay tails.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -832,7 +832,7 @@ tools = [
     },
     {
         "name": "bounce_tracks_to_stems",
-        "description": "Bounce multiple tracks to individual stem files",
+        "description": "Export multiple tracks as individual stem files for mixing, collaboration, or archiving. Each track is rendered to a separate audio file with customizable naming. Perfect for creating deliverables or backing up multitrack sessions.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -850,7 +850,7 @@ tools = [
     },
     {
         "name": "freeze_track",
-        "description": "Freeze a track to reduce CPU usage",
+        "description": "Temporarily render a track to reduce CPU load while preserving editability. Frozen tracks can be unfrozen later to restore effects and processing. Choose to freeze items only or include FX. Essential for working with CPU-intensive plugins.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -862,7 +862,7 @@ tools = [
     },
     {
         "name": "unfreeze_track",
-        "description": "Unfreeze a previously frozen track",
+        "description": "Restore a frozen track to its original state with all effects and processing active. Returns the track to full editability. Use when you need to make changes to a previously frozen track.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -873,7 +873,7 @@ tools = [
     },
     {
         "name": "render_selected_items_to_new_track",
-        "description": "Render selected items to a new track",
+        "description": "Create a new track containing rendered versions of all selected items. Combines multiple items into a single rendered file. Options for normalization and tail length. Useful for creating comp tracks or simplifying complex edits.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -885,7 +885,7 @@ tools = [
     },
     {
         "name": "glue_selected_items",
-        "description": "Glue selected items together",
+        "description": "Combine multiple selected items into a single continuous item. Merges items while preserving their relative timing and crossfades. Essential for cleaning up edits and creating seamless audio regions. Requires at least 2 selected items.",
         "input_schema": {
             "type": "object",
             "properties": {},
@@ -894,7 +894,7 @@ tools = [
     },
     {
         "name": "apply_track_fx_to_items",
-        "description": "Apply track FX to items on the track as a render",
+        "description": "Permanently apply track effects to all items on a track through rendering. Choose to render full signal or FX only (preserving dry signal). Useful for committing effects or creating parallel processing chains.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -906,7 +906,7 @@ tools = [
     },
     {
         "name": "create_submix_from_tracks",
-        "description": "Create a submix bus from selected tracks",
+        "description": "Create a submix bus track and automatically route multiple tracks to it. Removes direct master sends from source tracks. Perfect for grouping instruments (drums, vocals, etc.) for collective processing and level control.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -922,7 +922,7 @@ tools = [
     },
     {
         "name": "render_project_to_file",
-        "description": "Render the entire project to a file",
+        "description": "Export the complete project as an audio file. Renders from project start to end including all tracks, automation, and effects. Supports various sample rates, bit depths, and channel configurations. Use for final mixdown or project delivery.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -943,7 +943,7 @@ tools = [
     },
     {
         "name": "render_time_selection",
-        "description": "Render only the time selection to a file",
+        "description": "Export only the time selection region as an audio file. Renders the selected portion with all active tracks and effects. Ideal for exporting specific sections, loops, or creating shorter versions of your project.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -964,7 +964,7 @@ tools = [
     },
     {
         "name": "consolidate_track",
-        "description": "Consolidate all items on a track into a single item",
+        "description": "Merge all items on a track into one continuous item. Removes gaps and creates a single audio region. Simplifies complex item arrangements and prepares tracks for further processing or archiving.",
         "input_schema": {
             "type": "object",
             "properties": {

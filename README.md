@@ -11,7 +11,7 @@ This project is developed and tested on **macOS** but should work on Windows and
 ## Requirements
 
 - [REAPER](https://www.reaper.fm/) 6.83+ (includes embedded Lua 5.4 and full ReaScript API)
-- Python 3.8+
+- Python 3.10+ (required for MCP 1.1.2+)
 - LuaSocket library (optional - only needed for socket-based communication)
 
 ## Architecture
@@ -47,6 +47,11 @@ This will:
 ### 1. Install Python dependencies
 
 ```bash
+# Create and activate virtual environment (Python 3.10+ required)
+python3.10 -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install the package
 pip install -e .
 ```
 
@@ -107,14 +112,29 @@ pytest tests/test_integration.py -v
 
 ## Available Tools
 
-The REAPER MCP Server implements **169+ ReaScript API methods** across 21 categories including:
+The REAPER MCP Server implements **756 tools** across 40+ categories including:
+
+### Core DAW Functions
 - Track Management & Controls
-- Media Items & Takes
+- Media Items & Takes  
 - MIDI Operations
 - Effects/FX Management
 - Automation & Envelopes
 - Project Management
 - Transport & Playback
+
+### Music Production Tools
+- **Loop & Time Selection Management** - Loop points, time selection, grid quantization
+- **Bounce & Render Operations** - Track bouncing, freezing, stem export
+- **Groove & Quantization** - Humanization, swing, polyrhythms, tempo detection
+- **Bus Routing & Mixing** - Submixes, parallel compression, sidechain routing
+
+### Advanced Features
+- Audio Analysis & Peak Detection
+- Video & Visual Media Support
+- Color Management
+- Layout & Screenset Management
+- Script Extension Support
 - And much more
 
 For the complete list of all implemented methods, see [IMPLEMENTATION_MASTER.md](IMPLEMENTATION_MASTER.md).
