@@ -569,7 +569,7 @@ def register_advanced_midi_tools(mcp):
 tools = [
     {
         "name": "create_new_midi_item",
-        "description": "Create a new empty MIDI item on a track at specified position. Essential for generative music - creates the container for MIDI notes. Returns item and take handles for further MIDI operations.",
+        "description": "Make a blank canvas for notes. Use when users want to start writing music from scratch.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -641,7 +641,7 @@ tools = [
     },
     {
         "name": "select_midi_notes",
-        "description": "Select MIDI notes within specified time range, pitch range, and channel. Useful for targeted editing operations like transposition, velocity changes, or analysis of specific note ranges.",
+        "description": "Highlight specific notes for editing. Use when users want to modify certain pitches or note ranges.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -681,7 +681,7 @@ tools = [
     },
     {
         "name": "insert_midi_note_extended",
-        "description": "Insert a MIDI note using musical timing in beats rather than PPQ. Simpler interface for note creation when thinking in musical terms. Automatically converts beats to PPQ positions.",
+        "description": "Add a single musical note. Use for specific note requests like 'add a C' or 'put a kick drum hit'.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -698,7 +698,7 @@ tools = [
     },
     {
         "name": "generate_chord_progression",
-        "description": "Generate a complete chord progression in a MIDI take. Supports major, minor, diminished, augmented, and 7th chords. Perfect for quickly sketching harmonic ideas or creating backing tracks.",
+        "description": "Create chord sequences automatically. Use when users want harmony, chord progressions, or accompaniment.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -723,7 +723,7 @@ tools = [
     },
     {
         "name": "generate_scale_run",
-        "description": "Generate scale runs and arpeggios in a MIDI take. Supports major, minor, pentatonic, blues, and chromatic scales. Can generate ascending, descending, or up-and-down patterns. Great for solos and fills.",
+        "description": "Create melodic runs and scales. Use for solos, arpeggios, or melodic passages.",
         "input_schema": {
             "type": "object",
             "properties": {

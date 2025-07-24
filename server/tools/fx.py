@@ -283,16 +283,16 @@ def register_fx_tools(mcp) -> int:
     tools = [
         # Basic FX Management
         (track_fx_get_count, "Get the number of FX on a track"),
-        (track_fx_add_by_name, "Add an FX to a track by name"),
+        (track_fx_add_by_name, "Add effects like reverb, delay, EQ, or compression. Use to change sound character, add space, or fix audio issues"),
         (track_fx_delete, "Delete an FX from a track"),
         (track_fx_get_enabled, "Get whether an FX is enabled"),
-        (track_fx_set_enabled, "Enable or disable an FX"),
+        (track_fx_set_enabled, "Turn effects on or off. Use to bypass, disable, or re-enable any audio effect"),
         (track_fx_get_name, "Get the name of an FX"),
         
         # FX Parameters
         (track_fx_get_param_count, "Get the number of parameters for an FX"),
         (track_fx_get_param, "Get an FX parameter value"),
-        (track_fx_set_param, "Set an FX parameter value"),
+        (track_fx_set_param, "Adjust effect settings. Use for 'more reverb', 'brighter', 'darker', 'less echo', or any effect modification"),
         (track_fx_get_param_name, "Get the name of an FX parameter"),
         
         # FX Presets
@@ -300,7 +300,7 @@ def register_fx_tools(mcp) -> int:
         (track_fx_set_preset, "Set the preset of an FX by name"),
         
         # FX UI
-        (track_fx_show, "Show/hide/toggle FX window"),
+        (track_fx_show, "Show or hide effect windows. Use to see effect controls and make adjustments"),
         (track_fx_get_open, "Check if FX window is open"),
         (track_fx_set_open, "Open or close FX window"),
         (track_fx_get_chain_visible, "Check if FX chain window is visible"),

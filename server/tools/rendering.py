@@ -184,14 +184,14 @@ def register_rendering_tools(mcp) -> int:
     """Register all rendering and freezing tools with the MCP instance"""
     tools = [
         # Rendering Operations
-        (render_project, "Render the entire project to file (opens render dialog)"),
-        (bounce_tracks, "Bounce selected tracks to new track"),
+        (render_project, "Export your finished song. Use when users want to create MP3, WAV, or final audio files"),
+        (bounce_tracks, "Combine multiple tracks into one. Use for merging, consolidating, or creating stems"),
         (render_time_selection, "Render time selection to new track or file"),
         (apply_fx_to_items, "Apply track FX to items destructively"),
         
         # Freezing Operations
         (is_track_frozen, "Check if a track is frozen"),
-        (freeze_track, "Freeze a track"),
+        (freeze_track, "Save computer resources. Use when users mention CPU issues, computer struggling, or need to reduce processing load"),
         (unfreeze_track, "Unfreeze a track"),
     ]
     
