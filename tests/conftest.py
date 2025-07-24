@@ -73,9 +73,12 @@ async def reaper_mcp_client():
     """Create an MCP client connected to the REAPER server"""
     server_module = "server.app"
     
+    # Check for profile override
+    profile = os.environ.get("MCP_TEST_PROFILE", "dsl-production")
+    
     server_params = StdioServerParameters(
         command=sys.executable,
-        args=["-m", server_module],
+        args=["-m", server_module, "--profile", profile],
         env=None
     )
     

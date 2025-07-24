@@ -48,6 +48,7 @@ from .tools.transport import register_transport_tools
 from .tools.time_selection import register_time_selection_tools
 from .tools.markers import register_markers_tools
 from .tools.automation import register_automation_tools
+from .dsl.tools import register_dsl_tools
 from .tools.rendering import register_rendering_tools
 from .tools.gui import register_gui_tools
 from .tools.fx_take import register_fx_take_tools
@@ -81,8 +82,12 @@ from .tools.bus_routing import register_bus_routing_tools
 from .tools.tempo_time_management import register_tempo_time_tools
 from .tools.advanced_midi_generation import register_advanced_midi_tools
 
+# Import DSL health check
+from .dsl.health_check import verify_dsl_installation
+
 # Category mapping
 CATEGORY_REGISTRY = {
+    "DSL": register_dsl_tools,
     "Core API": register_core_api_tools,
     "Tracks": register_track_tools,
     "Media Items": register_media_items_tools,
@@ -188,6 +193,12 @@ async def main_async(args):
     
     logger.info(f"Total tools registered: {total}")
     
+    # Verify DSL functions if using a DSL profile
+    profile = TOOL_PROFILES.get(args.profile)
+    if profile:
+        categories = profile.get("categories", [])
+        await verify_dsl_installation(bridge, args.profile, categories)
+    
     # Create and connect WebSocket client if relay URL is provided
     relay_url = os.environ.get("MCP_RELAY_URL")
     auth_token = os.environ.get("MCP_AUTH_TOKEN")
@@ -215,8 +226,8 @@ def main():
     parser.add_argument(
         "--profile",
         choices=list(TOOL_PROFILES.keys()),
-        default="groq-essential",
-        help="Tool profile to use (default: groq-essential)"
+        default="dsl-production",
+        help="Tool profile to use (default: dsl-production)"
     )
     parser.add_argument(
         "--list-profiles",

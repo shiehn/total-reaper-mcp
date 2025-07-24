@@ -69,6 +69,23 @@ TOOL_PROFILES = {
         "name": "Full",
         "description": "All available tools (may cause issues with some LLMs)",
         "categories": None  # None means all categories
+    },
+    "dsl": {
+        "name": "DSL/Macros",
+        "description": "Natural language friendly DSL tools for common workflows",
+        "categories": [
+            "DSL"  # Just the DSL tools
+        ]
+    },
+    "dsl-production": {
+        "name": "DSL Production",
+        "description": "DSL tools plus essential MIDI and track management",
+        "categories": [
+            "DSL",
+            "Advanced MIDI Generation",  # For external MIDI generation
+            "FX",  # For adding instruments
+            "Rendering & Freezing"  # For bouncing
+        ]
     }
 }
 
