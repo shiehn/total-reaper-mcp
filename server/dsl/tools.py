@@ -44,7 +44,21 @@ def register_dsl_tools(mcp):
             - "I want to record my guitar"
         """
         result = await track_create(bridge, name, role, position)
-        return result.to_string()
+        
+        # Include ReaScript calls in the response message
+        response = result.to_string()
+        
+        if result.reascript_calls:
+            response += "\n\n[ReaScript calls:"
+            for call in result.reascript_calls:
+                response += f"\n  {call['function']}({call['args']}) → {call.get('duration_ms', 0):.0f}ms"
+            response += "]"
+        
+        # If there's an error, raise an exception so MCP sets isError properly
+        if not result.success:
+            raise Exception(response)
+        
+        return response
     
     @mcp.tool()
     async def dsl_track_volume(
@@ -73,7 +87,20 @@ def register_dsl_tools(mcp):
             - "bring up the drums"
         """
         result = await track_set_volume(bridge, track, volume)
-        return result.to_string()
+        
+        # Include ReaScript calls if any
+        response = result.to_string()
+        if result.reascript_calls:
+            response += "\n\n[ReaScript calls:"
+            for call in result.reascript_calls:
+                response += f"\n  {call['function']}({call['args']}) → {call.get('duration_ms', 0):.0f}ms"
+            response += "]"
+        
+        # If there's an error, raise an exception so MCP sets isError properly
+        if not result.success:
+            raise Exception(response)
+        
+        return response
     
     @mcp.tool()
     async def dsl_track_pan(

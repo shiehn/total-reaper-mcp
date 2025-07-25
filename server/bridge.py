@@ -9,6 +9,7 @@ import os
 import json
 import asyncio
 import logging
+import time
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 
@@ -21,12 +22,21 @@ BRIDGE_DIR = Path(os.environ.get(
 ))
 BRIDGE_DIR.mkdir(parents=True, exist_ok=True)
 
+# ReaScript logging configuration
+REASCRIPT_LOGGING_ENABLED = os.environ.get('REASCRIPT_LOGGING', '').lower() in ('1', 'true', 'yes')
+REASCRIPT_LOG_FILE = Path(os.environ.get(
+    'REASCRIPT_LOG_FILE',
+    '/tmp/reascript_calls.jsonl'
+))
+
 class ReaperFileBridge:
     """File-based bridge for communicating with REAPER"""
     
     def __init__(self):
         self.bridge_dir = BRIDGE_DIR
         self.request_id = 0
+        self.call_tracking = []  # Track calls during operations
+        self.tracking_enabled = False
         
     async def call_lua(self, func_name: str, args: Optional[List[Any]] = None) -> Dict[str, Any]:
         """Call a Lua function and wait for response"""
@@ -41,6 +51,24 @@ class ReaperFileBridge:
             "args": args or []
         }
         
+        # Track call start time for performance logging
+        call_start_time = time.time()
+        
+        # Log ReaScript call if enabled
+        if REASCRIPT_LOGGING_ENABLED:
+            log_entry = {
+                "timestamp": call_start_time,
+                "request_id": self.request_id,
+                "type": "call",
+                "function": func_name,
+                "args": args or [],
+                "dsl_tool": os.environ.get('CURRENT_DSL_TOOL', 'unknown')
+            }
+            try:
+                with open(REASCRIPT_LOG_FILE, 'a') as f:
+                    f.write(json.dumps(log_entry) + '\n')
+            except Exception as e:
+                logger.debug(f"Failed to log ReaScript call: {e}")
         
         try:
             with open(request_file, 'w') as f:
@@ -58,6 +86,38 @@ class ReaperFileBridge:
                         # Clean up files
                         request_file.unlink(missing_ok=True)
                         response_file.unlink(missing_ok=True)
+                        
+                        # Track call if tracking is enabled
+                        if self.tracking_enabled:
+                            duration_ms = (time.time() - call_start_time) * 1000
+                            self.call_tracking.append({
+                                "timestamp": call_start_time,
+                                "function": func_name,
+                                "args": args or [],
+                                "response": response,
+                                "duration_ms": duration_ms,
+                                "success": response.get("ok", False)
+                            })
+                        
+                        # Log ReaScript response if enabled
+                        if REASCRIPT_LOGGING_ENABLED:
+                            duration_ms = (time.time() - call_start_time) * 1000
+                            log_entry = {
+                                "timestamp": time.time(),
+                                "request_id": self.request_id,
+                                "type": "response",
+                                "function": func_name,
+                                "response": response,
+                                "duration_ms": duration_ms,
+                                "success": response.get("ok", False),
+                                "dsl_tool": os.environ.get('CURRENT_DSL_TOOL', 'unknown')
+                            }
+                            try:
+                                with open(REASCRIPT_LOG_FILE, 'a') as f:
+                                    f.write(json.dumps(log_entry) + '\n')
+                            except Exception as e:
+                                logger.debug(f"Failed to log ReaScript response: {e}")
+                        
                         return response
                     except json.JSONDecodeError:
                         # File might be partially written, wait a bit
@@ -67,11 +127,92 @@ class ReaperFileBridge:
             # Timeout
             request_file.unlink(missing_ok=True)
             logger.error("Timeout waiting for REAPER response")
-            return {"ok": False, "error": "Timeout waiting for REAPER response"}
+            timeout_response = {"ok": False, "error": "Timeout waiting for REAPER response"}
+            
+            # Track timeout if tracking is enabled
+            if self.tracking_enabled:
+                duration_ms = (time.time() - call_start_time) * 1000
+                self.call_tracking.append({
+                    "timestamp": call_start_time,
+                    "function": func_name,
+                    "args": args or [],
+                    "response": timeout_response,
+                    "duration_ms": duration_ms,
+                    "success": False,
+                    "timeout": True
+                })
+            
+            # Log timeout if enabled
+            if REASCRIPT_LOGGING_ENABLED:
+                duration_ms = (time.time() - call_start_time) * 1000
+                log_entry = {
+                    "timestamp": time.time(),
+                    "request_id": self.request_id,
+                    "type": "timeout",
+                    "function": func_name,
+                    "duration_ms": duration_ms,
+                    "dsl_tool": os.environ.get('CURRENT_DSL_TOOL', 'unknown')
+                }
+                try:
+                    with open(REASCRIPT_LOG_FILE, 'a') as f:
+                        f.write(json.dumps(log_entry) + '\n')
+                except Exception as e:
+                    logger.debug(f"Failed to log ReaScript timeout: {e}")
+            
+            return timeout_response
             
         except Exception as e:
             logger.error(f"Bridge error: {e}")
-            return {"ok": False, "error": str(e)}
+            error_response = {"ok": False, "error": str(e)}
+            
+            # Track error if tracking is enabled
+            if self.tracking_enabled:
+                duration_ms = (time.time() - call_start_time) * 1000
+                self.call_tracking.append({
+                    "timestamp": call_start_time,
+                    "function": func_name,
+                    "args": args or [],
+                    "response": error_response,
+                    "duration_ms": duration_ms,
+                    "success": False,
+                    "error": str(e)
+                })
+            
+            # Log error if enabled
+            if REASCRIPT_LOGGING_ENABLED:
+                duration_ms = (time.time() - call_start_time) * 1000
+                log_entry = {
+                    "timestamp": time.time(),
+                    "request_id": self.request_id,
+                    "type": "error",
+                    "function": func_name,
+                    "error": str(e),
+                    "duration_ms": duration_ms,
+                    "dsl_tool": os.environ.get('CURRENT_DSL_TOOL', 'unknown')
+                }
+                try:
+                    with open(REASCRIPT_LOG_FILE, 'a') as f:
+                        f.write(json.dumps(log_entry) + '\n')
+                except Exception as e:
+                    logger.debug(f"Failed to log ReaScript error: {e}")
+            
+            return error_response
+    
+    def start_tracking(self):
+        """Start tracking ReaScript calls"""
+        self.tracking_enabled = True
+        self.call_tracking = []
+    
+    def stop_tracking(self):
+        """Stop tracking and return collected calls"""
+        self.tracking_enabled = False
+        calls = self.call_tracking.copy()
+        self.call_tracking = []
+        return calls
+    
+    def get_tracked_calls(self):
+        """Get tracked calls without clearing"""
+        return self.call_tracking.copy()
 
 # Singleton instance
 bridge = ReaperFileBridge()

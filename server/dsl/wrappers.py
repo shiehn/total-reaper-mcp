@@ -36,6 +36,7 @@ class OperationResult:
     changes: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
     disambiguation_needed: Optional[Dict[str, Any]] = None
+    reascript_calls: Optional[List[Dict[str, Any]]] = None
     
     def to_string(self) -> str:
         """Convert to user-friendly string message"""
@@ -43,6 +44,19 @@ class OperationResult:
             return self.message
         else:
             return f"Error: {self.error or self.message}"
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization"""
+        return {
+            "success": self.success,
+            "action": self.action,
+            "message": self.message,
+            "targets": self.targets,
+            "changes": self.changes,
+            "error": self.error,
+            "disambiguation_needed": self.disambiguation_needed,
+            "reascript_calls": self.reascript_calls
+        }
 
 # Track Operations
 
@@ -50,6 +64,9 @@ async def track_create(bridge, name: Optional[str] = None,
                       role: Optional[str] = None,
                       position: Optional[int] = None) -> OperationResult:
     """Create a new track with optional name and role"""
+    # Start tracking ReaScript calls
+    bridge.start_tracking()
+    
     try:
         # Determine position
         if position is None:
@@ -63,7 +80,8 @@ async def track_create(bridge, name: Optional[str] = None,
                 success=False,
                 action="track_create",
                 message="Failed to create track",
-                error=result.get("error")
+                error=result.get("error"),
+                reascript_calls=bridge.stop_tracking()
             )
         
         # Set name if provided
@@ -74,13 +92,17 @@ async def track_create(bridge, name: Optional[str] = None,
         if role:
             await bridge.call_lua("SetTrackNotes", [position, f"role:{role}"])
         
+        # Get tracked calls
+        reascript_calls = bridge.stop_tracking()
+        
         return OperationResult(
             success=True,
             action="track_create",
             message=f"Created track '{name or f'Track {position + 1}'}'" + 
                    (f" with role '{role}'" if role else ""),
             targets=[{"index": position, "name": name or f"Track {position + 1}"}],
-            changes={"position": position, "name": name, "role": role}
+            changes={"position": position, "name": name, "role": role},
+            reascript_calls=reascript_calls
         )
         
     except Exception as e:
@@ -88,12 +110,16 @@ async def track_create(bridge, name: Optional[str] = None,
             success=False,
             action="track_create",
             message="Failed to create track",
-            error=str(e)
+            error=str(e),
+            reascript_calls=bridge.stop_tracking()
         )
 
 async def track_set_volume(bridge, track_sel: TrackSelector, 
                           volume: VolumeValue) -> OperationResult:
     """Set track volume (accepts dB, linear, or relative changes)"""
+    # Start tracking ReaScript calls
+    bridge.start_tracking()
+    
     try:
         track = await resolve_track(bridge, track_sel)
         
@@ -114,6 +140,9 @@ async def track_set_volume(bridge, track_sel: TrackSelector,
         if not result.get("ok"):
             raise Exception("Failed to set volume")
         
+        # Get tracked calls
+        reascript_calls = bridge.stop_tracking()
+        
         return OperationResult(
             success=True,
             action="track_set_volume",
@@ -124,7 +153,8 @@ async def track_set_volume(bridge, track_sel: TrackSelector,
                 "new_volume_db": new_db,
                 "old_volume_linear": current_linear,
                 "new_volume_linear": new_linear
-            }
+            },
+            reascript_calls=reascript_calls
         )
         
     except DisambiguationNeeded as e:
@@ -135,14 +165,16 @@ async def track_set_volume(bridge, track_sel: TrackSelector,
             disambiguation_needed={
                 "type": "track",
                 "candidates": [t.to_dict() for t in e.candidates]
-            }
+            },
+            reascript_calls=bridge.stop_tracking()
         )
     except Exception as e:
         return OperationResult(
             success=False,
             action="track_set_volume",
             message=f"Failed to set track volume",
-            error=str(e)
+            error=str(e),
+            reascript_calls=bridge.stop_tracking()
         )
 
 async def track_set_pan(bridge, track_sel: TrackSelector, 
