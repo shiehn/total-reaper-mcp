@@ -367,10 +367,12 @@ def register_dsl_tools(mcp):
         length: Union[str, int] = "4 bars",
         complexity: float = 0.7,
         key: Optional[str] = None,
-        track: Optional[Union[str, int, Dict[str, Any]]] = None
+        track: Optional[Union[str, int, Dict[str, Any]]] = None,
+        position: Optional[Union[str, float]] = "cursor"
     ) -> str:
         """
-        Generate musical patterns using AI. Use when users ask to create, generate, or make drums, bass, chords, melodies, or any musical content.
+        Generate musical patterns using AI. Creates a new track if none specified, or adds to existing track. 
+        Use when users ask to create, generate, or make drums, bass, chords, melodies, or any musical content.
         
         Args:
             pattern_type: Type of pattern - "drums", "bass", "chords", "melody", "lead", "arpeggio", "rhythm"
@@ -378,17 +380,17 @@ def register_dsl_tools(mcp):
             length: Pattern length - "4 bars", "8 bars", "16 bars", or seconds
             complexity: Pattern complexity (0.0 to 1.0, default 0.7)
             key: Musical key if applicable - "C major", "A minor", etc.
-            track: Target track or None to create new track
+            track: Target track (None = create new track, string/int = use existing)
+            position: Where to insert - "cursor", "start", "end", or time in seconds
             
         Examples:
-            - "generate a drum beat"
-            - "create a bassline"
-            - "make a chord progression"
-            - "add a melody"
-            - "generate a funky bass"
-            - "create a jazz piano part"
-            - "make me a trap beat"
-            - "add some strings"
+            - "generate a drum beat" → Creates new drum track with pattern
+            - "add 4 bars of bass to the Bass track" → Adds to existing track
+            - "create a melody on track 3" → Adds to track 3
+            - "generate a funky bass" → Creates new bass track
+            - "put a jazz piano part at bar 8" → Creates track and adds at position
+        
+        Workflow: If track is None, creates appropriate track first, then generates and inserts pattern.
         """
         # Premium feature stub
         return "🔒 Premium Feature: AI pattern generation requires authentication. Please log in to use generative features at https://signalsandsorcery.com/auth"
@@ -399,27 +401,28 @@ def register_dsl_tools(mcp):
         style: Optional[str] = None,
         length: Union[str, float] = "4 bars",
         characteristics: Optional[Dict[str, Any]] = None,
-        track: Optional[Union[str, int, Dict[str, Any]]] = None
+        track: Optional[Union[str, int, Dict[str, Any]]] = None,
+        position: Optional[Union[str, float]] = "cursor"
     ) -> str:
         """
-        Generate audio samples, loops, or soundscapes using AI. Use when users want to create sounds, effects, atmospheres, or any audio content.
+        Generate audio samples, loops, or soundscapes using AI. Creates a new track if none specified, or adds to existing track.
+        Use when users want to create sounds, effects, atmospheres, or any audio content.
         
         Args:
             audio_type: Type of audio - "pad", "texture", "effect", "atmosphere", "loop", "one-shot", "vocal"
             style: Audio style - "ambient", "cinematic", "lo-fi", "glitch", "nature", etc.
             length: Audio length - "4 bars", "8 bars", or seconds
             characteristics: Additional parameters like mood, energy, brightness
-            track: Target track or None to create new track
+            track: Target track (None = create new track, string/int = use existing)
+            position: Where to insert - "cursor", "start", "end", or time in seconds
             
         Examples:
-            - "generate an ambient pad"
-            - "create a riser"
-            - "make a sound effect"
-            - "generate background atmosphere"
-            - "create a vocal chop"
-            - "make some nature sounds"
-            - "generate a transition effect"
-            - "create a cinematic drone"
+            - "generate an ambient pad" → Creates new track with pad
+            - "add a riser to the FX track" → Adds to existing FX track
+            - "create a sound effect at the drop" → Creates track and places at position
+            - "put some nature sounds on track 4" → Adds to track 4
+        
+        Workflow: If track is None, creates appropriate track first, then generates and inserts audio.
         """
         # Premium feature stub
         return "🔒 Premium Feature: AI audio generation requires authentication. Please log in to use generative features at https://signalsandsorcery.com/auth"
