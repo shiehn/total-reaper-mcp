@@ -361,101 +361,67 @@ def register_dsl_tools(mcp):
     # Generative AI Tools (Premium)
     
     @mcp.tool()
-    async def dsl_generate_pattern(
-        pattern_type: str,
-        style: Optional[str] = None,
-        length: Union[str, int] = "4 bars",
-        complexity: float = 0.7,
-        key: Optional[str] = None,
-        track: Optional[Union[str, int, Dict[str, Any]]] = None,
-        position: Optional[Union[str, float]] = "cursor"
+    async def dsl_generate(
+        what: str,
+        style: Optional[str] = None
     ) -> str:
         """
-        Generate musical patterns using AI. Creates a new track if none specified, or adds to existing track. 
-        Use when users ask to create, generate, or make drums, bass, chords, melodies, or any musical content.
+        Generate music using AI. Use when users ask to create, generate, or make any musical content.
         
         Args:
-            pattern_type: Type of pattern - "drums", "bass", "chords", "melody", "lead", "arpeggio", "rhythm"
-            style: Musical style - "rock", "jazz", "electronic", "hip-hop", "classical", etc.
-            length: Pattern length - "4 bars", "8 bars", "16 bars", or seconds
-            complexity: Pattern complexity (0.0 to 1.0, default 0.7)
-            key: Musical key if applicable - "C major", "A minor", etc.
-            track: Target track (None = create new track, string/int = use existing)
-            position: Where to insert - "cursor", "start", "end", or time in seconds
+            what: What to generate - "drums", "bass", "melody", "chords", "pad", etc.
+            style: Optional style descriptor - "funk", "jazz", "ambient", etc.
             
         Examples:
-            - "generate a drum beat" → Creates new drum track with pattern
-            - "add 4 bars of bass to the Bass track" → Adds to existing track
-            - "create a melody on track 3" → Adds to track 3
-            - "generate a funky bass" → Creates new bass track
-            - "put a jazz piano part at bar 8" → Creates track and adds at position
-        
-        Workflow: If track is None, creates appropriate track first, then generates and inserts pattern.
+            - "generate drums"
+            - "create a bassline"
+            - "make a jazz piano part"
+            - "generate an ambient pad"
+            - "create a melody"
+            - "make a beat"
         """
         # Premium feature stub
-        return "🔒 Premium Feature: AI pattern generation requires authentication. Please log in to use generative features at https://signalsandsorcery.com/auth"
+        return "🔒 Premium Feature: AI generation requires authentication. Please log in to use generative features at https://signalsandsorcery.com/auth"
     
     @mcp.tool()
-    async def dsl_generate_audio(
-        audio_type: str,
-        style: Optional[str] = None,
-        length: Union[str, float] = "4 bars",
-        characteristics: Optional[Dict[str, Any]] = None,
-        track: Optional[Union[str, int, Dict[str, Any]]] = None,
-        position: Optional[Union[str, float]] = "cursor"
+    async def dsl_enhance(
+        target: Optional[str] = "selected"
     ) -> str:
         """
-        Generate audio samples, loops, or soundscapes using AI. Creates a new track if none specified, or adds to existing track.
-        Use when users want to create sounds, effects, atmospheres, or any audio content.
+        Enhance or humanize existing content using AI. Use for variations, humanization, or improvements.
         
         Args:
-            audio_type: Type of audio - "pad", "texture", "effect", "atmosphere", "loop", "one-shot", "vocal"
-            style: Audio style - "ambient", "cinematic", "lo-fi", "glitch", "nature", etc.
-            length: Audio length - "4 bars", "8 bars", or seconds
-            characteristics: Additional parameters like mood, energy, brightness
-            track: Target track (None = create new track, string/int = use existing)
-            position: Where to insert - "cursor", "start", "end", or time in seconds
-            
-        Examples:
-            - "generate an ambient pad" → Creates new track with pad
-            - "add a riser to the FX track" → Adds to existing FX track
-            - "create a sound effect at the drop" → Creates track and places at position
-            - "put some nature sounds on track 4" → Adds to track 4
-        
-        Workflow: If track is None, creates appropriate track first, then generates and inserts audio.
-        """
-        # Premium feature stub
-        return "🔒 Premium Feature: AI audio generation requires authentication. Please log in to use generative features at https://signalsandsorcery.com/auth"
-    
-    @mcp.tool()
-    async def dsl_generate_variation(
-        target: Union[str, Dict[str, Any]] = "selected",
-        variation_type: str = "melodic",
-        amount: float = 0.5,
-        preserve: Optional[List[str]] = None
-    ) -> str:
-        """
-        Create variations, humanize, or enhance existing content using AI. Use when users want to modify, vary, humanize, or improve what's already there.
-        
-        Args:
-            target: What to vary - "selected", "last", track reference, or time range
-            variation_type: Type of variation - "melodic", "rhythmic", "harmonic", "humanize", "fill", "ornament"
-            amount: Variation amount (0.0 to 1.0, default 0.5)
-            preserve: Elements to keep unchanged - ["rhythm", "pitch", "timing"]
+            target: What to enhance - "selected" (default), "last", or track name/number
             
         Examples:
             - "make it more interesting"
-            - "add some variation"
             - "humanize this"
-            - "create a fill here"
-            - "make it less repetitive"
-            - "add some swing"
-            - "vary the velocity"
-            - "add ornaments"
-            - "make it more dynamic"
+            - "add variation"
+            - "make it less robotic"
+            - "enhance the drums"
         """
         # Premium feature stub
-        return "🔒 Premium Feature: AI variation generation requires authentication. Please log in to use generative features at https://signalsandsorcery.com/auth"
+        return "🔒 Premium Feature: AI enhancement requires authentication. Please log in to use generative features at https://signalsandsorcery.com/auth"
+    
+    @mcp.tool()
+    async def dsl_continue(
+        from_where: Optional[str] = "end"
+    ) -> str:
+        """
+        Continue or extend existing music using AI. Use when users want AI to continue their composition.
+        
+        Args:
+            from_where: Where to continue from - "end" (default), "cursor", or "selection"
+            
+        Examples:
+            - "continue this"
+            - "what comes next"
+            - "extend the melody"
+            - "keep going"
+            - "finish the song"
+        """
+        # Premium feature stub
+        return "🔒 Premium Feature: AI continuation requires authentication. Please log in to use generative features at https://signalsandsorcery.com/auth"
     
     # Count registered tools
     tool_count = 18
