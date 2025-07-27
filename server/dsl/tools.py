@@ -16,7 +16,7 @@ from .wrappers import (
     context_get_tracks, context_get_tempo_info,
     OperationResult
 )
-from .resolvers import reset_context, dsl_context
+from .resolvers import reset_context, _context as dsl_context
 
 def register_dsl_tools(mcp):
     """Register DSL/Macro tools for natural language control"""
@@ -378,13 +378,15 @@ def register_dsl_tools(mcp):
             - "call the first track Drums"
         """
         try:
-            resolved_track = dsl_context.resolve_track(track)
-            track_index = resolved_track['index']
+            from .resolvers import resolve_track
+            
+            resolved_track = await resolve_track(bridge, track)
+            track_index = resolved_track.index
             
             from server.tools.tracks import set_track_name
             result = await set_track_name(track_index, name)
             
-            dsl_context.last_track = resolved_track
+            dsl_context.update_track(resolved_track)
             
             return f"Renamed track {track_index + 1} to '{name}'"
             
@@ -407,14 +409,16 @@ def register_dsl_tools(mcp):
             - "get rid of the bass track"
         """
         try:
-            resolved_track = dsl_context.resolve_track(track)
-            track_index = resolved_track['index']
+            from .resolvers import resolve_track
+            
+            resolved_track = await resolve_track(bridge, track)
+            track_index = resolved_track.index
             
             from server.tools.tracks import delete_track
             result = await delete_track(track_index)
             
             # Clear last track reference if it was deleted
-            if dsl_context.last_track and dsl_context.last_track['index'] == track_index:
+            if dsl_context.last_track and dsl_context.last_track.index == track_index:
                 dsl_context.last_track = None
             
             return f"Deleted track {track_index + 1}"
@@ -440,13 +444,15 @@ def register_dsl_tools(mcp):
             - "unarm all tracks"
         """
         try:
-            resolved_track = dsl_context.resolve_track(track)
-            track_index = resolved_track['index']
+            from .resolvers import resolve_track
             
-            from server.tools.tracks import set_track_arm
-            result = await set_track_arm(track_index, armed)
+            resolved_track = await resolve_track(bridge, track)
+            track_index = resolved_track.index
             
-            dsl_context.last_track = resolved_track
+            from server.tools.tracks import set_track_record_arm
+            result = await set_track_record_arm(track_index, armed)
+            
+            dsl_context.update_track(resolved_track)
             
             action = "armed" if armed else "unarmed"
             return f"Track {track_index + 1} {action} for recording"
@@ -522,7 +528,7 @@ def register_dsl_tools(mcp):
             - "go to the chorus marker"
         """
         try:
-            from server.tools.transport import set_cursor_position, get_play_position
+            from server.tools.transport import set_edit_cursor_position
             from server.tools.project import get_project_length
             
             # Handle different position formats
@@ -546,7 +552,7 @@ def register_dsl_tools(mcp):
             else:
                 return f"Invalid position format: {position}"
             
-            result = await set_cursor_position(pos_seconds)
+            result = await set_edit_cursor_position(pos_seconds)
             return f"Moved to {pos_seconds:.1f} seconds"
             
         except Exception as e:
@@ -563,8 +569,8 @@ def register_dsl_tools(mcp):
             - "begin recording"
         """
         try:
-            from server.tools.transport import transport_record
-            result = await transport_record()
+            from server.tools.transport import record
+            result = await record()
             return "Recording started"
         except Exception as e:
             return f"Failed to start recording: {str(e)}"
@@ -874,11 +880,12 @@ def register_dsl_tools(mcp):
             - "make another drums track"
         """
         try:
+            from .resolvers import resolve_track
             from server.tools.tracks import set_track_selected
             from server.tools.core_api import execute_action
             
-            resolved_track = dsl_context.resolve_track(track)
-            track_index = resolved_track['index']
+            resolved_track = await resolve_track(bridge, track)
+            track_index = resolved_track.index
             
             # Select the track to duplicate
             await set_track_selected(track_index, True)
@@ -947,10 +954,11 @@ def register_dsl_tools(mcp):
             - "color this blue"
         """
         try:
+            from .resolvers import resolve_track
             from server.tools.tracks import set_track_color
             
-            resolved_track = dsl_context.resolve_track(track)
-            track_index = resolved_track['index']
+            resolved_track = await resolve_track(bridge, track)
+            track_index = resolved_track.index
             
             # Map color names to RGB values
             color_map = {
@@ -971,7 +979,7 @@ def register_dsl_tools(mcp):
             color_value = color_map.get(color.lower(), 0xFF0000)  # Default to red
             result = await set_track_color(track_index, color_value)
             
-            dsl_context.last_track = resolved_track
+            dsl_context.update_track(resolved_track)
             
             return f"Colored track {track_index + 1} {color}"
             
@@ -1085,18 +1093,19 @@ def register_dsl_tools(mcp):
             - "create a send to the delay track"
         """
         try:
+            from .resolvers import resolve_track
             from server.tools.routing_sends import create_send
             
             # Resolve tracks
-            source = dsl_context.resolve_track(from_track)
-            dest = dsl_context.resolve_track(to_track)
+            source = await resolve_track(bridge, from_track)
+            dest = await resolve_track(bridge, to_track)
             
-            result = await create_send(source['index'], dest['index'])
+            result = await create_send(source.index, dest.index)
             
             # Update context
-            dsl_context.last_track = source
+            dsl_context.update_track(source)
             
-            return f"Created send from track {source['index'] + 1} to track {dest['index'] + 1}"
+            return f"Created send from track {source.index + 1} to track {dest.index + 1}"
             
         except Exception as e:
             return f"Failed to create send: {str(e)}"
