@@ -39,9 +39,9 @@ class TestDSLTrackManagementNew:
         tracks = await call_dsl_tool(reaper_mcp_client, "dsl_list_tracks", {})
         print(f"Track list: {tracks}")
         
-        # Rename it - use index 0 since it's the first track
+        # Rename it by name
         result = await call_dsl_tool(reaper_mcp_client, "dsl_track_rename", {
-            "track": 0,  # Use index instead of name
+            "track": unique_name,
             "name": new_name
         })
         assert "Renamed track" in result and f"to '{new_name}'" in result

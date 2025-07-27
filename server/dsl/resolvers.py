@@ -250,9 +250,11 @@ def _score_track(track: TrackRef, selector: Dict[str, Any]) -> float:
 
 async def _get_track_count(bridge) -> int:
     """Get the number of tracks in the project"""
-    result = await bridge.call_lua("GetTrackCount", [])
+    # Use GetAllTracksInfo which we know works
+    result = await bridge.call_lua("GetAllTracksInfo", [])
     if result.get("ok"):
-        return result.get("ret", 0)
+        tracks = result.get("tracks", [])
+        return len(tracks)
     return 0
 
 async def _get_track_by_index(bridge, index: int) -> TrackRef:
