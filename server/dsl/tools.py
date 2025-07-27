@@ -1097,7 +1097,7 @@ def register_dsl_tools(mcp):
         """
         try:
             from .resolvers import resolve_track
-            from server.tools.routing_sends import create_send
+            from server.tools.routing_sends import create_track_send
             
             # Resolve tracks
             source = await resolve_track(bridge, from_track)
@@ -1221,7 +1221,17 @@ def register_dsl_tools(mcp):
             
             # Get FX count to find the effect
             fx_count_result = await track_fx_get_count(track_index)
-            fx_count = int(fx_count_result.split(":")[1].strip())
+            
+            # Parse the result - format is "Track X has Y FX"
+            try:
+                parts = str(fx_count_result).split()
+                if "has" in parts:
+                    has_idx = parts.index("has")
+                    fx_count = int(parts[has_idx + 1])
+                else:
+                    fx_count = 0
+            except:
+                fx_count = 0
             
             # For now, we'll bypass/enable the first effect (index 0)
             # In a full implementation, we'd search for the effect by name
@@ -1251,17 +1261,18 @@ def register_dsl_tools(mcp):
         """
         try:
             from .resolvers import resolve_track
-            from server.tools.routing_sends import create_send, set_send_volume
+            from server.tools.routing_sends import create_track_send, set_track_send_ui_vol
             
             source = await resolve_track(bridge, from_track)
             dest = await resolve_track(bridge, to_track)
             
             # Create the send
-            result = await create_send(source.index, dest.index)
+            result = await create_track_send(source.index, dest.index)
             
-            # Set send amount (convert 0-1 to dB)
-            amount_db = 20 * math.log10(amount) if amount > 0 else -150
-            await set_send_volume(source.index, dest.index, amount_db)
+            # Set send amount (convert 0-1 to normalized volume)
+            # For sends, we'll use send index 0 (assuming it's the first send)
+            send_index = 0
+            await set_track_send_ui_vol(source.index, send_index, amount)
             
             # Update context
             dsl_context.update_track(source)
@@ -1284,7 +1295,7 @@ def register_dsl_tools(mcp):
         """
         try:
             from .resolvers import resolve_track, resolve_tracks_pattern
-            from server.tools.routing_sends import create_send
+            from server.tools.routing_sends import create_track_send
             
             # Create the bus track
             bus_result = await dsl_track_create(name)
@@ -1311,7 +1322,7 @@ def register_dsl_tools(mcp):
             routed = []
             for track in tracks:
                 try:
-                    await create_send(track.index, bus_track.index)
+                    await create_track_send(track.index, bus_track.index)
                     routed.append(track.name)
                 except:
                     pass
@@ -1346,7 +1357,7 @@ def register_dsl_tools(mcp):
         """
         try:
             from .resolvers import resolve_track
-            from server.tools.automation import show_track_envelope, insert_envelope_point
+            from server.tools.automation import insert_envelope_point, get_track_envelope_by_name
             
             resolved_track = await resolve_track(bridge, track)
             track_index = resolved_track.index
@@ -1363,8 +1374,8 @@ def register_dsl_tools(mcp):
             
             envelope_name = param_map.get(parameter.lower(), parameter)
             
-            # Show the automation envelope
-            await show_track_envelope(track_index, envelope_name, True)
+            # Get or create the automation envelope
+            envelope_result = await get_track_envelope_by_name(track_index, envelope_name)
             
             # Create automation based on type
             current_pos = await bridge.call_lua("GetCursorPosition", [])

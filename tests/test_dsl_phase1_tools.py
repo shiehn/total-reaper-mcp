@@ -89,10 +89,14 @@ class TestDSLEffectsTools:
         """Test bypassing and enabling effects"""
         # Create track and add effect
         await call_dsl_tool(reaper_mcp_client, "dsl_track_create", {"name": "Bypass Test"})
-        await call_dsl_tool(reaper_mcp_client, "dsl_add_effect", {
+        
+        # Add effect and check result
+        add_result = await call_dsl_tool(reaper_mcp_client, "dsl_add_effect", {
             "track": "Bypass Test",
             "effect": "delay"
         })
+        logger.info(f"Add effect result: {add_result}")
+        assert "Added delay" in add_result
         
         # Bypass effect
         result = await call_dsl_tool(reaper_mcp_client, "dsl_effect_bypass", {
@@ -100,6 +104,7 @@ class TestDSLEffectsTools:
             "effect": "delay",
             "bypass": True
         })
+        logger.info(f"Bypass result: {result}")
         assert "Bypassed delay on track" in result
         
         # Enable effect
