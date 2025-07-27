@@ -769,6 +769,53 @@ local function process_request()
                             response.error = "GetTrack requires 2 arguments"
                         end
                     
+                    elseif fname == "CreateTrackSend" then
+                        -- Create a send between two tracks
+                        if #args >= 2 then
+                            local src_track = nil
+                            local dest_track = nil
+                            
+                            -- Handle source track
+                            if type(args[1]) == "number" then
+                                src_track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use source track pointer from previous call - use track index instead"
+                                response.ok = false
+                            elseif type(args[1]) == "userdata" then
+                                src_track = args[1]
+                            end
+                            
+                            -- Handle destination track
+                            if src_track and type(args[2]) == "number" then
+                                dest_track = reaper.GetTrack(0, args[2])
+                            elseif src_track and type(args[2]) == "table" and args[2].__ptr then
+                                response.error = "Cannot use destination track pointer from previous call - use track index instead"
+                                response.ok = false
+                                src_track = nil  -- Clear to prevent partial operation
+                            elseif src_track and type(args[2]) == "userdata" then
+                                dest_track = args[2]
+                            end
+                            
+                            if src_track and dest_track then
+                                local send_idx = reaper.CreateTrackSend(src_track, dest_track)
+                                response.ok = true
+                                response.ret = send_idx
+                            elseif not src_track then
+                                if not response.error then
+                                    response.error = "Source track not found"
+                                end
+                                response.ok = false
+                            else
+                                if not response.error then
+                                    response.error = "Destination track not found"
+                                end
+                                response.ok = false
+                            end
+                        else
+                            response.error = "CreateTrackSend requires 2 arguments (source_track, dest_track)"
+                            response.ok = false
+                        end
+                    
                     elseif fname == "SetTrackSelected" then
                         if #args >= 2 then
                             local track = reaper.GetTrack(0, args[1])

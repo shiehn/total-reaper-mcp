@@ -36,21 +36,17 @@ async def get_track_num_sends(track_index: int, category: int = 0) -> str:
 
 async def create_track_send(src_track_index: int, dst_track_index: int) -> str:
     """Create a send from source track to destination track"""
-    # Get tracks
+    # Verify tracks exist first
     src_track_result = await bridge.call_lua("GetTrack", [0, src_track_index])
     if not src_track_result.get("ok") or not src_track_result.get("ret"):
         raise Exception(f"Failed to find source track at index {src_track_index}")
-    
-    src_track = src_track_result.get("ret")
     
     dst_track_result = await bridge.call_lua("GetTrack", [0, dst_track_index])
     if not dst_track_result.get("ok") or not dst_track_result.get("ret"):
         raise Exception(f"Failed to find destination track at index {dst_track_index}")
     
-    dst_track = dst_track_result.get("ret")
-    
-    # Create send
-    result = await bridge.call_lua("CreateTrackSend", [src_track, dst_track])
+    # Create send using track indices (CreateTrackSend handler will convert to track objects)
+    result = await bridge.call_lua("CreateTrackSend", [src_track_index, dst_track_index])
     
     if result.get("ok"):
         send_idx = result.get("ret", -1)

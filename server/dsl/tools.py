@@ -1103,7 +1103,7 @@ def register_dsl_tools(mcp):
             source = await resolve_track(bridge, from_track)
             dest = await resolve_track(bridge, to_track)
             
-            result = await create_send(source.index, dest.index)
+            result = await create_track_send(source.index, dest.index)
             
             # Update context
             dsl_context.update_track(source)
@@ -1379,16 +1379,18 @@ def register_dsl_tools(mcp):
             
             # Create automation based on type
             current_pos = await bridge.call_lua("GetCursorPosition", [])
-            current_time = current_pos.get('result', 0)
+            current_time = current_pos.get('ret', 0.0) if current_pos.get('ok') else 0.0
             
             # Parse duration from details
             duration = 4.0  # Default 4 seconds
             if details:
                 if 'bar' in details:
                     bars = float(details.split()[0])
-                    tempo_info = await dsl_get_tempo_info()
+                    # Get tempo directly from bridge
+                    tempo_result = await bridge.call_lua("GetTempo", [])
+                    tempo = tempo_result.get("ret", 120.0) if tempo_result.get("ok") else 120.0
                     # Assuming 4/4 time
-                    duration = (bars * 4 * 60) / float(tempo_info.split()[0])
+                    duration = (bars * 4 * 60) / tempo
             
             # Create automation points based on type
             if automation_type == 'fade_in':
@@ -1431,71 +1433,6 @@ def register_dsl_tools(mcp):
         except Exception as e:
             return f"Failed to automate section: {str(e)}"
     
-    # Marker/Navigation Tool
-    
-    @mcp.tool()
-    async def dsl_marker(
-        action: str,
-        position: Optional[Union[str, float]] = None,
-        name: Optional[str] = None,
-        color: Optional[str] = None
-    ) -> str:
-        """
-        Manage markers and regions. Use for 'add marker here', 'mark chorus at bar 16',
-        'create region from 1-8 called intro', 'color verse markers blue', 'go to bridge marker'.
-        Actions: add, create_region, go_to, color.
-        """
-        try:
-            from server.tools.markers import add_project_marker
-            from server.tools.transport import set_cursor_position
-            
-            if action == 'add':
-                # Get position
-                if position is None or position == 'here':
-                    pos_result = await bridge.call_lua("GetCursorPosition", [])
-                    pos = pos_result.get('result', 0)
-                elif isinstance(position, str) and 'bar' in position:
-                    # Convert bar to time
-                    bar_num = float(position.split()[0])
-                    tempo_info = await dsl_get_tempo_info()
-                    tempo = float(tempo_info.split()[0])
-                    pos = (bar_num - 1) * 4 * 60 / tempo  # Assuming 4/4
-                else:
-                    pos = float(position)
-                
-                # Add marker
-                marker_name = name or f"Marker at {pos:.1f}s"
-                result = await add_project_marker(False, pos, marker_name)
-                
-                return f"Added marker '{marker_name}' at {pos:.1f} seconds"
-                
-            elif action == 'create_region':
-                # Parse region bounds
-                if position and '-' in str(position):
-                    start, end = str(position).split('-')
-                    start = float(start)
-                    end = float(end)
-                else:
-                    return "Region creation requires start-end format (e.g., '1-8')"
-                
-                region_name = name or f"Region {start}-{end}"
-                # Add region (is_region=True, rgnend parameter determines end)
-                result = await add_project_marker(True, start, region_name, rgnend=end)
-                
-                return f"Created region '{region_name}' from {start} to {end} seconds"
-                
-            elif action == 'go_to':
-                if name:
-                    # For now, return a placeholder - would need to search markers by name
-                    return f"Navigation to marker '{name}' requires marker search implementation"
-                else:
-                    return "Please specify marker name to go to"
-                
-            else:
-                return f"Marker action '{action}' not supported"
-                
-        except Exception as e:
-            return f"Failed to {action} marker: {str(e)}"
     
     # Count registered tools
     tool_count = 46  # Was 38, added 8 more tools
