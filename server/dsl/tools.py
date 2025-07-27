@@ -598,7 +598,7 @@ def register_dsl_tools(mcp):
         """
         try:
             if action == "add":
-                from server.tools.markers import add_marker
+                from server.tools.markers import add_project_marker
                 from server.tools.transport import get_cursor_position
                 
                 # Get position if not specified
@@ -613,7 +613,8 @@ def register_dsl_tools(mcp):
                 # Default color (red)
                 color = 0xFF0000
                 
-                result = await add_marker(position, name, color)
+                # add_project_marker(is_region, position, name, region_end, color, wants_guid)
+                result = await add_project_marker(False, position, name, 0.0, color, False)
                 return f"Added marker '{name}' at {position:.1f} seconds"
                 
             elif action == "delete":
@@ -1042,7 +1043,7 @@ def register_dsl_tools(mcp):
         """
         try:
             if action == "create":
-                from server.tools.markers import add_region
+                from server.tools.markers import add_project_marker
                 from server.tools.time_selection import get_time_selection
                 
                 # Get current time selection if positions not specified
@@ -1062,7 +1063,8 @@ def register_dsl_tools(mcp):
                 # Default color (blue)
                 color = 0x0000FF
                 
-                result = await add_region(start, end, name, color)
+                # add_project_marker(is_region=True for regions)
+                result = await add_project_marker(True, start, name, end, color, False)
                 return f"Created region '{name}' from {start:.1f} to {end:.1f} seconds"
                 
             else:
