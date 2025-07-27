@@ -287,6 +287,50 @@ async def _get_track_info(bridge, index: int) -> Optional[TrackRef]:
     
     return track
 
+async def resolve_tracks_pattern(bridge, pattern: str) -> List[TrackRef]:
+    """
+    Resolve a track pattern like "all drums", "all vocals", "guitars"
+    
+    Returns a list of tracks that match the pattern
+    """
+    tracks = []
+    
+    # Extract the pattern keyword
+    pattern = pattern.lower().strip()
+    if pattern.startswith('all '):
+        pattern = pattern[4:]  # Remove 'all '
+    
+    # Define role patterns
+    role_patterns = {
+        'drums': ['drum', 'kick', 'snare', 'hat', 'tom', 'cymbal', 'perc'],
+        'drum': ['drum', 'kick', 'snare', 'hat', 'tom', 'cymbal', 'perc'],
+        'vocals': ['vocal', 'vox', 'voice', 'singer'],
+        'vocal': ['vocal', 'vox', 'voice', 'singer'],
+        'guitars': ['guitar', 'gtr', 'acoustic', 'electric'],
+        'guitar': ['guitar', 'gtr', 'acoustic', 'electric'],
+        'bass': ['bass', 'sub'],
+        'keys': ['piano', 'keys', 'synth', 'organ', 'keyboard'],
+        'strings': ['strings', 'violin', 'viola', 'cello', 'orchestra']
+    }
+    
+    # Get patterns to search for
+    search_patterns = role_patterns.get(pattern, [pattern])
+    
+    # Get all tracks
+    track_count = await _get_track_count(bridge)
+    
+    for i in range(track_count):
+        track_info = await _get_track_info(bridge, i)
+        if track_info:
+            track_name = track_info.name.lower()
+            # Check if any pattern matches
+            for p in search_patterns:
+                if p in track_name:
+                    tracks.append(track_info)
+                    break
+    
+    return tracks
+
 async def resolve_time(bridge, selector: Union[str, float, Dict[str, Any]]) -> TimeRef:
     """
     Resolve a flexible time reference
