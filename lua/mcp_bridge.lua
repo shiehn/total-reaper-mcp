@@ -816,6 +816,139 @@ local function process_request()
                             response.ok = false
                         end
                     
+                    elseif fname == "SetTrackSendUIVol" then
+                        -- Set track send UI volume
+                        if #args >= 4 then
+                            local track = nil
+                            
+                            -- Handle track parameter
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call - use track index instead"
+                                response.ok = false
+                            elseif type(args[1]) == "userdata" then
+                                track = args[1]
+                            end
+                            
+                            if track then
+                                local send_idx = args[2]
+                                local volume = args[3]
+                                local relative = args[4]
+                                
+                                local result = reaper.SetTrackSendUIVol(track, send_idx, volume, relative)
+                                response.ok = true
+                                response.ret = result
+                            else
+                                if not response.error then
+                                    response.error = "Track not found"
+                                end
+                                response.ok = false
+                            end
+                        else
+                            response.error = "SetTrackSendUIVol requires 4 arguments (track, send_index, volume, relative)"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "SetTrackSendUIPan" then
+                        -- Set track send UI pan
+                        if #args >= 4 then
+                            local track = nil
+                            
+                            -- Handle track parameter
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call - use track index instead"
+                                response.ok = false
+                            elseif type(args[1]) == "userdata" then
+                                track = args[1]
+                            end
+                            
+                            if track then
+                                local send_idx = args[2]
+                                local pan = args[3]
+                                local relative = args[4]
+                                
+                                local result = reaper.SetTrackSendUIPan(track, send_idx, pan, relative)
+                                response.ok = true
+                                response.ret = result
+                            else
+                                if not response.error then
+                                    response.error = "Track not found"
+                                end
+                                response.ok = false
+                            end
+                        else
+                            response.error = "SetTrackSendUIPan requires 4 arguments (track, send_index, pan, relative)"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "SetTrackSendInfo_Value" then
+                        -- Set track send info value
+                        if #args >= 5 then
+                            local track = nil
+                            
+                            -- Handle track parameter
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call - use track index instead"
+                                response.ok = false
+                            elseif type(args[1]) == "userdata" then
+                                track = args[1]
+                            end
+                            
+                            if track then
+                                local category = args[2]
+                                local send_idx = args[3]
+                                local param_name = args[4]
+                                local value = args[5]
+                                
+                                local result = reaper.SetTrackSendInfo_Value(track, category, send_idx, param_name, value)
+                                response.ok = true
+                                response.ret = result
+                            else
+                                if not response.error then
+                                    response.error = "Track not found"
+                                end
+                                response.ok = false
+                            end
+                        else
+                            response.error = "SetTrackSendInfo_Value requires 5 arguments (track, category, send_index, param_name, value)"
+                            response.ok = false
+                        end
+                    
+                    elseif fname == "InsertEnvelopePoint" then
+                        -- Insert envelope point
+                        if #args >= 7 then
+                            local envelope = args[1]
+                            
+                            -- Handle envelope pointer
+                            if type(envelope) == "table" and envelope.__ptr then
+                                response.error = "Cannot use envelope pointer from previous call - envelope objects cannot be reused"
+                                response.ok = false
+                            elseif type(envelope) == "userdata" then
+                                -- It's a valid envelope object
+                                local time = args[2]
+                                local value = args[3]
+                                local shape = args[4]
+                                local tension = args[5]
+                                local selected = args[6]
+                                local noSort = args[7]
+                                
+                                local result = reaper.InsertEnvelopePoint(envelope, time, value, shape, tension, selected, noSort)
+                                response.ok = result
+                                response.ret = result
+                            else
+                                response.error = "Invalid envelope parameter"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "InsertEnvelopePoint requires 7 arguments"
+                            response.ok = false
+                        end
+                    
                     elseif fname == "SetTrackSelected" then
                         if #args >= 2 then
                             local track = reaper.GetTrack(0, args[1])

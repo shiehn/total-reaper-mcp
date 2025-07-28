@@ -46,6 +46,22 @@ def register_dsl_tools(mcp):
         """
         result = await track_create(bridge, name, role, position)
         
+        # Update context with the created track
+        if result.success and result.targets:
+            from .resolvers import TrackRef
+            track_info = result.targets[0]
+            # Get track GUID
+            guid_result = await bridge.call_lua("GetTrackGUID", [track_info['index']])
+            guid = guid_result.get('ret', '') if guid_result.get('ok') else ''
+            
+            track_ref = TrackRef(
+                index=track_info['index'],
+                name=track_info['name'],
+                guid=guid,
+                role=role
+            )
+            dsl_context.update_track(track_ref)
+        
         # Include ReaScript calls in the response message
         response = result.to_string()
         
@@ -582,15 +598,15 @@ def register_dsl_tools(mcp):
     async def dsl_marker(
         action: str = "add",
         name: Optional[str] = None,
-        position: Optional[float] = None
+        position: Optional[Union[float, str]] = None
     ) -> str:
         """
         Work with markers. Use for 'add marker', 'insert marker here', 'delete marker'.
         
         Args:
-            action: "add" or "delete"
+            action: "add", "delete", "create_region", or "go_to"
             name: Name for the marker (when adding)
-            position: Position in seconds (None = current position)
+            position: Position in seconds, bars ("16 bars"), or range ("0-8") for regions
             
         Examples:
             - "insert a marker here"
@@ -602,21 +618,58 @@ def register_dsl_tools(mcp):
                 from server.tools.markers import add_project_marker
                 from server.tools.transport import get_cursor_position
                 
-                # Get position if not specified
+                # Parse position
                 if position is None:
-                    pos_result = await get_cursor_position()
-                    position = float(pos_result.split()[0])
+                    # Get cursor position directly from bridge
+                    pos_result = await bridge.call_lua("GetCursorPosition", [])
+                    position_seconds = pos_result.get('ret', 0.0) if pos_result.get('ok') else 0.0
+                elif isinstance(position, str) and position.endswith(' bars'):
+                    # Convert bars to time
+                    bars = int(position.split()[0])
+                    # Get tempo
+                    tempo_result = await bridge.call_lua("GetTempo", [])
+                    tempo = tempo_result.get("ret", 120.0) if tempo_result.get("ok") else 120.0
+                    # Assuming 4/4 time
+                    position_seconds = (bars * 4 * 60) / tempo
+                else:
+                    position_seconds = float(position)
                 
                 # Default name if not specified
                 if not name:
-                    name = f"Marker at {position:.1f}s"
+                    name = f"Marker at {position_seconds:.1f}s"
                 
-                # Default color (red)
-                color = 0xFF0000
+                # add_project_marker(is_region, position, name, region_end, want_index)
+                result = await add_project_marker(False, position_seconds, name)
+                return f"Added marker '{name}' at {position_seconds:.1f} seconds"
                 
-                # add_project_marker(is_region, position, name, region_end, color, wants_guid)
-                result = await add_project_marker(False, position, name, 0.0, color, False)
-                return f"Added marker '{name}' at {position:.1f} seconds"
+            elif action == "create_region":
+                from server.tools.markers import add_project_marker
+                
+                # Parse position range
+                if isinstance(position, str) and '-' in position:
+                    start, end = position.split('-')
+                    start = float(start)
+                    end = float(end)
+                else:
+                    raise ValueError("Region position must be in format 'start-end'")
+                
+                # Default name if not specified
+                if not name:
+                    name = f"Region {start}-{end}s"
+                
+                # add_project_marker(is_region, position, name, region_end, want_index)
+                result = await add_project_marker(True, start, name, end)
+                return f"Created region '{name}' from {int(start) if start == int(start) else start} to {int(end) if end == int(end) else end} seconds"
+                
+            elif action == "go_to":
+                from server.tools.markers import go_to_marker
+                
+                if not name:
+                    raise ValueError("Marker name required for go_to action")
+                
+                # Find and go to the marker
+                await go_to_marker(0, False, name)  # 0=name search, False=not region
+                return f"Moved to marker '{name}'"
                 
             elif action == "delete":
                 return "Marker deletion not yet implemented"
@@ -1269,10 +1322,20 @@ def register_dsl_tools(mcp):
             # Create the send
             result = await create_track_send(source.index, dest.index)
             
+            # Extract send index from result
+            import re
+            match = re.search(r'send index: (\d+)', result)
+            if not match:
+                raise Exception("Failed to get send index from create result")
+            send_index = int(match.group(1))
+            
             # Set send amount (convert 0-1 to normalized volume)
-            # For sends, we'll use send index 0 (assuming it's the first send)
-            send_index = 0
             await set_track_send_ui_vol(source.index, send_index, amount)
+            
+            # Set pre-fader mode if requested
+            if pre_fader:
+                from server.tools.routing_sends import set_send_mode
+                await set_send_mode(source.index, send_index, 1)  # 1 = pre-fader
             
             # Update context
             dsl_context.update_track(source)

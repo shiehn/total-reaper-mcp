@@ -224,15 +224,13 @@ async def get_track_send_ui_vol_pan(track_index: int, send_index: int) -> str:
 
 async def set_track_send_ui_vol(track_index: int, send_index: int, volume: float) -> str:
     """Set track send UI volume"""
-    # Get track
+    # Verify track exists first
     track_result = await bridge.call_lua("GetTrack", [0, track_index])
     if not track_result.get("ok") or not track_result.get("ret"):
         raise Exception(f"Failed to find track at index {track_index}")
     
-    track_handle = track_result.get("ret")
-    
-    # Set UI volume
-    result = await bridge.call_lua("SetTrackSendUIVol", [track_handle, send_index, volume, 0])
+    # Set UI volume using track index (SetTrackSendUIVol handler will convert to track object)
+    result = await bridge.call_lua("SetTrackSendUIVol", [track_index, send_index, volume, 0])
     
     if result.get("ok"):
         return f"Set send {send_index} UI volume to {volume:.3f}"
@@ -242,15 +240,13 @@ async def set_track_send_ui_vol(track_index: int, send_index: int, volume: float
 
 async def set_track_send_ui_pan(track_index: int, send_index: int, pan: float) -> str:
     """Set track send UI pan"""
-    # Get track
+    # Verify track exists first
     track_result = await bridge.call_lua("GetTrack", [0, track_index])
     if not track_result.get("ok") or not track_result.get("ret"):
         raise Exception(f"Failed to find track at index {track_index}")
     
-    track_handle = track_result.get("ret")
-    
-    # Set UI pan
-    result = await bridge.call_lua("SetTrackSendUIPan", [track_handle, send_index, pan, 0])
+    # Set UI pan using track index (SetTrackSendUIPan handler will convert to track object)
+    result = await bridge.call_lua("SetTrackSendUIPan", [track_index, send_index, pan, 0])
     
     if result.get("ok"):
         return f"Set send {send_index} UI pan to {pan:.3f}"
@@ -407,15 +403,13 @@ async def set_send_enabled(track_index: int, send_index: int, enabled: bool) -> 
 
 async def set_send_mode(track_index: int, send_index: int, mode: int) -> str:
     """Set send mode (0=post-fader, 1=pre-fader, 3=post-fx)"""
-    # Get track
+    # Verify track exists first
     track_result = await bridge.call_lua("GetTrack", [0, track_index])
     if not track_result.get("ok") or not track_result.get("ret"):
         raise Exception(f"Failed to find track at index {track_index}")
     
-    track_handle = track_result.get("ret")
-    
-    # Set send mode
-    result = await bridge.call_lua("SetTrackSendInfo_Value", [track_handle, 0, send_index, "I_SENDMODE", float(mode)])
+    # Set send mode using track index (SetTrackSendInfo_Value handler will convert to track object)
+    result = await bridge.call_lua("SetTrackSendInfo_Value", [track_index, 0, send_index, "I_SENDMODE", float(mode)])
     
     if result.get("ok"):
         mode_names = {0: "post-fader", 1: "pre-fader", 3: "post-fx"}

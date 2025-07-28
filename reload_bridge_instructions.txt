@@ -1,0 +1,15 @@
+To reload the Lua bridge in REAPER with the new handlers:
+
+1. In REAPER, open the Actions List (Actions > Actions List)
+2. Run the action "Script: reload_bridge_in_reaper.lua"
+   OR
+3. Manually run the script at:
+   /Users/stevehiehn/total-reaper-mcp/scripts/reload_bridge_in_reaper.lua
+
+The bridge will be reloaded with the following new handlers:
+- CreateTrackSend (already working)
+- SetTrackSendUIVol
+- SetTrackSendUIPan  
+- SetTrackSendInfo_Value
+
+This will fix the routing send test failures.
