@@ -444,6 +444,47 @@ def register_dsl_tools(mcp):
             return f"Failed to delete track: {str(e)}"
     
     @mcp.tool()
+    async def dsl_track_delete_all() -> str:
+        """
+        Delete all tracks in the project. Use for 'delete all tracks', 'remove everything', 'clear the session', 'start over'.
+        
+        Examples:
+            - "delete all the tracks in the session"
+            - "remove all tracks"
+            - "clear everything"
+            - "I want to start over"
+        """
+        try:
+            # Get all tracks
+            tracks_result = await bridge.call_lua("GetAllTracksInfo", [])
+            if not tracks_result.get('ok'):
+                return "Failed to get track list"
+            
+            tracks = tracks_result.get('ret', [])
+            if not tracks:
+                return "No tracks to delete"
+            
+            # Delete tracks in reverse order to avoid index shifting
+            deleted_count = 0
+            for i in range(len(tracks) - 1, -1, -1):
+                try:
+                    # Call DeleteTrackByIndex which is more reliable than DeleteTrack
+                    result = await bridge.call_lua("DeleteTrackByIndex", [i])
+                    if result.get('ok'):
+                        deleted_count += 1
+                except Exception as e:
+                    print(f"Failed to delete track {i}: {e}")
+            
+            # Clear context
+            dsl_context.tracks.clear()
+            dsl_context.last_track = None
+            
+            return f"Deleted {deleted_count} tracks"
+            
+        except Exception as e:
+            return f"Failed to delete all tracks: {str(e)}"
+    
+    @mcp.tool()
     async def dsl_track_arm(
         track: Union[str, int, Dict[str, Any]],
         armed: bool = True
