@@ -141,6 +141,11 @@ def register_dsl_tools(mcp):
             - "everything sounds in the middle"
         """
         result = await track_set_pan(bridge, track, pan)
+        
+        # If there\'s an error, raise an exception so MCP sets isError properly
+        if not result.success:
+            raise Exception(result.to_string())
+            
         return result.to_string()
     
     @mcp.tool()
@@ -162,6 +167,11 @@ def register_dsl_tools(mcp):
             - "bring it back"
         """
         result = await track_mute(bridge, track, mute)
+        
+        # If there\'s an error, raise an exception so MCP sets isError properly
+        if not result.success:
+            raise Exception(result.to_string())
+            
         return result.to_string()
     
     @mcp.tool()
@@ -183,6 +193,11 @@ def register_dsl_tools(mcp):
             - "isolate the vocals"
         """
         result = await track_solo(bridge, track, solo)
+        
+        # If there\'s an error, raise an exception so MCP sets isError properly
+        if not result.success:
+            raise Exception(result.to_string())
+            
         return result.to_string()
     
     # Time and Loop Tools
@@ -209,6 +224,11 @@ def register_dsl_tools(mcp):
             - "the next bit"
         """
         result = await time_select(bridge, time)
+        
+        # If there's an error, raise an exception so MCP sets isError properly
+        if not result.success:
+            raise Exception(result.to_string())
+            
         return result.to_string()
     
     @mcp.tool()
@@ -232,6 +252,11 @@ def register_dsl_tools(mcp):
             - "repeat that section"
         """
         result = await loop_create(bridge, track, time, midi)
+        
+        # If there\'s an error, raise an exception so MCP sets isError properly
+        if not result.success:
+            raise Exception(result.to_string())
+            
         return result.to_string()
     
     # Item and MIDI Tools
@@ -259,6 +284,11 @@ def register_dsl_tools(mcp):
         The MIDI data format matches common MIDI generation APIs.
         """
         result = await item_insert_midi(bridge, track, time, midi_data)
+        
+        # If there\'s an error, raise an exception so MCP sets isError properly
+        if not result.success:
+            raise Exception(result.to_string())
+            
         return result.to_string()
     
     @mcp.tool()
@@ -286,6 +316,11 @@ def register_dsl_tools(mcp):
             - "make it on time"
         """
         result = await item_quantize(bridge, items, strength, grid)
+        
+        # If there\'s an error, raise an exception so MCP sets isError properly
+        if not result.success:
+            raise Exception(result.to_string())
+            
         return result.to_string()
     
     # Transport Tools
@@ -302,6 +337,11 @@ def register_dsl_tools(mcp):
             - "start"
         """
         result = await transport_play(bridge)
+        
+        # If there\'s an error, raise an exception so MCP sets isError properly
+        if not result.success:
+            raise Exception(result.to_string())
+            
         return result.to_string()
     
     @mcp.tool()
@@ -316,6 +356,11 @@ def register_dsl_tools(mcp):
             - "pause"
         """
         result = await transport_stop(bridge)
+        
+        # If there\'s an error, raise an exception so MCP sets isError properly
+        if not result.success:
+            raise Exception(result.to_string())
+            
         return result.to_string()
     
     @mcp.tool()
@@ -333,6 +378,11 @@ def register_dsl_tools(mcp):
             - "too fast"
         """
         result = await transport_set_tempo(bridge, bpm)
+        
+        # If there\'s an error, raise an exception so MCP sets isError properly
+        if not result.success:
+            raise Exception(result.to_string())
+            
         return result.to_string()
     
     # Context and Query Tools
@@ -349,6 +399,11 @@ def register_dsl_tools(mcp):
             - "what tracks?"
         """
         result = await context_get_tracks(bridge)
+        
+        # If there\'s an error, raise an exception so MCP sets isError properly
+        if not result.success:
+            raise Exception(result.to_string())
+            
         return result.to_string()
     
     @mcp.tool()
@@ -363,6 +418,11 @@ def register_dsl_tools(mcp):
             - "BPM?"
         """
         result = await context_get_tempo_info(bridge)
+        
+        # If there\'s an error, raise an exception so MCP sets isError properly
+        if not result.success:
+            raise Exception(result.to_string())
+            
         return result.to_string()
     
     @mcp.tool()

@@ -19,6 +19,9 @@ logger = logging.getLogger(__name__)
 async def call_dsl_tool(client, tool_name, params):
     """Helper to call DSL tools and return the text response"""
     result = await client.call_tool(tool_name, params)
+    # Check if the result indicates an error
+    if hasattr(result, 'isError') and result.isError:
+        raise Exception(result.content[0].text if result.content else "Tool execution failed")
     return result.content[0].text if result.content else ""
 
 @pytest.mark.asyncio
@@ -209,13 +212,14 @@ class TestDSLItemOperations:
         # This test assumes there are selected items
         # In practice, would need to create and select items first
         
-        result = await call_dsl_tool(reaper_mcp_client, "dsl_quantize", {
-            "items": "selected",
-            "strength": 0.75,
-            "grid": "1/16"
-        })
-        # Result depends on whether items exist
-        assert "Quantized" in result or "No items found" in result
+        # Since there are no items selected, this should raise an error
+        with pytest.raises(Exception) as exc_info:
+            await call_dsl_tool(reaper_mcp_client, "dsl_quantize", {
+                "items": "selected",
+                "strength": 0.75,
+                "grid": "1/16"
+            })
+        assert "No items found" in str(exc_info.value)
 
 @pytest.mark.asyncio
 class TestDSLTransportOperations:
@@ -252,7 +256,7 @@ class TestDSLContextOperations:
         
         result = await call_dsl_tool(reaper_mcp_client, "dsl_list_tracks", {})
         assert "Found" in result
-        assert "tracks in project" in result
+        assert "tracks:" in result
     
     async def test_tempo_info(self, reaper_mcp_client):
         """Test getting tempo and time signature"""
