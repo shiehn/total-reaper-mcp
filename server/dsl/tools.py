@@ -1598,7 +1598,52 @@ def register_dsl_tools(mcp):
             return f"Failed to automate section: {str(e)}"
     
     
+    # Item Copy/Paste Tools
+
+    @mcp.tool()
+    async def dsl_item_copy_paste(
+        track: Union[str, int, Dict[str, Any]],
+        src_start: float,
+        src_end: float,
+        dest_start: float,
+        tolerance: Optional[float] = 0.1
+    ) -> str:
+        """
+        Copy items from one position on a track and paste them at a new position.
+        Use this to duplicate sections, fill bars, or extend loops.
+
+        Args:
+            track: Track name, number, or dict reference
+            src_start: Start of source range in seconds
+            src_end: End of source range in seconds (exclusive — items starting at or after this are not included)
+            dest_start: Destination paste position in seconds
+            tolerance: Position match tolerance in seconds (default 0.1)
+
+        Examples:
+            - "copy bars 1-8 of drums and paste at bar 9"
+            - "duplicate the first 8 bars of bass to bar 17"
+            - "repeat the verse section"
+        """
+        try:
+            from .resolvers import resolve_track
+
+            resolved_track = await resolve_track(bridge, track)
+            track_index = resolved_track.index
+
+            result = await bridge.call_lua("CopyItemsToPosition", [
+                track_index, src_start, src_end, dest_start, tolerance
+            ])
+
+            if result.get("ok"):
+                count = result.get("ret", 0)
+                return f"Copied {count} item(s) from {src_start:.2f}s–{src_end:.2f}s to {dest_start:.2f}s on track {track_index + 1} ({resolved_track.name})"
+            else:
+                return f"Failed to copy items: {result.get('error', 'unknown error')}"
+
+        except Exception as e:
+            return f"Failed to copy/paste items: {str(e)}"
+
     # Count registered tools
-    tool_count = 46  # Was 38, added 8 more tools
-    
+    tool_count = 47
+
     return tool_count

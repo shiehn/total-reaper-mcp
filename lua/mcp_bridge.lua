@@ -668,6 +668,103 @@ local function GetTimeSignature()
     return {ok = true, numerator = num, denominator = denom}
 end
 
+local function SelectItemsOnTrackByPosition(track_index, start_pos, end_pos, tolerance)
+    tolerance = tolerance or 0.1
+    local track = reaper.GetTrack(0, track_index)
+    if not track then
+        return {ok = false, error = "Track not found at index " .. tostring(track_index)}
+    end
+    reaper.Main_OnCommand(40289, 0)  -- Unselect all items
+    local item_count = reaper.CountTrackMediaItems(track)
+    local selected_count = 0
+    for i = 0, item_count - 1 do
+        local item = reaper.GetTrackMediaItem(track, i)
+        if item then
+            local pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
+            if pos >= (start_pos - tolerance) and pos < (end_pos - tolerance) then
+                reaper.SetMediaItemSelected(item, true)
+                selected_count = selected_count + 1
+            end
+        end
+    end
+    reaper.UpdateArrange()
+    return {ok = true, ret = selected_count}
+end
+
+local function CopyItemsToPosition(track_index, src_start, src_end, dest_start, tolerance)
+    -- Direct MIDI copy: no clipboard, no cursor, no UI state required.
+    tolerance = tolerance or 0.1
+    local track = reaper.GetTrack(0, track_index)
+    if not track then
+        return {ok = false, error = "Track not found at index " .. tostring(track_index)}
+    end
+
+    -- Snapshot source items before we modify the track
+    local src_items = {}
+    local item_count = reaper.CountTrackMediaItems(track)
+    for i = 0, item_count - 1 do
+        local item = reaper.GetTrackMediaItem(track, i)
+        if item then
+            local pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
+            if pos >= (src_start - tolerance) and pos < (src_end - tolerance) then
+                table.insert(src_items, item)
+            end
+        end
+    end
+
+    if #src_items == 0 then
+        return {ok = false, error = "No items found in range " .. src_start .. "-" .. src_end}
+    end
+
+    local copied = 0
+    for _, src_item in ipairs(src_items) do
+        local src_pos = reaper.GetMediaItemInfo_Value(src_item, "D_POSITION")
+        local src_len = reaper.GetMediaItemInfo_Value(src_item, "D_LENGTH")
+        -- Preserve relative offset within the block
+        local new_pos = dest_start + (src_pos - src_start)
+
+        local src_take = reaper.GetActiveTake(src_item)
+        if src_take and reaper.TakeIsMIDI(src_take) then
+            -- CreateNewMIDIItemInProj creates a properly initialised MIDI take
+            local new_item = reaper.CreateNewMIDIItemInProj(track, new_pos, new_pos + src_len, false)
+            local new_take = reaper.GetActiveTake(new_item)
+            if not new_take then
+                reaper.DeleteTrackMediaItem(track, new_item)
+            else
+                reaper.GetSetMediaItemTakeInfo_String(new_take, "P_NAME",
+                    reaper.GetTakeName(src_take), true)
+
+                -- Copy all MIDI notes
+                local note_count, cc_count = reaper.MIDI_CountEvts(src_take)
+                for j = 0, note_count - 1 do
+                    local ok2, sel, muted, startppq, endppq, chan, pitch, vel =
+                        reaper.MIDI_GetNote(src_take, j)
+                    if ok2 then
+                        reaper.MIDI_InsertNote(new_take, sel, muted,
+                            startppq, endppq, chan, pitch, vel, false)
+                    end
+                end
+                -- Copy all MIDI CCs
+                for j = 0, cc_count - 1 do
+                    local ok2, sel, muted, ppqpos, chanmsg, chan, msg2, msg3 =
+                        reaper.MIDI_GetCC(src_take, j)
+                    if ok2 then
+                        reaper.MIDI_InsertCC(new_take, sel, muted,
+                            ppqpos, chanmsg, chan, msg2, msg3)
+                    end
+                end
+
+                reaper.MIDI_Sort(new_take)
+                reaper.UpdateItemInProject(new_item)
+                copied = copied + 1
+            end
+        end
+    end
+
+    reaper.UpdateArrange()
+    return {ok = true, ret = copied}
+end
+
 -- Export function table for DSL
 DSL_FUNCTIONS = {
     -- Track info
@@ -707,7 +804,11 @@ DSL_FUNCTIONS = {
     Stop = Stop,
     GetTempo = GetTempo,
     SetTempo = SetTempo,
-    GetTimeSignature = GetTimeSignature
+    GetTimeSignature = GetTimeSignature,
+
+    -- Item copy/paste
+    SelectItemsOnTrackByPosition = SelectItemsOnTrackByPosition,
+    CopyItemsToPosition = CopyItemsToPosition
 }
 
 -- Main processing function
