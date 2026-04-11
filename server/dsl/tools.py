@@ -18,6 +18,79 @@ from .wrappers import (
     OperationResult
 )
 from .resolvers import reset_context, _context as dsl_context
+from difflib import SequenceMatcher
+
+# Shared effect name mapping for DSL functions
+EFFECT_MAP = {
+    'reverb': 'ReaVerbate',
+    'verb': 'ReaVerbate',
+    'compression': 'ReaComp',
+    'compressor': 'ReaComp',
+    'comp': 'ReaComp',
+    'eq': 'ReaEQ',
+    'equalizer': 'ReaEQ',
+    'delay': 'ReaDelay',
+    'chorus': 'Chorus',
+    'distortion': 'Distortion',
+    'limiter': 'ReaLimit',
+    'gate': 'ReaGate',
+    'noise gate': 'ReaGate',
+}
+
+
+async def _find_fx_on_track(bridge, track_index: int, effect_name: str):
+    """Find an FX on a track by friendly name. Returns 0-based FX index or None."""
+    canonical = EFFECT_MAP.get(effect_name.lower(), effect_name)
+
+    count_result = await bridge.call_lua("TrackFX_GetCount", [track_index])
+    if not count_result.get("ok"):
+        return None
+    fx_count = count_result.get("ret", 0)
+
+    for i in range(fx_count):
+        name_result = await bridge.call_lua("TrackFX_GetFXName", [track_index, i, "", 256])
+        if name_result.get("ok"):
+            fx_name = name_result.get("ret", "")
+            if canonical.lower() in fx_name.lower():
+                return i
+
+    return None
+
+
+async def _fuzzy_match_param(bridge, track_index: int, fx_index: int, setting: str):
+    """Find the best-matching parameter index for a setting name. Returns param index or None."""
+    num_result = await bridge.call_lua("TrackFX_GetNumParams", [track_index, fx_index])
+    if not num_result.get("ok"):
+        return None
+    param_count = num_result.get("ret", 0)
+
+    setting_lower = setting.lower()
+    best_index = None
+    best_score = 0.0
+
+    for i in range(param_count):
+        name_result = await bridge.call_lua("TrackFX_GetParamName", [track_index, fx_index, i, "", 256])
+        if not name_result.get("ok"):
+            continue
+        param_name = name_result.get("ret", "")
+        param_lower = param_name.lower()
+
+        if setting_lower == param_lower:
+            return i
+
+        if setting_lower in param_lower or param_lower in setting_lower:
+            score = 0.85
+        else:
+            score = SequenceMatcher(None, setting_lower, param_lower).ratio()
+
+        if score > best_score:
+            best_score = score
+            best_index = i
+
+    if best_score >= 0.4:
+        return best_index
+    return None
+
 
 def register_dsl_tools(mcp):
     """Register DSL/Macro tools for natural language control"""
@@ -1287,24 +1360,7 @@ def register_dsl_tools(mcp):
             resolved_track = await resolve_track(bridge, track)
             track_index = resolved_track.index
             
-            # Map common effect names to REAPER FX names
-            effect_map = {
-                'reverb': 'ReaVerbate',
-                'verb': 'ReaVerbate',
-                'compression': 'ReaComp',
-                'compressor': 'ReaComp',
-                'comp': 'ReaComp',
-                'eq': 'ReaEQ',
-                'equalizer': 'ReaEQ',
-                'delay': 'ReaDelay',
-                'chorus': 'Chorus',
-                'distortion': 'Distortion',
-                'limiter': 'ReaLimit',
-                'gate': 'ReaGate',
-                'noise gate': 'ReaGate'
-            }
-            
-            fx_name = effect_map.get(effect.lower(), effect)
+            fx_name = EFFECT_MAP.get(effect.lower(), effect)
             
             # Add the effect
             result = await track_fx_add_by_name(track_index, fx_name)
@@ -1333,26 +1389,64 @@ def register_dsl_tools(mcp):
         """
         try:
             from .resolvers import resolve_track
-            
+
             resolved_track = await resolve_track(bridge, track)
             track_index = resolved_track.index
-            
-            # Map descriptive values to numeric
+
+            # Find the FX on the track
+            fx_index = await _find_fx_on_track(bridge, track_index, effect)
+            if fx_index is None:
+                return f"Could not find {effect} on track {track_index + 1}"
+
+            # Find the matching parameter
+            param_index = await _fuzzy_match_param(bridge, track_index, fx_index, setting)
+            if param_index is None:
+                return f"Could not find parameter '{setting}' on {effect}"
+
+            # Get current value and range
+            param_result = await bridge.call_lua("TrackFX_GetParam", [track_index, fx_index, param_index])
+            if not param_result.get("ok"):
+                return f"Failed to read parameter '{setting}'"
+
+            old_value = param_result.get("value", 0.0)
+            min_val = param_result.get("min", 0.0)
+            max_val = param_result.get("max", 1.0)
+
+            # Map descriptive values to numeric (normalized 0-1, then scaled to param range)
             if isinstance(value, str):
                 value_map = {
-                    'wet': 0.7,
-                    'wetter': 0.8,
-                    'dry': 0.2,
-                    'subtle': 0.3,
-                    'heavy': 0.8,
-                    'gentle': 0.3,
-                    'strong': 0.7
+                    'wet': 0.7, 'wetter': 0.8, 'dry': 0.2,
+                    'subtle': 0.3, 'heavy': 0.8, 'gentle': 0.3,
+                    'strong': 0.7, 'max': 1.0, 'min': 0.0,
+                    'half': 0.5, 'full': 1.0, 'off': 0.0,
                 }
-                value = value_map.get(value.lower(), 0.5)
-            
-            # For now, return a placeholder - actual FX parameter control needs implementation
-            return f"Adjusted {effect} {setting} to {value} on track {track_index + 1}"
-            
+                normalized = value_map.get(value.lower())
+                if normalized is not None:
+                    new_value = min_val + normalized * (max_val - min_val)
+                else:
+                    try:
+                        new_value = float(value)
+                    except ValueError:
+                        new_value = min_val + 0.5 * (max_val - min_val)
+            else:
+                new_value = float(value)
+
+            # Clamp to valid range
+            new_value = max(min_val, min(max_val, new_value))
+
+            # Set the parameter
+            set_result = await bridge.call_lua("TrackFX_SetParam", [track_index, fx_index, param_index, new_value])
+            if not set_result.get("ok"):
+                return f"Failed to set parameter '{setting}'"
+
+            # Get param name for display
+            name_result = await bridge.call_lua("TrackFX_GetParamName", [track_index, fx_index, param_index, "", 256])
+            param_display = name_result.get("ret", setting) if name_result.get("ok") else setting
+
+            dsl_context.update_track(resolved_track)
+
+            return f"Adjusted {effect} {param_display} from {old_value:.3f} to {new_value:.3f} on track {track_index + 1}"
+
         except Exception as e:
             return f"Failed to adjust effect: {str(e)}"
     
@@ -1368,35 +1462,25 @@ def register_dsl_tools(mcp):
         """
         try:
             from .resolvers import resolve_track
-            from server.tools.fx import track_fx_set_enabled, track_fx_get_count
-            
+
             resolved_track = await resolve_track(bridge, track)
             track_index = resolved_track.index
-            
-            # Get FX count to find the effect
-            fx_count_result = await track_fx_get_count(track_index)
-            
-            # Parse the result - format is "Track X has Y FX"
-            try:
-                parts = str(fx_count_result).split()
-                if "has" in parts:
-                    has_idx = parts.index("has")
-                    fx_count = int(parts[has_idx + 1])
-                else:
-                    fx_count = 0
-            except:
-                fx_count = 0
-            
-            # For now, we'll bypass/enable the first effect (index 0)
-            # In a full implementation, we'd search for the effect by name
-            if fx_count > 0:
-                # Set enabled state (bypass is inverse of enabled)
-                await track_fx_set_enabled(track_index, 0, not bypass)
-                action = "Bypassed" if bypass else "Enabled"
-                return f"{action} {effect} on track {track_index + 1}"
-            else:
-                return f"No effects found on track {track_index + 1}"
-            
+
+            # Find the FX on the track
+            fx_index = await _find_fx_on_track(bridge, track_index, effect)
+            if fx_index is None:
+                return f"Could not find {effect} on track {track_index + 1}"
+
+            # Set enabled state (bypass is inverse of enabled)
+            result = await bridge.call_lua("TrackFX_SetEnabled", [track_index, fx_index, not bypass])
+            if not result.get("ok"):
+                return f"Failed to {'bypass' if bypass else 'enable'} {effect}: {result.get('error', 'Unknown error')}"
+
+            dsl_context.update_track(resolved_track)
+
+            action = "Bypassed" if bypass else "Enabled"
+            return f"{action} {effect} on track {track_index + 1}"
+
         except Exception as e:
             return f"Failed to bypass effect: {str(e)}"
     
