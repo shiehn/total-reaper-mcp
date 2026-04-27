@@ -1525,6 +1525,23 @@ local function process_request()
                         local pos = reaper.GetCursorPosition()
                         response.ok = true
                         response.ret = pos
+
+                    elseif fname == "InsertMedia" then
+                        -- Import an audio/MIDI file into the current project.
+                        -- args[1] = file path (string)
+                        -- args[2] = mode (int): 0=current track, 1=new track,
+                        --          3=takes, 4=stretch to selection, 8=match tempo,
+                        --          512=ignore extension test, |1024=force new tempo map.
+                        --          Combine with bitwise OR.
+                        if #args >= 1 then
+                            local file = args[1]
+                            local mode = args[2] or 1   -- default new track per file
+                            local n = reaper.InsertMedia(file, mode)
+                            response.ok = true
+                            response.ret = n   -- # of items inserted (0 = failure)
+                        else
+                            response.error = "InsertMedia requires 1 argument (file path)"
+                        end
                     
                     elseif fname == "SetEditCurPos" then
                         if #args >= 1 then
