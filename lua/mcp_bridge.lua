@@ -1526,6 +1526,28 @@ local function process_request()
                         response.ok = true
                         response.ret = pos
 
+                    elseif fname == "GetSetProjectInfo_String" then
+                        -- Get/set string project info. Used for RENDER_FILE,
+                        -- RENDER_PATTERN, MARKER_GUID, etc.
+                        -- args: (project, key, value, is_set)
+                        --   project: 0 = current project
+                        --   key: e.g. "RENDER_FILE", "RENDER_PATTERN"
+                        --   value: the string to set (ignored if is_set=false)
+                        --   is_set: true to write, false to read
+                        if #args >= 4 then
+                            local proj = args[1]
+                            -- args[1] for project is typically 0; treat as nil
+                            -- (REAPER's API takes a ReaProject* — 0/nil works for current)
+                            if proj == 0 then proj = nil end
+                            local retval, value = reaper.GetSetProjectInfo_String(
+                                proj, args[2], args[3] or "", args[4]
+                            )
+                            response.ok = retval and true or false
+                            response.ret = value
+                        else
+                            response.error = "GetSetProjectInfo_String requires 4 args (project, key, value, is_set)"
+                        end
+
                     elseif fname == "InsertMedia" then
                         -- Import an audio/MIDI file into the current project.
                         -- args[1] = file path (string)
