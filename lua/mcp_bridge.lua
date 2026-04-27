@@ -20,7 +20,17 @@ local function encode_json(v)
     elseif type(v) == "number" then
         return tostring(v)
     elseif type(v) == "string" then
-        return string.format('"%s"', v:gsub('"', '\\"'):gsub('\n', '\\n'):gsub('\r', '\\r'))
+        -- IMPORTANT: backslash MUST be escaped first, otherwise the
+        -- subsequent gsubs that introduce \" \n \r will themselves get
+        -- doubled. Tabs and control chars are also added; any unescaped
+        -- backslash in a returned string (e.g. Windows path C:\Users\...)
+        -- previously broke strict JSON parsers on the client side.
+        local s = v:gsub('\\', '\\\\')
+                   :gsub('"',  '\\"')
+                   :gsub('\n', '\\n')
+                   :gsub('\r', '\\r')
+                   :gsub('\t', '\\t')
+        return string.format('"%s"', s)
     elseif type(v) == "table" then
         local parts = {}
         local is_array = #v > 0
@@ -31,7 +41,10 @@ local function encode_json(v)
             return "[" .. table.concat(parts, ",") .. "]"
         else
             for k, item in pairs(v) do
-                table.insert(parts, string.format('"%s":%s', k, encode_json(item)))
+                -- Keys also need escaping; previously a key containing
+                -- a quote, backslash, or control char would corrupt
+                -- the output.
+                table.insert(parts, encode_json(tostring(k)) .. ":" .. encode_json(item))
             end
             return "{" .. table.concat(parts, ",") .. "}"
         end
@@ -54,11 +67,23 @@ local function decode_json(str)
     if str == "null" then return nil
     elseif str == "true" then return true
     elseif str == "false" then return false
-    elseif str:match("^%-?%d+%.?%d*$") then return tonumber(str)
-    elseif str:match('^"(.*)"$') then 
-        -- Unescape string
+    elseif tonumber(str) ~= nil then
+        -- tonumber() handles ints, floats, AND scientific notation
+        -- (e.g. "1.5e-3", "2E+4") — the previous regex `%-?%d+%.?%d*`
+        -- did not, breaking automation values and other normalized floats.
+        return tonumber(str)
+    elseif str:match('^"(.*)"$') then
+        -- Unescape string. The order matters: unescape \\ LAST so that
+        -- a literal backslash from "\\\\n" doesn't get mistaken for a
+        -- newline escape. Use a placeholder for double-backslash.
         local s = str:match('^"(.*)"$')
-        s = s:gsub('\\n', '\n'):gsub('\\r', '\r'):gsub('\\"', '"')
+        s = s:gsub('\\\\', '\0')          -- protect literal backslash
+              :gsub('\\n', '\n')
+              :gsub('\\r', '\r')
+              :gsub('\\t', '\t')
+              :gsub('\\"', '"')
+              :gsub('\\/', '/')
+              :gsub('\0',  '\\')           -- restore literal backslash
         return s
     elseif str:match("^%[.*%]$") then
         -- Array - improved parsing
@@ -1284,15 +1309,54 @@ local function process_request()
                             response.error = "CountTakes requires 1 argument"
                         end
                     
+                    elseif fname == "CountTrackMediaItems" then
+                        -- Count media items on a track. Accept either a
+                        -- track index (auto-resolves) or a track pointer.
+                        if #args >= 1 then
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "userdata" then
+                                track = args[1]
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call (pass int index instead)"
+                                response.ok = false
+                            end
+                            if track then
+                                response.ok = true
+                                response.ret = reaper.CountTrackMediaItems(track)
+                            elseif not response.error then
+                                response.error = "Invalid track parameter"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "CountTrackMediaItems requires 1 argument"
+                        end
+
                     elseif fname == "GetTrackMediaItem" then
+                        -- Get the i-th media item on a track. Accept track
+                        -- index (auto-resolves) or pointer for arg 1.
                         if #args >= 2 then
-                            local item = reaper.GetTrackMediaItem(args[1], args[2])
-                            response.ok = true
-                            response.ret = item
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "userdata" then
+                                track = args[1]
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call (pass int index instead)"
+                                response.ok = false
+                            end
+                            if track then
+                                response.ok = true
+                                response.ret = reaper.GetTrackMediaItem(track, args[2])
+                            elseif not response.error then
+                                response.error = "Invalid track parameter"
+                                response.ok = false
+                            end
                         else
                             response.error = "GetTrackMediaItem requires 2 arguments"
                         end
-                    
+
                     elseif fname == "DeleteTrackMediaItem" then
                         if #args >= 2 then
                             local track_index = args[1]
