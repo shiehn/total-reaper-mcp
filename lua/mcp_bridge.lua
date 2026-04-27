@@ -1083,12 +1083,15 @@ local function process_request()
                     
                     elseif fname == "GetMediaTrackInfo_Value" then
                         if #args >= 2 then
-                            local track = args[1]
-                            -- Handle track index or pointer object
+                            -- IMPORTANT: start `track` at nil. The previous
+                            -- shape (`local track = args[1]`) let unknown
+                            -- arg types (e.g. string) fall through to the
+                            -- final `if track then` check (truthy in Lua),
+                            -- crashing reaper.GetMediaTrackInfo_Value with
+                            -- a non-pointer first arg.
+                            local track = nil
                             if type(args[1]) == "number" then
-                                -- It's a track index
                                 if args[1] == -1 then
-                                    -- Special case for master track
                                     track = reaper.GetMasterTrack(0)
                                 else
                                     track = reaper.GetTrack(0, args[1])
@@ -1097,13 +1100,18 @@ local function process_request()
                                     response.error = "Track not found at index " .. tostring(args[1])
                                     response.ok = false
                                 end
+                            elseif type(args[1]) == "userdata" then
+                                -- Real REAPER pointer (e.g. handed back from
+                                -- GetTrack within the same request) — use as-is.
+                                track = args[1]
                             elseif type(args[1]) == "table" and args[1].__ptr then
-                                -- It's a pointer object - we can't use it
                                 response.error = "Cannot use track pointer from previous call - use track index instead"
                                 response.ok = false
-                                track = nil
+                            else
+                                response.error = "Invalid track parameter type: " .. type(args[1])
+                                response.ok = false
                             end
-                            
+
                             if track then
                                 local value = reaper.GetMediaTrackInfo_Value(track, args[2])
                                 response.ok = true
@@ -1391,25 +1399,26 @@ local function process_request()
                     
                     elseif fname == "GetMediaItemInfo_Value" then
                         if #args >= 2 then
-                            local item = args[1]
-                            -- Handle item index or pointer
+                            -- IMPORTANT: start at nil so unknown arg types
+                            -- (string, etc.) don't fall through to the
+                            -- truthy `if item then` and crash the API.
+                            local item = nil
                             if type(args[1]) == "number" then
-                                -- It's an item index
                                 item = reaper.GetMediaItem(0, args[1])
                                 if not item then
                                     response.error = "Item not found at index " .. tostring(args[1])
                                     response.ok = false
                                 end
+                            elseif type(args[1]) == "userdata" then
+                                item = args[1]
                             elseif type(args[1]) == "table" and args[1].__ptr then
-                                -- It's a pointer reference from a previous call - we can't use it
                                 response.error = "Cannot use item pointer from previous call - use item index instead"
                                 response.ok = false
-                                item = nil
-                            elseif type(args[1]) == "userdata" then
-                                -- It's already an item object
-                                item = args[1]
+                            else
+                                response.error = "Invalid item parameter type: " .. type(args[1])
+                                response.ok = false
                             end
-                            
+
                             if item then
                                 local value = reaper.GetMediaItemInfo_Value(item, args[2])
                                 response.ok = true
@@ -1421,22 +1430,24 @@ local function process_request()
                     
                     elseif fname == "SetMediaItemLength" then
                         if #args >= 3 then
-                            local item = args[1]
-                            -- Handle item index or pointer
+                            -- nil-init guards against unknown-type fallthrough.
+                            local item = nil
                             if type(args[1]) == "number" then
-                                -- It's an item index
                                 item = reaper.GetMediaItem(0, args[1])
+                            elseif type(args[1]) == "userdata" then
+                                item = args[1]
                             elseif type(args[1]) == "table" and args[1].__ptr then
-                                -- It's a pointer reference from a previous call - we can't use it
                                 response.error = "Cannot use item pointer from previous call - use item index instead"
                                 response.ok = false
-                                item = nil
+                            else
+                                response.error = "Invalid item parameter type: " .. type(args[1])
+                                response.ok = false
                             end
-                            
+
                             if item then
                                 reaper.SetMediaItemLength(item, args[2], args[3])
                                 response.ok = true
-                            else
+                            elseif not response.error then
                                 response.error = "Invalid item parameter"
                                 response.ok = false
                             end
@@ -1446,22 +1457,24 @@ local function process_request()
                     
                     elseif fname == "SetMediaItemPosition" then
                         if #args >= 3 then
-                            local item = args[1]
-                            -- Handle item index or pointer
+                            -- nil-init guards against unknown-type fallthrough.
+                            local item = nil
                             if type(args[1]) == "number" then
-                                -- It's an item index
                                 item = reaper.GetMediaItem(0, args[1])
+                            elseif type(args[1]) == "userdata" then
+                                item = args[1]
                             elseif type(args[1]) == "table" and args[1].__ptr then
-                                -- It's a pointer reference from a previous call - we can't use it
                                 response.error = "Cannot use item pointer from previous call - use item index instead"
                                 response.ok = false
-                                item = nil
+                            else
+                                response.error = "Invalid item parameter type: " .. type(args[1])
+                                response.ok = false
                             end
-                            
+
                             if item then
                                 reaper.SetMediaItemPosition(item, args[2], args[3])
                                 response.ok = true
-                            else
+                            elseif not response.error then
                                 response.error = "Invalid item parameter"
                                 response.ok = false
                             end
