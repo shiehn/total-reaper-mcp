@@ -20,7 +20,17 @@ local function encode_json(v)
     elseif type(v) == "number" then
         return tostring(v)
     elseif type(v) == "string" then
-        return string.format('"%s"', v:gsub('"', '\\"'):gsub('\n', '\\n'):gsub('\r', '\\r'))
+        -- IMPORTANT: backslash MUST be escaped first, otherwise the
+        -- subsequent gsubs that introduce \" \n \r will themselves get
+        -- doubled. Tabs and control chars are also added; any unescaped
+        -- backslash in a returned string (e.g. Windows path C:\Users\...)
+        -- previously broke strict JSON parsers on the client side.
+        local s = v:gsub('\\', '\\\\')
+                   :gsub('"',  '\\"')
+                   :gsub('\n', '\\n')
+                   :gsub('\r', '\\r')
+                   :gsub('\t', '\\t')
+        return string.format('"%s"', s)
     elseif type(v) == "table" then
         local parts = {}
         local is_array = #v > 0
@@ -31,7 +41,10 @@ local function encode_json(v)
             return "[" .. table.concat(parts, ",") .. "]"
         else
             for k, item in pairs(v) do
-                table.insert(parts, string.format('"%s":%s', k, encode_json(item)))
+                -- Keys also need escaping; previously a key containing
+                -- a quote, backslash, or control char would corrupt
+                -- the output.
+                table.insert(parts, encode_json(tostring(k)) .. ":" .. encode_json(item))
             end
             return "{" .. table.concat(parts, ",") .. "}"
         end
@@ -54,11 +67,23 @@ local function decode_json(str)
     if str == "null" then return nil
     elseif str == "true" then return true
     elseif str == "false" then return false
-    elseif str:match("^%-?%d+%.?%d*$") then return tonumber(str)
-    elseif str:match('^"(.*)"$') then 
-        -- Unescape string
+    elseif tonumber(str) ~= nil then
+        -- tonumber() handles ints, floats, AND scientific notation
+        -- (e.g. "1.5e-3", "2E+4") — the previous regex `%-?%d+%.?%d*`
+        -- did not, breaking automation values and other normalized floats.
+        return tonumber(str)
+    elseif str:match('^"(.*)"$') then
+        -- Unescape string. The order matters: unescape \\ LAST so that
+        -- a literal backslash from "\\\\n" doesn't get mistaken for a
+        -- newline escape. Use a placeholder for double-backslash.
         local s = str:match('^"(.*)"$')
-        s = s:gsub('\\n', '\n'):gsub('\\r', '\r'):gsub('\\"', '"')
+        s = s:gsub('\\\\', '\0')          -- protect literal backslash
+              :gsub('\\n', '\n')
+              :gsub('\\r', '\r')
+              :gsub('\\t', '\t')
+              :gsub('\\"', '"')
+              :gsub('\\/', '/')
+              :gsub('\0',  '\\')           -- restore literal backslash
         return s
     elseif str:match("^%[.*%]$") then
         -- Array - improved parsing
@@ -1058,12 +1083,15 @@ local function process_request()
                     
                     elseif fname == "GetMediaTrackInfo_Value" then
                         if #args >= 2 then
-                            local track = args[1]
-                            -- Handle track index or pointer object
+                            -- IMPORTANT: start `track` at nil. The previous
+                            -- shape (`local track = args[1]`) let unknown
+                            -- arg types (e.g. string) fall through to the
+                            -- final `if track then` check (truthy in Lua),
+                            -- crashing reaper.GetMediaTrackInfo_Value with
+                            -- a non-pointer first arg.
+                            local track = nil
                             if type(args[1]) == "number" then
-                                -- It's a track index
                                 if args[1] == -1 then
-                                    -- Special case for master track
                                     track = reaper.GetMasterTrack(0)
                                 else
                                     track = reaper.GetTrack(0, args[1])
@@ -1072,13 +1100,18 @@ local function process_request()
                                     response.error = "Track not found at index " .. tostring(args[1])
                                     response.ok = false
                                 end
+                            elseif type(args[1]) == "userdata" then
+                                -- Real REAPER pointer (e.g. handed back from
+                                -- GetTrack within the same request) — use as-is.
+                                track = args[1]
                             elseif type(args[1]) == "table" and args[1].__ptr then
-                                -- It's a pointer object - we can't use it
                                 response.error = "Cannot use track pointer from previous call - use track index instead"
                                 response.ok = false
-                                track = nil
+                            else
+                                response.error = "Invalid track parameter type: " .. type(args[1])
+                                response.ok = false
                             end
-                            
+
                             if track then
                                 local value = reaper.GetMediaTrackInfo_Value(track, args[2])
                                 response.ok = true
@@ -1284,15 +1317,54 @@ local function process_request()
                             response.error = "CountTakes requires 1 argument"
                         end
                     
+                    elseif fname == "CountTrackMediaItems" then
+                        -- Count media items on a track. Accept either a
+                        -- track index (auto-resolves) or a track pointer.
+                        if #args >= 1 then
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "userdata" then
+                                track = args[1]
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call (pass int index instead)"
+                                response.ok = false
+                            end
+                            if track then
+                                response.ok = true
+                                response.ret = reaper.CountTrackMediaItems(track)
+                            elseif not response.error then
+                                response.error = "Invalid track parameter"
+                                response.ok = false
+                            end
+                        else
+                            response.error = "CountTrackMediaItems requires 1 argument"
+                        end
+
                     elseif fname == "GetTrackMediaItem" then
+                        -- Get the i-th media item on a track. Accept track
+                        -- index (auto-resolves) or pointer for arg 1.
                         if #args >= 2 then
-                            local item = reaper.GetTrackMediaItem(args[1], args[2])
-                            response.ok = true
-                            response.ret = item
+                            local track = nil
+                            if type(args[1]) == "number" then
+                                track = reaper.GetTrack(0, args[1])
+                            elseif type(args[1]) == "userdata" then
+                                track = args[1]
+                            elseif type(args[1]) == "table" and args[1].__ptr then
+                                response.error = "Cannot use track pointer from previous call (pass int index instead)"
+                                response.ok = false
+                            end
+                            if track then
+                                response.ok = true
+                                response.ret = reaper.GetTrackMediaItem(track, args[2])
+                            elseif not response.error then
+                                response.error = "Invalid track parameter"
+                                response.ok = false
+                            end
                         else
                             response.error = "GetTrackMediaItem requires 2 arguments"
                         end
-                    
+
                     elseif fname == "DeleteTrackMediaItem" then
                         if #args >= 2 then
                             local track_index = args[1]
@@ -1327,25 +1399,26 @@ local function process_request()
                     
                     elseif fname == "GetMediaItemInfo_Value" then
                         if #args >= 2 then
-                            local item = args[1]
-                            -- Handle item index or pointer
+                            -- IMPORTANT: start at nil so unknown arg types
+                            -- (string, etc.) don't fall through to the
+                            -- truthy `if item then` and crash the API.
+                            local item = nil
                             if type(args[1]) == "number" then
-                                -- It's an item index
                                 item = reaper.GetMediaItem(0, args[1])
                                 if not item then
                                     response.error = "Item not found at index " .. tostring(args[1])
                                     response.ok = false
                                 end
+                            elseif type(args[1]) == "userdata" then
+                                item = args[1]
                             elseif type(args[1]) == "table" and args[1].__ptr then
-                                -- It's a pointer reference from a previous call - we can't use it
                                 response.error = "Cannot use item pointer from previous call - use item index instead"
                                 response.ok = false
-                                item = nil
-                            elseif type(args[1]) == "userdata" then
-                                -- It's already an item object
-                                item = args[1]
+                            else
+                                response.error = "Invalid item parameter type: " .. type(args[1])
+                                response.ok = false
                             end
-                            
+
                             if item then
                                 local value = reaper.GetMediaItemInfo_Value(item, args[2])
                                 response.ok = true
@@ -1357,22 +1430,24 @@ local function process_request()
                     
                     elseif fname == "SetMediaItemLength" then
                         if #args >= 3 then
-                            local item = args[1]
-                            -- Handle item index or pointer
+                            -- nil-init guards against unknown-type fallthrough.
+                            local item = nil
                             if type(args[1]) == "number" then
-                                -- It's an item index
                                 item = reaper.GetMediaItem(0, args[1])
+                            elseif type(args[1]) == "userdata" then
+                                item = args[1]
                             elseif type(args[1]) == "table" and args[1].__ptr then
-                                -- It's a pointer reference from a previous call - we can't use it
                                 response.error = "Cannot use item pointer from previous call - use item index instead"
                                 response.ok = false
-                                item = nil
+                            else
+                                response.error = "Invalid item parameter type: " .. type(args[1])
+                                response.ok = false
                             end
-                            
+
                             if item then
                                 reaper.SetMediaItemLength(item, args[2], args[3])
                                 response.ok = true
-                            else
+                            elseif not response.error then
                                 response.error = "Invalid item parameter"
                                 response.ok = false
                             end
@@ -1382,22 +1457,24 @@ local function process_request()
                     
                     elseif fname == "SetMediaItemPosition" then
                         if #args >= 3 then
-                            local item = args[1]
-                            -- Handle item index or pointer
+                            -- nil-init guards against unknown-type fallthrough.
+                            local item = nil
                             if type(args[1]) == "number" then
-                                -- It's an item index
                                 item = reaper.GetMediaItem(0, args[1])
+                            elseif type(args[1]) == "userdata" then
+                                item = args[1]
                             elseif type(args[1]) == "table" and args[1].__ptr then
-                                -- It's a pointer reference from a previous call - we can't use it
                                 response.error = "Cannot use item pointer from previous call - use item index instead"
                                 response.ok = false
-                                item = nil
+                            else
+                                response.error = "Invalid item parameter type: " .. type(args[1])
+                                response.ok = false
                             end
-                            
+
                             if item then
                                 reaper.SetMediaItemPosition(item, args[2], args[3])
                                 response.ok = true
-                            else
+                            elseif not response.error then
                                 response.error = "Invalid item parameter"
                                 response.ok = false
                             end
@@ -1448,6 +1525,45 @@ local function process_request()
                         local pos = reaper.GetCursorPosition()
                         response.ok = true
                         response.ret = pos
+
+                    elseif fname == "GetSetProjectInfo_String" then
+                        -- Get/set string project info. Used for RENDER_FILE,
+                        -- RENDER_PATTERN, MARKER_GUID, etc.
+                        -- args: (project, key, value, is_set)
+                        --   project: 0 = current project
+                        --   key: e.g. "RENDER_FILE", "RENDER_PATTERN"
+                        --   value: the string to set (ignored if is_set=false)
+                        --   is_set: true to write, false to read
+                        if #args >= 4 then
+                            local proj = args[1]
+                            -- args[1] for project is typically 0; treat as nil
+                            -- (REAPER's API takes a ReaProject* — 0/nil works for current)
+                            if proj == 0 then proj = nil end
+                            local retval, value = reaper.GetSetProjectInfo_String(
+                                proj, args[2], args[3] or "", args[4]
+                            )
+                            response.ok = retval and true or false
+                            response.ret = value
+                        else
+                            response.error = "GetSetProjectInfo_String requires 4 args (project, key, value, is_set)"
+                        end
+
+                    elseif fname == "InsertMedia" then
+                        -- Import an audio/MIDI file into the current project.
+                        -- args[1] = file path (string)
+                        -- args[2] = mode (int): 0=current track, 1=new track,
+                        --          3=takes, 4=stretch to selection, 8=match tempo,
+                        --          512=ignore extension test, |1024=force new tempo map.
+                        --          Combine with bitwise OR.
+                        if #args >= 1 then
+                            local file = args[1]
+                            local mode = args[2] or 1   -- default new track per file
+                            local n = reaper.InsertMedia(file, mode)
+                            response.ok = true
+                            response.ret = n   -- # of items inserted (0 = failure)
+                        else
+                            response.error = "InsertMedia requires 1 argument (file path)"
+                        end
                     
                     elseif fname == "SetEditCurPos" then
                         if #args >= 1 then
