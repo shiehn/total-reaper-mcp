@@ -85,6 +85,12 @@ from .tools.advanced_midi_generation import register_advanced_midi_tools
 # Import DSL health check
 from .dsl.health_check import verify_dsl_installation
 
+# Import capability gate meta-tools
+from .dsl.capability_tools import register_capability_tools
+
+# Tracks which categories are loaded in this session (mutable set shared with capability_tools)
+_loaded_categories: set = set()
+
 # Category mapping
 CATEGORY_REGISTRY = {
     "DSL": register_dsl_tools,
@@ -135,44 +141,56 @@ CATEGORY_REGISTRY = {
 def register_tools_by_profile(profile_name):
     """Register tools based on the selected profile"""
     allowed_categories = get_profile_categories(profile_name)
-    
+
     if allowed_categories is None:
         # Full profile - register everything
         logger.info(f"Using profile: {TOOL_PROFILES['full']['name']}")
         return register_all_tools()
-    
+
     profile = TOOL_PROFILES.get(profile_name, TOOL_PROFILES["groq-essential"])
     logger.info(f"Using profile: {profile['name']} - {profile['description']}")
     logger.info(f"Categories to register: {', '.join(allowed_categories)}")
-    
+
     total_tools = 0
-    
+
     for category_name, register_func in CATEGORY_REGISTRY.items():
-        # Check if this category is in our allowed list
         if category_name in allowed_categories:
             try:
                 count = register_func(mcp)
                 total_tools += count
+                _loaded_categories.add(category_name)
                 logger.info(f"✓ {category_name}: {count} tools")
             except Exception as e:
                 logger.error(f"✗ Failed to register {category_name}: {e}")
         else:
             logger.debug(f"⊘ Skipping {category_name} (not in profile)")
-    
+
+    # Always register capability gate meta-tools so Claude can discover and load
+    # unloaded categories on demand, regardless of which profile is active.
+    cap_count = register_capability_tools(mcp, CATEGORY_REGISTRY, _loaded_categories)
+    total_tools += cap_count
+    logger.info(f"✓ Capability gates: {cap_count} tools (list_capabilities, enable_capability)")
+
     return total_tools
 
 def register_all_tools():
-    """Register all available tools (original behavior)"""
+    """Register all available tools (full profile)"""
     total_tools = 0
-    
+
     for category_name, register_func in CATEGORY_REGISTRY.items():
         try:
             count = register_func(mcp)
             total_tools += count
+            _loaded_categories.add(category_name)
             logger.info(f"✓ {category_name}: {count} tools")
         except Exception as e:
             logger.error(f"✗ Failed to register {category_name}: {e}")
-    
+
+    # Capability tools still registered for completeness (list_capabilities returns
+    # "all loaded" and enable_capability is a no-op, but the tools are discoverable)
+    cap_count = register_capability_tools(mcp, CATEGORY_REGISTRY, _loaded_categories)
+    total_tools += cap_count
+
     return total_tools
 
 async def main_async(args):

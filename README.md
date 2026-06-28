@@ -58,18 +58,32 @@ This will:
 - Create launch scripts
 - Optionally set up auto-start on login
 
-**Note:** The quick install script may reference outdated configurations. For the most reliable setup, follow the manual instructions below.
+**Note:** The quick install script is macOS-only. Windows users must follow the manual setup below.
 
 ## Manual Setup
 
 ### 1. Install Python dependencies
 
+**macOS / Linux:**
 ```bash
-# Create and activate virtual environment (Python 3.10+ required)
-python3.10 -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+```
 
-# Install the package
+**Windows (recommended — using [uv](https://github.com/astral-sh/uv)):**
+```bash
+uv venv --python 3.11
+source .venv/Scripts/activate   # Git Bash
+# or: .venv\Scripts\activate.bat  (CMD) / .venv\Scripts\Activate.ps1 (PowerShell)
+uv pip install -e .
+```
+
+**Windows (standard venv):**
+```bash
+python -m venv .venv
+.venv\Scripts\activate.bat      # CMD
+# or: .venv\Scripts\Activate.ps1  (PowerShell)
 pip install -e .
 ```
 
@@ -81,49 +95,105 @@ Currently, only the **file-based bridge** is fully implemented and tested. The s
 
 The MCP server communicates with REAPER through a file-based bridge. This requires no additional dependencies and is the most reliable method.
 
+**macOS / Linux:**
+
 1. Install the bridge:
    ```bash
    ./scripts/install_bridge.sh
    ```
 
-2. Load the bridge in REAPER:
-   - Open REAPER
-   - Go to Actions → Show action list
-   - Click "Load..." and select `mcp_bridge_file_v2.lua` from your Scripts folder
-   - Run the action (check the REAPER console for startup message)
+**Windows:**
 
-3. Start the MCP server:
-   ```bash
-   # Default profile (dsl-production: 53 tools with natural language interface)
-   python -m server.app
-   
-   # Or with a specific profile
-   python -m server.app --profile dsl      # Natural language tools only (15 tools)
-   python -m server.app --profile full     # All tools (600+ tools)
-   ```
+The install script is macOS-only. Copy the bridge manually:
 
-**Important Architecture Note:** 
+```bash
+# Git Bash
+cp lua/mcp_bridge.lua "$APPDATA/REAPER/Scripts/"
+```
+
+Or in PowerShell:
+```powershell
+Copy-Item lua\mcp_bridge.lua "$env:APPDATA\REAPER\Scripts\"
+```
+
+The bridge is copied as `mcp_bridge.lua`. REAPER's Scripts folder is typically:
+`C:\Users\<you>\AppData\Roaming\REAPER\Scripts\`
+
+**Load the bridge in REAPER (all platforms):**
+
+1. Open REAPER
+2. Go to **Actions → Show action list**
+3. Click the **New action** button
+4. Select **Load ReaScript...** from the options that appear
+5. Navigate to your Scripts folder and select `mcp_bridge.lua` (Windows) or `mcp_bridge_file_v2.lua` (macOS)
+   - Windows Scripts folder: `C:\Users\<you>\AppData\Roaming\REAPER\Scripts\`
+   - macOS Scripts folder: `~/Library/Application Support/REAPER/Scripts/`
+6. The script appears in the action list — select it and click **Run**
+7. Check the REAPER console (**View → Show REAPER console**) for: `"REAPER MCP Bridge (File-based, Full API) started"`
+
+**Start the MCP server:**
+```bash
+# Default profile (dsl-production: 53 tools with natural language interface)
+python -m server.app
+
+# Or with a specific profile
+python -m server.app --profile dsl      # Natural language tools only (15 tools)
+python -m server.app --profile full     # All tools (600+ tools)
+```
+
+**Important Architecture Note:**
 - There is only ONE bridge script (`lua/mcp_bridge.lua`) that supports ALL profiles
 - The bridge includes both traditional ReaScript functions (600+) and DSL functions
 - Profile selection happens in the Python MCP server, NOT in the bridge
-- The bridge is installed as `mcp_bridge_file_v2.lua` for backward compatibility
-
+- On macOS the bridge is installed as `mcp_bridge_file_v2.lua` for backward compatibility
 
 #### Socket-based Bridge (Not Currently Implemented)
 
 While the Lua script `lua/mcp_bridge.lua` exists for socket-based communication, there is no corresponding Python server implementation. The socket bridge requires LuaSocket and would need a server that listens on UDP port 9000.
 
-### 3. Verify the setup
+### 3. Connect to Claude Code (or other MCP client)
+
+**Claude Code (`claude mcp add`):**
+
+```bash
+# macOS / Linux
+claude mcp add reaper-mcp -- /path/to/.venv/bin/python -m server.app
+
+# Windows — must set REAPER_MCP_BRIDGE_DIR explicitly (default path is macOS-only)
+claude mcp add reaper-mcp \
+  -e REAPER_MCP_BRIDGE_DIR="C:/Users/<you>/AppData/Roaming/REAPER/Scripts/mcp_bridge_data" \
+  -- C:/path/to/.venv/Scripts/python.exe -m server.app
+```
+
+If you already added the server without the env variable, edit `~/.claude.json` and add it to the `"env"` field:
+
+```json
+"reaper-mcp": {
+  "type": "stdio",
+  "command": "C:/Users/<you>/github/total-reaper-mcp/.venv/Scripts/python.exe",
+  "args": ["-m", "server.app"],
+  "env": {
+    "REAPER_MCP_BRIDGE_DIR": "C:/Users/<you>/AppData/Roaming/REAPER/Scripts/mcp_bridge_data"
+  }
+}
+```
+
+### 4. Verify the setup
 
 1. Check REAPER console shows: "REAPER MCP Bridge (File-based, Full API) started"
 2. Check Python server shows: "Server ready. Waiting for connections..."
 3. The server will display which profile is active and how many tools were registered
-4. The bridge uses file-based communication via `~/Library/Application Support/REAPER/Scripts/mcp_bridge_data/`
+4. The bridge uses file-based communication via:
+   - **macOS:** `~/Library/Application Support/REAPER/Scripts/mcp_bridge_data/`
+   - **Windows:** `%APPDATA%\REAPER\Scripts\mcp_bridge_data\`
+
+> **Windows gotcha:** The Python server defaults to the macOS bridge path. Without setting
+> `REAPER_MCP_BRIDGE_DIR`, all tool calls will time out even if REAPER and the Lua bridge are running.
 
 ## Testing
 
 Make sure you have:
-1. REAPER running with `mcp_bridge_file_v2.lua` loaded
+1. REAPER running with `mcp_bridge.lua` loaded (macOS: `mcp_bridge_file_v2.lua`)
 2. The MCP server running (`python -m server.app`)
 
 Then run the tests:
