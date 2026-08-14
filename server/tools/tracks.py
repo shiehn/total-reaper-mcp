@@ -549,15 +549,10 @@ async def track_fx_get_count(track_index: int) -> str:
 
 async def track_fx_add_by_name(track_index: int, fx_name: str, instantiate: bool = True) -> str:
     """Add an FX to a track by name"""
-    # Get track
-    track_result = await bridge.call_lua("GetTrack", [0, track_index])
-    if not track_result.get("ok") or not track_result.get("ret"):
-        raise Exception(f"Failed to find track at index {track_index}")
-    
-    track_handle = track_result.get("ret")
-    
-    # Add FX
-    result = await bridge.call_lua("TrackFX_AddByName", [track_handle, fx_name, False, -1 if instantiate else -1000])
+    # Pass the track index directly - the bridge resolves it. A track handle
+    # from a previous call is a serialized pointer ({"__ptr": ...}) that
+    # cannot be replayed across the file-based IPC.
+    result = await bridge.call_lua("TrackFX_AddByName", [track_index, fx_name, False, -1 if instantiate else -1000])
     
     if result.get("ok"):
         fx_index = result.get("ret", -1)
