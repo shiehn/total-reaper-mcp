@@ -836,10 +836,31 @@ DSL_FUNCTIONS = {
     CopyItemsToPosition = CopyItemsToPosition
 }
 
+-- Which request files are actually on disk right now.
+--
+-- This used to be a literal `for i = 1, 1000` probe. Two problems: it cost a
+-- thousand file_exists() calls on every defer tick whether or not anything was
+-- pending, and -- the one that bites -- it silently ignored any id outside that
+-- window. A client writing request_7000.json got no reply, no error and no log
+-- line; the requests just piled up in the directory forever.
+local function pending_request_ids()
+    local ids = {}
+    local idx = 0
+    while true do
+        local name = reaper.EnumerateFiles(bridge_dir, idx)
+        if not name then break end
+        local id = name:match('^request_(%d+)%.json$')
+        if id then ids[#ids + 1] = tonumber(id) end
+        idx = idx + 1
+    end
+    table.sort(ids)          -- answer in the order the ids were numbered
+    return ids
+end
+
 -- Main processing function
 local function process_request()
-    -- Look for any request files with numbered pattern
-    for i = 1, 1000 do
+    -- Only the requests that exist -- see pending_request_ids above.
+    for _, i in ipairs(pending_request_ids()) do
         local numbered_request_file = bridge_dir .. 'request_' .. i .. '.json'
         local numbered_response_file = bridge_dir .. 'response_' .. i .. '.json'
         
