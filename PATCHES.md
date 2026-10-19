@@ -28,21 +28,22 @@ upstream; the REAPER-config bits are local setup notes.
   project file or `Untitled.rpp`) — never a dialog. Dir override:
   `REAPER_MCP_PROJECT_DIR`.
 
-## REAPER-side setup (local — lives in the REAPER resource dir, not this repo)
+**`lua/mcp_bridge.lua` + `scripts/install_bridge.sh` — auto-start, one loop only**
+- `install_bridge.sh` also installs `scripts/startup/__startup.lua` into
+  `<REAPER resource>/Scripts/` (never over an existing one; if one exists without
+  the bridge, it prints the line to add). REAPER runs it on every launch, so the
+  MCP tools work right after a restart with no manual "run the action" step.
+- Single instance: auto-start plus a manual run of the action would start two
+  `reaper.defer` loops racing on the same request files. A `_G` flag cannot
+  prevent it, because each ReaScript run has its own Lua state. The running loop
+  stamps a heartbeat into the process-wide ExtState (`mcp_bridge/heartbeat`);
+  a new start backs off while it is under 2 s old, and starts normally once a
+  stopped bridge has gone quiet. Test: `lua tests/lua/bridge_single_instance.lua`.
 
-- **Auto-start:** `<REAPER resource>/Scripts/__startup.lua` `dofile`s the bridge
-  on every launch (wrapped in `pcall`), so the MCP tools work right after a
-  REAPER restart with no manual "run the action" step:
-  ```lua
-  local ok, err = pcall(function()
-      dofile(reaper.GetResourcePath() .. '/Scripts/mcp_bridge_file_v2.lua')
-  end)
-  if not ok then reaper.ShowConsoleMsg('MCP bridge auto-start failed: ' .. tostring(err) .. '\n') end
-  ```
-- **Single-instance guard:** a `if _G.__MCP_BRIDGE_RUNNING then return end` /
-  `_G.__MCP_BRIDGE_RUNNING = true` guard at the top of the running bridge script
-  prevents a duplicate `reaper.defer` poll loop if it's started twice
-  (e.g. `__startup` + a manual re-run) racing on the same request files.
+**Install from a fresh clone**
+- `.venv`/`.venv-new` are no longer tracked: their symlinks pointed at another
+  machine's Python, so `python -m venv .venv` on a clone left no interpreter.
+- `mcp<2` pinned: 2.x renamed FastMCP and `server.app` failed on import.
 
 ## Hard-won rule
 

@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "MCP Server for REAPER DAW"
 requires-python = ">=3.9"
 dependencies = [
-    "mcp>=1.1.2",
+    "mcp>=1.1.2,<2",  # 2.x renamed FastMCP; server.app is v1 code
     "uvicorn[standard]>=0.32.1",
     "websockets>=12.0",
 ]

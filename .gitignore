@@ -69,3 +69,6 @@ coverage.xml
 *.temp
 /tmp/
 /temp/
+
+# virtualenvs are per machine; tracked ones break `python -m venv .venv` on a fresh clone
+.venv*/
