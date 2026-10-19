@@ -34,6 +34,19 @@ cp "$BRIDGE_FILE" "$REAPER_SCRIPTS_DIR/$TARGET_NAME"
 
 if [ $? -eq 0 ]; then
     echo "✅ Bridge installed successfully!"
+
+    # Auto-start: REAPER runs Scripts/__startup.lua on every launch, so the bridge is up
+    # without running the action by hand. Never overwrite a startup script someone already has.
+    STARTUP="$REAPER_SCRIPTS_DIR/__startup.lua"
+    if [ ! -f "$STARTUP" ]; then
+        cp scripts/startup/__startup.lua "$STARTUP"
+        echo "✅ Auto-start installed: $STARTUP"
+    elif grep -q "$TARGET_NAME" "$STARTUP"; then
+        echo "✅ Auto-start already set up in $STARTUP"
+    else
+        echo "ℹ️  $STARTUP exists without the bridge. To auto-start it, append:"
+        echo "    dofile(reaper.GetResourcePath() .. '/Scripts/$TARGET_NAME')"
+    fi
     echo ""
     echo "Next steps:"
     echo "1. Restart REAPER (or reload the bridge script)"

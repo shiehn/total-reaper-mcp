@@ -4,6 +4,21 @@
 -- - All DSL (Domain Specific Language) functions for natural language control
 -- Profile selection is handled by the Python MCP server, not this bridge
 
+-- One poller only. __startup.lua auto-runs this on launch, and a manual run
+-- of the action would start a second defer loop racing on the same request
+-- files. Each ReaScript run has its own Lua state, so a global flag cannot
+-- see the other loop; the running loop instead stamps a heartbeat into the
+-- process-wide ExtState, and a new start backs off while it is fresh.
+-- A stopped bridge stops beating, so a restart after a crash is never blocked.
+local HEARTBEAT_SECTION, HEARTBEAT_KEY = "mcp_bridge", "heartbeat"
+do
+    local last = tonumber(reaper.GetExtState(HEARTBEAT_SECTION, HEARTBEAT_KEY))
+    if last and reaper.time_precise() - last < 2.0 then
+        reaper.ShowConsoleMsg("REAPER MCP Bridge already running — ignoring duplicate start\n")
+        return
+    end
+end
+
 local bridge_dir = reaper.GetResourcePath() .. '/Scripts/mcp_bridge_data/'
 
 -- Create bridge directory if it doesn't exist
@@ -4260,6 +4275,7 @@ reaper.ShowConsoleMsg("REAPER MCP Bridge (File-based, Full API) started\n")
 reaper.ShowConsoleMsg("Bridge directory: " .. bridge_dir .. "\n")
 
 function main()
+    reaper.SetExtState(HEARTBEAT_SECTION, HEARTBEAT_KEY, tostring(reaper.time_precise()), false)
     process_request()
     reaper.defer(main)
 end
